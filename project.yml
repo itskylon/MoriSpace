@@ -9,13 +9,19 @@ settings:
     TARGETED_DEVICE_FAMILY: '1,2'
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ''
-    MARKETING_VERSION: '0.10.0'
-    CURRENT_PROJECT_VERSION: '18'
+    MARKETING_VERSION: '0.12.1'
+    CURRENT_PROJECT_VERSION: '22'
+    MORI_CALENDAR_APP_GROUP: group.dev.kylon.MoriPhotos.calendar
+    'MORI_CALENDAR_APP_GROUP[sdk=macosx*]': $(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 targets:
   MoriPhotos:
     type: application
     platform: iOS
+    attributes:
+      SystemCapabilities:
+        com.apple.ApplicationGroups.iOS:
+          enabled: 1
     settings:
       base:
         SUPPORTS_MACCATALYST: YES
@@ -23,23 +29,88 @@ targets:
         DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER: NO
         'TARGETED_DEVICE_FAMILY[sdk=macosx*]': '6'
         MORI_MAC_ENTITLEMENTS: MoriPhotos/Mac.entitlements
+        CODE_SIGN_ENTITLEMENTS: MoriPhotos/iOS.entitlements
         'CODE_SIGN_ENTITLEMENTS[sdk=macosx*]': $(MORI_MAC_ENTITLEMENTS)
-    sources: [MoriPhotos]
+    sources: [MoriPhotos, CalendarWidgetShared]
+    dependencies:
+      - target: MoriCalendarWidgets
+        platformFilter: iOS
+        embed: true
+      - target: MoriCalendarWidgetsMac
+        platformFilter: macOS
+        embed: true
     info:
       path: MoriPhotos/Info.plist
       properties:
         CFBundleDisplayName: 森空间
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        MoriCalendarAppGroup: $(MORI_CALENDAR_APP_GROUP)
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.kylon.MoriPhotos.calendar
+            CFBundleURLSchemes: [morispace]
         UILaunchScreen: {}
         NSPhotoLibraryUsageDescription: 用于浏览和管理本机照片；开启新照片备份后，将新照片原图备份到你选择的群晖 NAS。
         NSPhotoLibraryAddUsageDescription: 用于将你选择的群晖照片保存到本机照片图库。
         NSLocalNetworkUsageDescription: 用于连接局域网内的群晖 NAS 并浏览照片和文件。
+        NSCalendarsFullAccessUsageDescription: 用于在森空间查看、新建和编辑你的系统日历日程，包括重复事件与提醒。日程保存在你选择的日历账户中。
         PHPhotoLibraryPreventAutomaticLimitedAccessAlert: true
         UIBackgroundModes: [processing]
         BGTaskSchedulerPermittedIdentifiers: [dev.kylon.MoriPhotos.new-photo-backup]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+  MoriCalendarWidgets:
+    type: app-extension
+    platform: iOS
+    attributes:
+      SystemCapabilities:
+        com.apple.ApplicationGroups.iOS:
+          enabled: 1
+    sources:
+      - path: MoriCalendarWidgets/MoriCalendarWidget.swift
+      - path: CalendarWidgetShared
+      - path: MoriPhotos/CalendarDomain.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.kylon.MoriPhotos.CalendarWidget
+        CODE_SIGN_ENTITLEMENTS: MoriCalendarWidgets/Widget.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: ''
+    info:
+      path: MoriCalendarWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: 森空间日历
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        MoriCalendarAppGroup: $(MORI_CALENDAR_APP_GROUP)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+  MoriCalendarWidgetsMac:
+    type: app-extension
+    platform: macOS
+    deploymentTarget: '14.0'
+    sources:
+      - path: MoriCalendarWidgets/MoriCalendarWidget.swift
+      - path: CalendarWidgetShared
+      - path: MoriPhotos/CalendarDomain.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.kylon.MoriPhotos.CalendarWidgetMac
+        CODE_SIGN_ENTITLEMENTS: MoriCalendarWidgets/WidgetMac.entitlements
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: ''
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: MoriCalendarWidgets/InfoMac.plist
+      properties:
+        CFBundleDisplayName: 森空间日历
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        MoriCalendarAppGroup: $(MORI_CALENDAR_APP_GROUP)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
   MoriPhotosTests:
     type: bundle.unit-test
     platform: iOS

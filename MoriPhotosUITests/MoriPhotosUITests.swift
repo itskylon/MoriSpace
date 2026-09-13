@@ -79,7 +79,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--empty-connection-fixture"]
         app.launch()
-        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "群晖", "设置"])
+        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "群晖", "日历", "设置"])
         app.tabBars.buttons["设置"].tap()
         app.buttons["newPhotoBackupSettings"].tap()
         XCTAssertTrue(app.navigationBars["新照片备份"].waitForExistence(timeout: 5))
@@ -489,7 +489,7 @@ final class MoriPhotosUITests: XCTestCase {
         app.buttons["loginNAS"].tap()
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "请使用 HTTPS")).firstMatch.waitForExistence(timeout: 5))
         app.navigationBars.buttons["完成"].tap()
-        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "群晖", "设置"])
+        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "群晖", "日历", "设置"])
         app.tabBars.buttons["设置"].tap()
         let version = app.descendants(matching: .any)["appVersion"]
         if !version.waitForExistence(timeout: 2) { app.swipeUp() }

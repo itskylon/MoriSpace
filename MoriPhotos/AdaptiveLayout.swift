@@ -18,7 +18,7 @@ enum AppPlatform {
 }
 
 enum WorkspacePage: String, CaseIterable, Identifiable {
-    case local, photos, files, downloads, monitor, backup, settings
+    case local, photos, files, downloads, monitor, backup, settings, calendar
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -29,6 +29,7 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
         case .monitor: "运行状态"
         case .backup: "照片备份"
         case .settings: "设置"
+        case .calendar: "日历"
         }
     }
     var symbol: String {
@@ -40,12 +41,14 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
         case .monitor: "waveform.path.ecg"
         case .backup: "icloud.and.arrow.up"
         case .settings: "gearshape"
+        case .calendar: "calendar"
         }
     }
 }
 
 @MainActor final class WorkspaceNavigation: ObservableObject {
     @Published var selection: WorkspacePage = .photos
+    @Published var phoneSelection: WorkspacePage = .local
     @Published var paths: [WorkspacePage: NavigationPath] = [:]
 }
 
@@ -56,10 +59,11 @@ struct AdaptiveRootView: View {
         if AppPlatform.isMac || sizeClass == .regular {
             DesktopWorkspaceView(navigation: navigation)
         } else {
-            TabView {
-                NavigationStack { LocalLibraryView() }.tabItem { Label("照片", systemImage: "square.grid.2x2") }
-                NavigationStack { NASHomeView() }.tabItem { Label("群晖", systemImage: "externaldrive") }
-                NavigationStack { SettingsView() }.tabItem { Label("设置", systemImage: "slider.horizontal.3") }
+            TabView(selection: $navigation.phoneSelection) {
+                NavigationStack { LocalLibraryView() }.tabItem { Label("照片", systemImage: "square.grid.2x2") }.tag(WorkspacePage.local)
+                NavigationStack { NASHomeView() }.tabItem { Label("群晖", systemImage: "externaldrive") }.tag(WorkspacePage.photos)
+                NavigationStack { CalendarHomeView(isActive: navigation.phoneSelection == .calendar) }.tabItem { Label("日历", systemImage: "calendar") }.tag(WorkspacePage.calendar)
+                NavigationStack { SettingsView() }.tabItem { Label("设置", systemImage: "slider.horizontal.3") }.tag(WorkspacePage.settings)
             }
         }
     }
@@ -74,6 +78,7 @@ struct DesktopWorkspaceView: View {
         NavigationSplitView(columnVisibility: $visibility) {
             List {
                 Section("图库") { row(.local); row(.photos) }
+                Section("日程") { row(.calendar) }
                 Section("群晖 NAS") { row(.files); row(.downloads); row(.monitor) }
                 Section("管理") { row(.backup); row(.settings) }
             }.listStyle(.sidebar).environment(\.defaultMinListRowHeight, 28).navigationTitle("森空间")
@@ -126,6 +131,7 @@ struct DesktopWorkspaceView: View {
         case .monitor: NASMonitorHomeView(isActive: navigation.selection == page)
         case .backup: PhotoBackupView().readableFormWidth()
         case .settings: SettingsView().readableFormWidth()
+        case .calendar: CalendarHomeView(isActive: navigation.selection == page)
         }
     }
 }

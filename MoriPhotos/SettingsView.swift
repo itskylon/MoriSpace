@@ -37,7 +37,7 @@ struct SettingsView: View {
                 Button("打开系统权限设置") { AppPlatform.openPhotoSettings() }
             }
             Section("关于这一版") {
-                LabeledContent("版本", value: "0.10.0 · 个人使用版").accessibilityIdentifier("appVersion")
+                LabeledContent("版本", value: "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") · 个人使用版").accessibilityIdentifier("appVersion")
                 Text("支持 iPhone、iPad（iOS 17 及以上）与 Mac（macOS 14 及以上）。群晖使用 DSM 7 / Synology Photos，可直连 HTTPS 地址。照片在设备与 NAS 间传输。").font(.footnote).foregroundStyle(.secondary)
                 Text(AppPlatform.isMac ? "支持本机照片管理与备份、群晖文件下载、视频播放和 NAS 状态查看。备份与下载需保持 App 运行；退出或休眠后暂停。暂不支持 QuickConnect 中继、视频转码与人脸识别。" : "支持新照片自动备份、照片管理、群晖文件浏览与下载、视频播放和 NAS 状态查看。备份可由系统安排后台补传；文件下载需保持 App 在前台。暂不支持 QuickConnect 中继、视频转码与人脸识别。").font(.footnote).foregroundStyle(.secondary)
             }

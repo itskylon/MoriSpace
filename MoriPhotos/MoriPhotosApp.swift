@@ -1,10 +1,13 @@
 import SwiftUI
+import EventKit
+import Combine
 
 @main
 struct MoriPhotosApp: App {
     @UIApplicationDelegateAdaptor(BackupAppDelegate.self) private var delegate
     @StateObject private var navigation = WorkspaceNavigation()
     @StateObject private var library = PhotoLibraryStore()
+    @StateObject private var calendar = CalendarStore(widgetCache: .shared)
     @StateObject private var app: AppState
     @StateObject private var backup: PhotoBackupManager
     @Environment(\.scenePhase) private var scenePhase
@@ -23,9 +26,28 @@ struct MoriPhotosApp: App {
             .environmentObject(library)
             .environmentObject(app)
             .environmentObject(backup)
+            .environmentObject(calendar)
             .task { backup.foregroundChanged(scenePhase == .active) }
+            .task { await calendar.refreshWidgetSnapshot() }
+            .onOpenURL { url in
+                guard let date = CalendarWidgetRoute.date(from: url) else { return }
+                calendar.select(date); calendar.month = calendar.layout.month(containing: date)
+                calendar.displayMode = .month
+                navigation.paths[.calendar] = NavigationPath()
+                navigation.selection = .calendar; navigation.phoneSelection = .calendar
+            }
+            .onReceive(calendar.$hiddenCalendarIDs.dropFirst()) { _ in Task { await calendar.refreshWidgetSnapshot() } }
+            .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged).debounce(for: .milliseconds(400), scheduler: RunLoop.main)) { _ in
+                if scenePhase == .active { Task { await calendar.refreshWidgetSnapshot() } }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+                Task { await calendar.refreshWidgetSnapshot() }
+            }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { library.reload(); app.downloads.reloadIfNeeded() }
+                if phase == .active {
+                    library.reload(); app.downloads.reloadIfNeeded()
+                    Task { await calendar.refreshWidgetSnapshot() }
+                }
                 backup.foregroundChanged(phase == .active)
             }
         }

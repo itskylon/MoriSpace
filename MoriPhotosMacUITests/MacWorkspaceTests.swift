@@ -1,6 +1,25 @@
 import XCTest
 
 final class MacWorkspaceTests: XCTestCase {
+    func testCalendarSidebarWideLayoutAndMonthPersistence() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--empty-connection-fixture", "--calendar-fixture"]
+        app.launch()
+        let entry = app.buttons["sidebar_calendar"].firstMatch
+        XCTAssertTrue(entry.waitForExistence(timeout: 12)); entry.click()
+        XCTAssertTrue(app.staticTexts["calendarMonthTitle"].waitForExistence(timeout: 8))
+        let row = app.buttons.matching(identifier: "calendarEventRow").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
+        XCTAssertTrue(app.staticTexts["calendarSelectedLunarDay"].label.hasPrefix("农历"))
+        capture(app, "calendar-mac-wide")
+        app.buttons["calendarNextMonth"].click()
+        let month = app.staticTexts["calendarMonthTitle"].label
+        app.typeKey(",", modifierFlags: .command)
+        app.typeKey("8", modifierFlags: .command)
+        XCTAssertEqual(app.staticTexts["calendarMonthTitle"].label, month)
+    }
     func testDesktopBrowsingKeyboardAndPersistentNavigation() {
         continueAfterFailure = false
         let app = XCUIApplication()
