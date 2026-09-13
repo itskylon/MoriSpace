@@ -1,0 +1,30 @@
+# Xcode and Swift build output
+.DS_Store
+DerivedData/
+build/
+.build/
+*.xcuserstate
+xcuserdata/
+*.xcresult
+*.app/
+*.ipa
+*.dSYM/
+*.zip
+*.log
+
+# Local acceptance material
+Screenshots/
+.local-notes/
+验证记录.md
+
+# Signing material and local secrets
+.env
+.env.*
+!.env.example
+*.p12
+*.p8
+*.pem
+*.key
+*.mobileprovision
+*.provisionprofile
+*signing-team*.txt
