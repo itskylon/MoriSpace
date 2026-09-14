@@ -32,7 +32,8 @@ struct CalendarWidgetContent: View {
                 Text(date.formatted(.dateTime.weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
                     .font(.system(size: 12, weight: .semibold)).foregroundStyle(accent)
                 Spacer()
-                Image(systemName: "calendar").font(.system(size: 12)).foregroundStyle(accent)
+                if let holiday = ChinaHolidaySchedule.day(on: date) { HolidayBadge(kind: holiday.kind) }
+                else { Image(systemName: "calendar").font(.system(size: 12)).foregroundStyle(accent) }
             }
             HStack(alignment: .lastTextBaseline, spacing: 8) {
                 Text(String(layout.calendar.component(.day, from: date)))
@@ -41,6 +42,12 @@ struct CalendarWidgetContent: View {
             }
             Text(lunar.monthName + lunar.dayName + (lunar.festival.map { " · " + $0 } ?? ""))
                 .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+            if let holiday = ChinaHolidaySchedule.day(on: date) {
+                Text(holiday.description).font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(holiday.kind == .rest ? Color.red : Color.blue).lineLimit(1).minimumScaleFactor(0.8)
+            } else if ChinaHolidaySchedule.coverage(on: date) == nil {
+                Text("放假安排未收录").font(.system(size: 9)).foregroundStyle(.secondary)
+            }
             Spacer(minLength: 3)
             if let event = upcoming.first { eventContent(event) }
             else { Text(snapshot.emptyMessage(at: date)).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2) }
@@ -52,7 +59,7 @@ struct CalendarWidgetContent: View {
             HStack(alignment: .firstTextBaseline) {
                 Text("\(layout.calendar.component(.month, from: date))月").font(.system(size: 15, weight: .semibold))
                 Spacer(minLength: 2)
-                Text(lunar.festival ?? (lunar.monthName + lunar.dayName))
+                Text(ChinaHolidaySchedule.coverage(on: date) == nil ? "休班未收录" : lunar.festival ?? (lunar.monthName + lunar.dayName))
                     .font(.system(size: 9)).foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.8)
             }.padding(.bottom, 3)
             HStack(spacing: 0) {
@@ -65,13 +72,17 @@ struct CalendarWidgetContent: View {
                 ForEach(days, id: \.self) { day in
                     let today = layout.calendar.isDate(day, inSameDayAs: date)
                     let inMonth = layout.calendar.isDate(day, equalTo: date, toGranularity: .month)
+                    let holiday = ChinaHolidaySchedule.day(on: day)
                     Link(destination: CalendarWidgetRoute.url(for: day)) {
                         Text(String(layout.calendar.component(.day, from: day)))
                             .font(.system(size: 9, weight: today ? .bold : .regular))
                             .foregroundStyle(today ? Color.white : inMonth ? Color.primary : Color.secondary.opacity(0.5))
                             .frame(width: 15, height: 15)
                             .background(today ? accent : .clear, in: Circle())
-                    }.accessibilityLabel(day.formatted(.dateTime.month().day()) + "，" + layout.lunarDate(on: day).description)
+                            .overlay(alignment: .topTrailing) {
+                                if let holiday { HolidayBadge(kind: holiday.kind, fontSize: 5).offset(x: 4, y: -4).opacity(inMonth ? 1 : 0.4) }
+                            }
+                    }.accessibilityLabel(day.formatted(.dateTime.month().day()) + "，" + layout.lunarDate(on: day).description + (holiday.map { "，" + $0.description } ?? ""))
                 }
             }
         }

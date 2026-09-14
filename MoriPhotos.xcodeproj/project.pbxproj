@@ -13,6 +13,7 @@
 		0FE27DA83A27D87C9150B5B2 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEBB81A6B76ABF29C4956AC2 /* Models.swift */; };
 		12F03212B69B221F66B6EA7B /* NASMonitoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = 735EE07A0DF6F4701B719F31 /* NASMonitoring.swift */; };
 		133E9E0F02E9B90DF22E1F06 /* CalendarStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11792FF853066FE298B264EE /* CalendarStore.swift */; };
+		143DC639E577F3547704ECA7 /* ChinaHolidaySchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */; };
 		14B92DE9FB74875327CD76F1 /* CalendarWidgetContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCD5FB5673ABAFCBECB565F /* CalendarWidgetContent.swift */; };
 		25C7FF466302B7547A3FC875 /* LunarMonthWidgetContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE47DC8FEB7E8200EB69BFD /* LunarMonthWidgetContent.swift */; };
 		25FA002A4AD4181C13C4CD39 /* NASStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E332AB46CF90F1AB08AF5A19 /* NASStyle.swift */; };
@@ -28,8 +29,11 @@
 		4D60745BBBAA3F5A994B71B6 /* CalendarDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B270F3F68AB9065ABEB5BCD0 /* CalendarDomain.swift */; };
 		4ED69224BB730E926F4C60AD /* PhotoLibraryIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB1BF04404A8493BAB60509 /* PhotoLibraryIntegrationTests.swift */; };
 		52F9A82A65B2FDB500D80552 /* PhotoBackupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F655D12154C8ED18EDAC56C /* PhotoBackupView.swift */; };
+		55808695785740BAA34D0987 /* HolidayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80134465C65DC9628290845 /* HolidayBadge.swift */; };
+		5CA37363F0FB0C8607E5300F /* ChinaHolidaySchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */; };
 		6078839951AAE4FD8A3A1739 /* VideoPlaybackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7274409BBE484F52990098A9 /* VideoPlaybackView.swift */; };
 		607A32D07B12C231ECE25D5A /* CalendarViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C828459D1927A41E6C971A1 /* CalendarViews.swift */; };
+		6130287985B9EDBC252FF23F /* ChinaHolidaySchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */; };
 		63AFD47A23EEE3F1A994D138 /* PhotoFileSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6AAE08CD014153BE38DBC4F /* PhotoFileSize.swift */; };
 		65343B3E224BADB3461CA4EF /* NASViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568004985FCD4A42241CDA01 /* NASViews.swift */; };
 		69956B7049FA386D28244A88 /* SynologyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC28FA93EF083BB87500F14F /* SynologyClient.swift */; };
@@ -49,6 +53,7 @@
 		89025951598261022B366F71 /* CalendarWidgetUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4384ED8AC25418D63D492A78 /* CalendarWidgetUITests.swift */; };
 		8D8CC2531D5CB8E95BCA7DD9 /* PhotoBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60725D6A69C7EE9D6387682B /* PhotoBackupTests.swift */; };
 		9250040DBA08CD1418D59EFD /* CalendarDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B270F3F68AB9065ABEB5BCD0 /* CalendarDomain.swift */; };
+		96EE64BBB2FD2F52332AF1E6 /* ChinaHolidayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4921EB848336495B6525E6BE /* ChinaHolidayTests.swift */; };
 		9BCFA8C3A4B5ADA30CB807C3 /* FileStationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93E94C98B05D182056236E85 /* FileStationTests.swift */; };
 		9E6F5C84AD911F19FEE75279 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD612473CD1F61239A468C5 /* KeychainStore.swift */; };
 		9F0A37014DDE89604894AE54 /* NASMonitorDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6EF3CF14EB026ECB9C87C9A /* NASMonitorDashboard.swift */; };
@@ -67,9 +72,11 @@
 		CC4152AD62FA102AD4A78619 /* FileStation.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA2845221AB5B98D95E6E981 /* FileStation.swift */; };
 		CDE81E541A242EF8D61DD8D2 /* NASConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CD05A9EBD5067F6C666B4BD /* NASConnection.swift */; };
 		D1637BF24C52326D16C0849F /* NASMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A81AA60334F5863526553FA1 /* NASMonitorTests.swift */; };
+		DB38273008D0FDBC37E0AB9F /* HolidayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80134465C65DC9628290845 /* HolidayBadge.swift */; };
 		DE3E910608B3D6768B6C74C9 /* MoriCalendarWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A14CEA414FC091037665EB9 /* MoriCalendarWidget.swift */; };
 		E06AF9BEF6ACDC4AF7707883 /* PhotoLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ABD06E000A87BA5297A30FA /* PhotoLibraryStore.swift */; };
 		E1397E10C82CBCEEBDFE114A /* PhotoViewing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DA055DC4D355E9547364B35 /* PhotoViewing.swift */; };
+		ECC2708605260C2C3FE9B5E9 /* HolidayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80134465C65DC9628290845 /* HolidayBadge.swift */; };
 		EF60DABD68EADF76690948E2 /* ConnectionRestoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27B6095DB92ABE7E4C63C227 /* ConnectionRestoreTests.swift */; };
 		EFD33D8E30B2330F972FC8A6 /* PhotoBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE43CD8EEE908AED79A973D /* PhotoBackup.swift */; };
 		F3425B8E20269ABEEE78615E /* NASFilePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E83339E4DD5D67A754343A /* NASFilePreview.swift */; };
@@ -151,10 +158,12 @@
 		3EFBD487A4E5DCB5CAF659AB /* MoriPhotosUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MoriPhotosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4384ED8AC25418D63D492A78 /* CalendarWidgetUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarWidgetUITests.swift; sourceTree = "<group>"; };
 		483DD6F941B710B8476B7848 /* MoriPhotosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoriPhotosApp.swift; sourceTree = "<group>"; };
+		4921EB848336495B6525E6BE /* ChinaHolidayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChinaHolidayTests.swift; sourceTree = "<group>"; };
 		4A9C3809C2E657705DD021AF /* FileDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileDownloads.swift; sourceTree = "<group>"; };
 		4CD05A9EBD5067F6C666B4BD /* NASConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASConnection.swift; sourceTree = "<group>"; };
 		4CD612473CD1F61239A468C5 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		568004985FCD4A42241CDA01 /* NASViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASViews.swift; sourceTree = "<group>"; };
+		5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChinaHolidaySchedule.swift; sourceTree = "<group>"; };
 		5C828459D1927A41E6C971A1 /* CalendarViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarViews.swift; sourceTree = "<group>"; };
 		60725D6A69C7EE9D6387682B /* PhotoBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoBackupTests.swift; sourceTree = "<group>"; };
 		63E83339E4DD5D67A754343A /* NASFilePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASFilePreview.swift; sourceTree = "<group>"; };
@@ -195,6 +204,7 @@
 		E6EF3CF14EB026ECB9C87C9A /* NASMonitorDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASMonitorDashboard.swift; sourceTree = "<group>"; };
 		E79A359C3DFA8F3F793D6083 /* MoriPhotosUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoriPhotosUITests.swift; sourceTree = "<group>"; };
 		F07DC7F244C5AD308943D572 /* MacWorkspaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacWorkspaceTests.swift; sourceTree = "<group>"; };
+		F80134465C65DC9628290845 /* HolidayBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayBadge.swift; sourceTree = "<group>"; };
 		FB9D811487C68D877A22351C /* NASMonitorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASMonitorView.swift; sourceTree = "<group>"; };
 		FE0EDF0862AA31083F8E62F5 /* LocalViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalViews.swift; sourceTree = "<group>"; };
 		FE4AD4B855D54D55D50486FA /* CalendarWidgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarWidgetTests.swift; sourceTree = "<group>"; };
@@ -228,6 +238,8 @@
 			children = (
 				DFCD5FB5673ABAFCBECB565F /* CalendarWidgetContent.swift */,
 				BD5E5E83E9C3F9679C07600A /* CalendarWidgetData.swift */,
+				5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */,
+				F80134465C65DC9628290845 /* HolidayBadge.swift */,
 				FFE47DC8FEB7E8200EB69BFD /* LunarMonthWidgetContent.swift */,
 			);
 			path = CalendarWidgetShared;
@@ -238,6 +250,7 @@
 			children = (
 				1420924898078F2EDA927690 /* CalendarTests.swift */,
 				FE4AD4B855D54D55D50486FA /* CalendarWidgetTests.swift */,
+				4921EB848336495B6525E6BE /* ChinaHolidayTests.swift */,
 				27B6095DB92ABE7E4C63C227 /* ConnectionRestoreTests.swift */,
 				2C0D5E2EB15294CD604F4A8C /* DesktopFileNavigationTests.swift */,
 				93E94C98B05D182056236E85 /* FileStationTests.swift */,
@@ -566,6 +579,8 @@
 				9250040DBA08CD1418D59EFD /* CalendarDomain.swift in Sources */,
 				BD068FD04E4DC1D911CDF000 /* CalendarWidgetContent.swift in Sources */,
 				7E01845EB4C5E4D4D6652099 /* CalendarWidgetData.swift in Sources */,
+				143DC639E577F3547704ECA7 /* ChinaHolidaySchedule.swift in Sources */,
+				55808695785740BAA34D0987 /* HolidayBadge.swift in Sources */,
 				AE4FCF971C2251D03E9C55B0 /* LunarMonthWidgetContent.swift in Sources */,
 				2E1FFC3A9E386863F9E7DC1D /* MoriCalendarWidget.swift in Sources */,
 			);
@@ -578,6 +593,8 @@
 				4D60745BBBAA3F5A994B71B6 /* CalendarDomain.swift in Sources */,
 				14B92DE9FB74875327CD76F1 /* CalendarWidgetContent.swift in Sources */,
 				6AF602827C81B181AE7086A1 /* CalendarWidgetData.swift in Sources */,
+				5CA37363F0FB0C8607E5300F /* ChinaHolidaySchedule.swift in Sources */,
+				ECC2708605260C2C3FE9B5E9 /* HolidayBadge.swift in Sources */,
 				390D78D38E85D02E4FEE9F90 /* LunarMonthWidgetContent.swift in Sources */,
 				DE3E910608B3D6768B6C74C9 /* MoriCalendarWidget.swift in Sources */,
 			);
@@ -596,10 +613,12 @@
 				607A32D07B12C231ECE25D5A /* CalendarViews.swift in Sources */,
 				85AF170EE1D097AFB0963F61 /* CalendarWidgetContent.swift in Sources */,
 				79AB32B2DA7F271F6DB796C4 /* CalendarWidgetData.swift in Sources */,
+				6130287985B9EDBC252FF23F /* ChinaHolidaySchedule.swift in Sources */,
 				4CDF759C93458A225C3999CF /* DesktopFileNavigation.swift in Sources */,
 				A2863E0E341027B0CA44ABCD /* FileDownloads.swift in Sources */,
 				CC4152AD62FA102AD4A78619 /* FileStation.swift in Sources */,
 				70490F1EA001F189CD4B3C0E /* FileStationFixture.swift in Sources */,
+				DB38273008D0FDBC37E0AB9F /* HolidayBadge.swift in Sources */,
 				9E6F5C84AD911F19FEE75279 /* KeychainStore.swift in Sources */,
 				B127734EFB40556FB34997E2 /* LocalViews.swift in Sources */,
 				25C7FF466302B7547A3FC875 /* LunarMonthWidgetContent.swift in Sources */,
@@ -635,6 +654,7 @@
 			files = (
 				9F400C5BDC399A2A4B2BF4CA /* CalendarTests.swift in Sources */,
 				0CF6AA1D6E995A2BA9DBF9D9 /* CalendarWidgetTests.swift in Sources */,
+				96EE64BBB2FD2F52332AF1E6 /* ChinaHolidayTests.swift in Sources */,
 				EF60DABD68EADF76690948E2 /* ConnectionRestoreTests.swift in Sources */,
 				BCDE0C36C5013B574456F340 /* DesktopFileNavigationTests.swift in Sources */,
 				9BCFA8C3A4B5ADA30CB807C3 /* FileStationTests.swift in Sources */,
@@ -757,7 +777,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -777,7 +797,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.12.1;
+				MARKETING_VERSION = 0.13.0;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -1022,7 +1042,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 22;
+				CURRENT_PROJECT_VERSION = 23;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1036,7 +1056,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.12.1;
+				MARKETING_VERSION = 0.13.0;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MTL_ENABLE_DEBUG_INFO = NO;

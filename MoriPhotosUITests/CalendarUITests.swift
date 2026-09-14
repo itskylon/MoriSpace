@@ -1,6 +1,26 @@
 import XCTest
 
 final class CalendarUITests: XCTestCase {
+    func testPublishedHolidaysAndUncollectedYear() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--empty-connection-fixture", "--calendar-fixture"]
+        app.launch()
+        for (date, expected) in [("2026-09-20", "国庆节调休上班"), ("2026-09-25", "中秋节放假"), ("2026-10-10", "国庆节调休上班")] {
+            XCUIDevice.shared.system.open(URL(string: "morispace://calendar?date=" + date)!)
+            let holiday = app.staticTexts["calendarSelectedHoliday"]
+            XCTAssertTrue(holiday.waitForExistence(timeout: 8))
+            XCTAssertEqual(holiday.label, expected)
+            XCTAssertTrue(app.buttons["calendarDay_" + date].label.contains(expected))
+            capture(app, "calendar-holiday-" + date)
+        }
+        XCUIDevice.shared.system.open(URL(string: "morispace://calendar?date=2027-01-01")!)
+        let coverage = app.staticTexts["calendarHolidayCoverage"]
+        XCTAssertTrue(coverage.waitForExistence(timeout: 8))
+        XCTAssertEqual(coverage.label, "2027年放假安排未收录")
+        XCTAssertFalse(app.staticTexts["calendarSelectedHoliday"].exists)
+    }
+
     func testPhoneShowsLunarDatesAndUpdatesSelectedDay() {
         continueAfterFailure = false
         let app = XCUIApplication()

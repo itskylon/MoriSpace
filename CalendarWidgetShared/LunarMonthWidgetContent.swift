@@ -47,7 +47,7 @@ struct LunarMonthWidgetContent: View {
             Text(String(layout.calendar.component(.year, from: date)))
                 .font(.system(size: isLarge ? 12 : 10)).foregroundStyle(.secondary)
             Spacer(minLength: 8)
-            Text(layout.lunarDate(on: date).description)
+            Text(ChinaHolidaySchedule.coverage(on: date) == nil ? "放假安排未收录" : layout.lunarDate(on: date).description)
                 .font(.system(size: isLarge ? 12 : 10, weight: .medium))
                 .foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.8)
         }
@@ -55,6 +55,7 @@ struct LunarMonthWidgetContent: View {
 
     private func dayCell(_ day: Date, rowHeight: CGFloat) -> some View {
         let lunar = layout.lunarDate(on: day)
+        let holiday = ChinaHolidaySchedule.day(on: day)
         let today = layout.calendar.isDate(day, inSameDayAs: date)
         let inMonth = layout.calendar.isDate(day, equalTo: date, toGranularity: .month)
         // On compact six-week widgets, a single line keeps the lunar text readable.
@@ -62,19 +63,41 @@ struct LunarMonthWidgetContent: View {
         let dayColor: Color = today ? (colorScheme == .dark ? .black : .white) : inMonth ? .primary : .secondary.opacity(0.45)
         let lunarColor: Color = today ? dayColor : !inMonth ? .secondary.opacity(0.4) : lunar.festival != nil ? .orange : .secondary
         return Link(destination: CalendarWidgetRoute.url(for: day)) {
-            let content = Group {
-                Text(String(layout.calendar.component(.day, from: day)))
-                    .font(.system(size: isLarge ? 19 : inline ? 11 : 12, weight: today ? .bold : .medium, design: .rounded))
-                    .foregroundStyle(dayColor)
-                    .lineLimit(1).minimumScaleFactor(0.9)
-                    .frame(width: inline ? 18 : nil)
-                Text(lunar.label)
-                    .font(.system(size: isLarge ? 10 : 8, weight: lunar.festival == nil ? .regular : .medium))
-                    .foregroundStyle(lunarColor).lineLimit(1).minimumScaleFactor(inline ? 0.65 : 0.8)
-            }
+            let dayNumber = Text(String(layout.calendar.component(.day, from: day)))
+                .font(.system(size: isLarge ? 19 : inline ? 10 : 12, weight: today ? .bold : .medium, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(dayColor)
+                .lineLimit(1).minimumScaleFactor(0.9)
             Group {
-                if inline { HStack(spacing: 2) { content } }
-                else { VStack(spacing: isLarge ? 3 : 0) { content } }
+                if inline {
+                    HStack(spacing: 1) {
+                        dayNumber.frame(width: 16)
+                        Text(lunar.label)
+                            .font(.system(size: 7.5, weight: lunar.festival == nil ? .regular : .medium))
+                            .foregroundStyle(lunarColor).lineLimit(1).minimumScaleFactor(0.7)
+                            .frame(maxWidth: .infinity)
+                        // Reserve a column inside the cell; superscripts spill into adjacent weeks.
+                        Text(holiday?.marker ?? " ")
+                            .font(.system(size: 6, weight: .bold))
+                            .foregroundStyle(today ? dayColor : holiday?.kind == .work ? .blue : .red)
+                            .opacity(inMonth ? 1 : 0.4)
+                            .frame(width: 6)
+                    }
+                } else {
+                    VStack(spacing: isLarge ? 3 : 0) {
+                        dayNumber
+                            .overlay(alignment: .topTrailing) {
+                                if let holiday {
+                                    HolidayBadge(kind: holiday.kind, fontSize: 8)
+                                        .offset(x: 12, y: -3)
+                                        .opacity(inMonth ? 1 : 0.4)
+                                }
+                            }
+                        Text(lunar.label)
+                            .font(.system(size: isLarge ? 10 : 8, weight: lunar.festival == nil ? .regular : .medium))
+                            .foregroundStyle(lunarColor).lineLimit(1).minimumScaleFactor(0.8)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(today ? accent : .clear, in: RoundedRectangle(cornerRadius: isLarge ? 10 : 6))
@@ -83,6 +106,6 @@ struct LunarMonthWidgetContent: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(day.formatted(.dateTime.year().month().day()) + "，" + lunar.description + (today ? "，今天" : ""))
+        .accessibilityLabel(day.formatted(.dateTime.year().month().day()) + "，" + lunar.description + (holiday.map { "，" + $0.description } ?? "") + (today ? "，今天" : ""))
     }
 }

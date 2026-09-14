@@ -123,6 +123,19 @@ struct CalendarHomeView: View {
                 Button { Task { await store.refresh() } } label: { Image(systemName: "arrow.clockwise") }
                     .buttonStyle(.plain).disabled(store.isLoading).accessibilityLabel("刷新日历").accessibilityIdentifier("calendarRefresh")
             }
+            HStack(spacing: 5) {
+                if let schedule = ChinaHolidaySchedule.coverage(on: store.month) {
+                    Text("中国大陆")
+                    HolidayBadge(kind: .rest, fontSize: 8); Text("放假")
+                    HolidayBadge(kind: .work, fontSize: 8); Text("调休上班")
+                    Spacer(minLength: 4)
+                    Link("官方安排", destination: schedule.source)
+                } else {
+                    Text("\(String(store.layout.calendar.component(.year, from: store.month)))年放假安排未收录")
+                        .accessibilityIdentifier("calendarHolidayCoverage")
+                    Spacer()
+                }
+            }.font(.caption2).foregroundStyle(.secondary)
         }.padding(16)
     }
 
@@ -154,24 +167,15 @@ struct CalendarHomeView: View {
         let today = calendar.isDateInToday(date)
         let currentMonth = calendar.isDate(date, equalTo: store.month, toGranularity: .month)
         let lunar = store.layout.lunarDate(on: date)
+        let holiday = ChinaHolidaySchedule.day(on: date)
+        let labelParts: [String?] = [date.formatted(.dateTime.month().day()), lunar.description, holiday?.description, "\(events.count)项日程"]
+        let accessibilityLabel = labelParts.compactMap { $0 }.joined(separator: "，")
         return VStack(spacing: desktop ? 4 : 2) {
             Button { store.select(date) } label: {
-                VStack(spacing: 1) {
-                    Text(String(calendar.component(.day, from: date)))
-                    .font(.system(size: desktop ? 13 : 16, weight: selected || today ? .semibold : .regular))
-                    .foregroundStyle(today ? Color(uiColor: .systemBackground) : selected ? Theme.accent : currentMonth ? Color.primary : Color.secondary)
-                    .frame(width: desktop ? 28 : 34, height: desktop ? 28 : 34)
-                    .background(today ? Theme.accent : .clear, in: Circle())
-                    .overlay { if selected && !today { Circle().strokeBorder(Theme.accent, lineWidth: 1) } }
-                    Text(lunar.label)
-                        .font(.system(size: 11, weight: lunar.festival == nil ? .regular : .medium))
-                        .foregroundStyle(currentMonth && lunar.festival != nil ? Theme.accent : Color.secondary)
-                        .opacity(currentMonth ? 1 : 0.6)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(height: 14)
-                }.frame(maxWidth: .infinity, minHeight: desktop ? 44 : 49)
+                CalendarDayHeading(number: calendar.component(.day, from: date), lunar: lunar, holiday: holiday,
+                    desktop: desktop, selected: selected, today: today, currentMonth: currentMonth)
             }.buttonStyle(.plain)
-                .accessibilityLabel(date.formatted(.dateTime.month().day()) + "，" + lunar.description + "，\(events.count)项日程")
+                .accessibilityLabel(accessibilityLabel)
                 .accessibilityIdentifier("calendarDay_" + store.layout.dayID(date))
                 .accessibilityAddTraits(selected ? .isSelected : [])
             if desktop {
@@ -211,6 +215,13 @@ struct CalendarHomeView: View {
             Text(store.layout.lunarDate(on: date).description)
                 .font(.caption).foregroundStyle(.secondary).padding(.top, 5).padding(.bottom, 10)
                 .accessibilityIdentifier("calendarSelectedLunarDay")
+            if let holiday = ChinaHolidaySchedule.day(on: date) {
+                HStack(spacing: 6) {
+                    HolidayBadge(kind: holiday.kind)
+                    Text(holiday.description).font(.subheadline.weight(.medium))
+                        .accessibilityIdentifier("calendarSelectedHoliday")
+                }.padding(.bottom, 12)
+            }
             if events.isEmpty {
                 Text(store.visibleCalendars.isEmpty ? "已隐藏全部日历" : "这一天没有日程")
                     .foregroundStyle(.secondary).padding(.vertical, 24).accessibilityIdentifier("calendarDayEmpty")
@@ -226,7 +237,8 @@ struct CalendarHomeView: View {
 
     private var monthAgenda: some View {
         let dates = store.layout.days(in: store.month).filter {
-            store.layout.calendar.isDate($0, equalTo: store.month, toGranularity: .month) && !store.events(on: $0).isEmpty
+            store.layout.calendar.isDate($0, equalTo: store.month, toGranularity: .month)
+                && (!store.events(on: $0).isEmpty || ChinaHolidaySchedule.day(on: $0) != nil)
         }
         return LazyVStack(alignment: .leading, spacing: 0) {
             if dates.isEmpty {
@@ -238,6 +250,10 @@ struct CalendarHomeView: View {
                     .foregroundStyle(.secondary).padding(.top, 20).padding(.bottom, 4)
                 Text(store.layout.lunarDate(on: date).description)
                     .font(.caption).foregroundStyle(.secondary).padding(.bottom, 6)
+                if let holiday = ChinaHolidaySchedule.day(on: date) {
+                    HStack(spacing: 6) { HolidayBadge(kind: holiday.kind); Text(holiday.description).font(.subheadline) }
+                        .padding(.bottom, 8)
+                }
                 ForEach(store.events(on: date)) { event in eventRow(event, on: date) }
                 Divider()
             }
@@ -305,4 +321,34 @@ private struct CalendarSourcesView: View {
 
 private extension CalendarTint {
     var color: Color { Color(red: red, green: green, blue: blue) }
+}
+
+private struct CalendarDayHeading: View {
+    let number: Int
+    let lunar: LunarCalendarDate
+    let holiday: ChinaHolidayDay?
+    let desktop: Bool
+    let selected: Bool
+    let today: Bool
+    let currentMonth: Bool
+
+    var body: some View {
+        let numberColor: Color = today ? Color(uiColor: .systemBackground) : selected ? Theme.accent : currentMonth ? .primary : .secondary
+        let lunarColor: Color = currentMonth && lunar.festival != nil ? Theme.accent : .secondary
+        VStack(spacing: 1) {
+            Text(String(number))
+                .font(.system(size: desktop ? 13 : 16, weight: selected || today ? .semibold : .regular))
+                .foregroundStyle(numberColor)
+                .frame(width: desktop ? 28 : 34, height: desktop ? 28 : 34)
+                .background(today ? Theme.accent : .clear, in: Circle())
+                .overlay { if selected && !today { Circle().strokeBorder(Theme.accent, lineWidth: 1) } }
+                .overlay(alignment: .topTrailing) {
+                    if let holiday { HolidayBadge(kind: holiday.kind, fontSize: 8).offset(x: 6, y: -1).opacity(currentMonth ? 1 : 0.5) }
+                }
+            Text(lunar.label)
+                .font(.system(size: 11, weight: lunar.festival == nil ? .regular : .medium))
+                .foregroundStyle(lunarColor).opacity(currentMonth ? 1 : 0.6)
+                .lineLimit(1).minimumScaleFactor(0.8).frame(height: 14)
+        }.frame(maxWidth: .infinity, minHeight: desktop ? 44 : 49)
+    }
 }

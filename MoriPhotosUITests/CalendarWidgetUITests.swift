@@ -8,8 +8,25 @@ final class CalendarWidgetUITests: XCTestCase {
         app.launch()
         XCUIDevice.shared.press(.home)
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        let icon = springboard.icons["森空间"].firstMatch
+        func visibleIcon(_ element: XCUIElement) -> Bool {
+            let frame = element.frame
+            return !frame.isEmpty && springboard.frame.contains(frame)
+        }
+        var icon = springboard.icons["森空间"].firstMatch
         XCTAssertTrue(icon.waitForExistence(timeout: 10))
+        // Offscreen icons may report hittable despite a zero-size frame on iOS 27.
+        if !visibleIcon(icon) {
+            XCUIDevice.shared.press(.home)
+            for _ in 0..<6 {
+                if let visible = springboard.icons.matching(identifier: "森空间").allElementsBoundByIndex.first(where: visibleIcon) {
+                    icon = visible
+                    break
+                }
+                springboard.swipeLeft()
+            }
+        }
+        if !visibleIcon(icon) { print(springboard.debugDescription) }
+        XCTAssertTrue(visibleIcon(icon))
         icon.press(forDuration: 1.2)
         let edit = springboard.buttons.matching(NSPredicate(format: "label IN %@", ["Edit Home Screen", "编辑主屏幕"])).firstMatch
         if !edit.waitForExistence(timeout: 4) { print(springboard.debugDescription) }
