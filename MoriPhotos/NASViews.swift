@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct NASHomeView: View {
+    var isActive = true
     @State private var section = "照片"
     @State private var visited: Set<String> = ["照片"]
     private var selection: Binding<String> {
@@ -11,14 +12,14 @@ struct NASHomeView: View {
     }
     var body: some View {
         ZStack {
-            NASPhotosHomeView(isActive: section == "照片")
+            NASPhotosHomeView(isActive: isActive && section == "照片")
                 .nasPageVisibility(section == "照片")
             if visited.contains("文件") {
-                NASFilesHomeView(isActive: section == "文件")
+                NASFilesHomeView(isActive: isActive && section == "文件")
                     .nasPageVisibility(section == "文件")
             }
             if visited.contains("状态") {
-                NASMonitorHomeView(isActive: section == "状态")
+                NASMonitorHomeView(isActive: isActive && section == "状态")
                     .nasPageVisibility(section == "状态")
             }
         }.navigationTitle("群晖").navigationBarTitleDisplayMode(.inline)

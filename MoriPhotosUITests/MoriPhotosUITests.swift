@@ -79,7 +79,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--empty-connection-fixture"]
         app.launch()
-        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "群晖", "日历", "设置"])
+        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "存储", "日历", "设置"])
         app.tabBars.buttons["设置"].tap()
         app.buttons["newPhotoBackupSettings"].tap()
         XCTAssertTrue(app.navigationBars["新照片备份"].waitForExistence(timeout: 5))
@@ -145,7 +145,7 @@ final class MoriPhotosUITests: XCTestCase {
     func testNASSectionSwitchingKeepsTabPositionsAndPhotoFilter() {
         let app = XCUIApplication()
         app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
-        app.launch(); app.tabBars.buttons["群晖"].tap()
+        app.launch(); app.tabBars.buttons["存储"].tap()
         let photos = app.buttons.matching(identifier: "nasPhotoCell")
         XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 10))
         let ids = ["nasSectionPhotos", "nasSectionFiles", "nasSectionMonitor"]
@@ -194,7 +194,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         XCTAssertTrue(app.buttons.matching(identifier: "nasPhotoCell").firstMatch.waitForExistence(timeout: 10))
         app.buttons["nasSectionMonitor"].tap()
         let cpu = app.staticTexts["monitorCPU"]
@@ -217,7 +217,7 @@ final class MoriPhotosUITests: XCTestCase {
         app.terminate()
         app.launchArguments = ["--nas-connection-fixture", "--require-resumed-sessions"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         app.buttons["nasSectionMonitor"].tap()
         XCTAssertTrue(cpu.waitForExistence(timeout: 10))
         XCTAssertEqual(cpu.label, "18%")
@@ -228,7 +228,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture", "--monitor-partial-permission"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         app.buttons["nasSectionMonitor"].tap()
         XCTAssertTrue(app.staticTexts["DS923+"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["monitorStatus"].label, "部分数据不可用")
@@ -242,7 +242,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         let photos = app.buttons.matching(identifier: "nasPhotoCell")
         XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 10))
         app.buttons["toggleNASSearch"].tap()
@@ -270,7 +270,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         let photos = app.buttons.matching(identifier: "nasPhotoCell")
         XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["loginNAS"].exists)
@@ -284,7 +284,7 @@ final class MoriPhotosUITests: XCTestCase {
         // The fixture now rejects every password login. Only persisted sessions can succeed.
         app.launchArguments = ["--nas-connection-fixture", "--require-resumed-sessions"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 10))
         app.buttons["nasSectionFiles"].tap()
         XCTAssertTrue(app.buttons["nasFolder_测试共享"].waitForExistence(timeout: 10))
@@ -297,7 +297,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--files-fixture", "--video-fixture", "--reset-video-progress"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         app.buttons["nasSectionFiles"].tap()
         let share = app.buttons["nasFolder_测试共享"]
         XCTAssertTrue(share.waitForExistence(timeout: 10)); share.tap()
@@ -320,7 +320,7 @@ final class MoriPhotosUITests: XCTestCase {
         app.terminate()
         app.launchArguments = ["--files-fixture", "--video-fixture"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap(); app.buttons["nasSectionFiles"].tap()
+        app.tabBars.buttons["存储"].tap(); app.buttons["nasSectionFiles"].tap()
         XCTAssertTrue(share.waitForExistence(timeout: 10)); share.tap()
         app.buttons["nasFile_测试视频.mp4"].tap(); app.buttons["playVideo"].tap()
         XCTAssertTrue(app.staticTexts["videoResumed"].waitForExistence(timeout: 10))
@@ -336,7 +336,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--files-fixture", "--reset-files-fixture"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         app.buttons["nasSectionFiles"].tap()
         let share = app.buttons["nasFolder_测试共享"]
         XCTAssertTrue(share.waitForExistence(timeout: 10)); share.tap()
@@ -354,7 +354,7 @@ final class MoriPhotosUITests: XCTestCase {
         app.terminate()
         app.launchArguments = ["--files-fixture", "--files-fixture-offline"]
         app.launch()
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         app.buttons["nasSectionFiles"].tap()
         app.buttons["openDownloads"].tap()
         app.segmentedControls.buttons["已下载"].tap()
@@ -442,7 +442,7 @@ final class MoriPhotosUITests: XCTestCase {
     func testNASPhotoDetailsShowOriginalSizeAndUnknownValue() {
         let app = XCUIApplication()
         app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
-        app.launch(); app.tabBars.buttons["群晖"].tap()
+        app.launch(); app.tabBars.buttons["存储"].tap()
         let photos = app.buttons.matching(identifier: "nasPhotoCell")
         XCTAssertTrue(photos.firstMatch.waitForExistence(timeout: 10))
         for (index, expected) in ["原图 3.2 MB", "原图 850 KB", "大小暂不可用"].enumerated() {
@@ -466,7 +466,7 @@ final class MoriPhotosUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["森空间"].waitForExistence(timeout: 10))
         let home = XCTAttachment(screenshot: app.screenshot())
         home.name = "01-照片首页"; home.lifetime = .keepAlways; add(home)
-        app.tabBars.buttons["群晖"].tap()
+        app.tabBars.buttons["存储"].tap()
         XCTAssertTrue(app.buttons["connectNAS"].waitForExistence(timeout: 5))
         let nas = XCTAttachment(screenshot: app.screenshot())
         nas.name = "02-群晖图库"; nas.lifetime = .keepAlways; add(nas)
@@ -489,7 +489,7 @@ final class MoriPhotosUITests: XCTestCase {
         app.buttons["loginNAS"].tap()
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "请使用 HTTPS")).firstMatch.waitForExistence(timeout: 5))
         app.navigationBars.buttons["完成"].tap()
-        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "群晖", "日历", "设置"])
+        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "存储", "日历", "设置"])
         app.tabBars.buttons["设置"].tap()
         let version = app.descendants(matching: .any)["appVersion"]
         if !version.waitForExistence(timeout: 2) { app.swipeUp() }

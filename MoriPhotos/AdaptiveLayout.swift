@@ -18,7 +18,7 @@ enum AppPlatform {
 }
 
 enum WorkspacePage: String, CaseIterable, Identifiable {
-    case local, photos, files, downloads, monitor, backup, settings, calendar
+    case local, photos, files, downloads, monitor, backup, settings, calendar, oneDrive
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -30,6 +30,7 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
         case .backup: "照片备份"
         case .settings: "设置"
         case .calendar: "日历"
+        case .oneDrive: "OneDrive"
         }
     }
     var symbol: String {
@@ -42,6 +43,7 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
         case .backup: "icloud.and.arrow.up"
         case .settings: "gearshape"
         case .calendar: "calendar"
+        case .oneDrive: "cloud"
         }
     }
 }
@@ -61,7 +63,7 @@ struct AdaptiveRootView: View {
         } else {
             TabView(selection: $navigation.phoneSelection) {
                 NavigationStack { LocalLibraryView() }.tabItem { Label("照片", systemImage: "square.grid.2x2") }.tag(WorkspacePage.local)
-                NavigationStack { NASHomeView() }.tabItem { Label("群晖", systemImage: "externaldrive") }.tag(WorkspacePage.photos)
+                StorageHomeView(isActive: navigation.phoneSelection == .photos).tabItem { Label("存储", systemImage: "externaldrive") }.tag(WorkspacePage.photos)
                 NavigationStack { CalendarHomeView(isActive: navigation.phoneSelection == .calendar) }.tabItem { Label("日历", systemImage: "calendar") }.tag(WorkspacePage.calendar)
                 NavigationStack { SettingsView() }.tabItem { Label("设置", systemImage: "slider.horizontal.3") }.tag(WorkspacePage.settings)
             }
@@ -80,6 +82,7 @@ struct DesktopWorkspaceView: View {
                 Section("图库") { row(.local); row(.photos) }
                 Section("日程") { row(.calendar) }
                 Section("群晖 NAS") { row(.files); row(.downloads); row(.monitor) }
+                Section("云盘") { row(.oneDrive) }
                 Section("管理") { row(.backup); row(.settings) }
             }.listStyle(.sidebar).environment(\.defaultMinListRowHeight, 28).navigationTitle("森空间")
                 .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
@@ -132,6 +135,7 @@ struct DesktopWorkspaceView: View {
         case .backup: PhotoBackupView().readableFormWidth()
         case .settings: SettingsView().readableFormWidth()
         case .calendar: CalendarHomeView(isActive: navigation.selection == page)
+        case .oneDrive: OneDriveHomeView(isActive: navigation.selection == page)
         }
     }
 }

@@ -1,14 +1,15 @@
 # 森空间 · Mori Space
 
-自用的 Apple 多端群晖客户端，集中管理本机照片、NAS 照片、文件、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation 与 Synology 原生接口，没有第三方运行时 SDK，也不通过中转服务器传输照片。
+自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、OneDrive 文件、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口与 Microsoft Graph，没有第三方运行时 SDK，也不通过中转服务器传输照片和文件。
 
-当前版本：**0.13.0（23）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+当前版本：**0.14.0（24）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
 
 ## 功能
 
 - **本机照片**：贴边网格、收藏与截图筛选、文件大小、缩放和前后翻页。
 - **群晖照片**：接入 Synology Photos，浏览个人／共享空间、文件夹和照片，读取原图。
 - **群晖文件**：接入 File Station，目录分页、排序、下载任务及本地导出。
+- **OneDrive 文件**：微软账号授权、自己的云盘目录分页、默认文件夹、图标／列表浏览、文件预览、前台下载和原生视频续播。手机通过存储位置菜单切换群晖与 OneDrive，宽屏侧边栏提供独立入口。
 - **Mac 文件浏览**：图标／列表切换、单击选择、双击打开、路径栏、前进后退、右侧信息面板和右键菜单；切换栏目保留当前目录。搜索范围为当前已载入的文件。
 - **快速预览**：Mac 使用系统 Quick Look 预览常见图片、文本、PDF 和办公文档；上限 30 MB，关闭后清理临时文件，具体格式以系统支持为准。
 - **视频播放**：播放本机能够解码的视频，在线播放要求 NAS 支持分段读取；保存本机播放进度，下次打开可续播。
@@ -76,6 +77,24 @@ iOS App Group 默认为 `group.dev.kylon.MoriPhotos.calendar`；换用自己的 
 - NAS 监控可能需要更高的 DSM 权限；应用会显示实际接口或权限错误。
 - 自动封锁、双重验证及交互式 Secure SignIn 受 NAS 设置影响，不通过反复登录绕过这些限制。
 
+## 连接 OneDrive
+
+OneDrive 首次使用需要注册一个 Microsoft Entra 应用，然后在「OneDrive → 连接微软账号」中填写它的 **Application (client) ID**。这是带短横线的 UUID，不是邮箱、密码或 Client Secret；Client ID 仅保存于当前设备的应用配置，不需要写入源码。
+
+1. 在 [Microsoft Entra 应用注册](https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) 创建或打开应用。受支持的账号类型必须包含实际使用的账号：Outlook／Hotmail 等个人 OneDrive 需要包含「个人 Microsoft 账户」；工作或学校账号需要相应的组织账号支持。若同时使用两类账号，选择包含任何组织目录和个人 Microsoft 账户的类型。组织的管理员同意策略仍然适用。
+2. 在身份验证中添加「移动和桌面应用」平台，登记完整回调地址 `msauth.dev.kylon.MoriPhotos://auth`。本项目的 iPhone、iPad 和 Mac Catalyst 共用这一地址；自行更改 bundle identifier 时，需要同步更新 OAuth 配置、URL Types 和微软应用注册。
+3. 配置 Microsoft Graph 的委托权限 `Files.Read`，由应用在登录时请求 `https://graph.microsoft.com/Files.Read offline_access`。使用系统浏览器完成微软登录和授权。**不创建、不填写 Client Secret**，也不在森空间输入微软密码。
+
+认证使用授权码与 PKCE，验证回调和 state；访问令牌和刷新令牌存入独立的、仅限当前设备的系统钥匙串。再次打开 OneDrive 会尝试恢复登录并验证云盘；网络暂时失败或设备钥匙串锁定时，可以点「重试已保存的连接」，无需立刻重新交互登录。授权撤销或刷新令牌失效后，需要重新登录。退出会移除本机登录信息并取消进行中的传输、预览和播放，已下载的文件仍保留，可在「查看本机下载」中打开、分享或删除。
+
+当前接入全球版 Microsoft 服务，使用 `login.microsoftonline.com/common` 与 `graph.microsoft.com`。支持个人和工作／学校账号，但可登录的范围取决于上述应用注册；不接入世纪互联运营的中国版或其他主权云。读取范围为当前账号自己的 OneDrive，暂不展示 `remoteItem` 跨网盘／共享库快捷方式，也不浏览团队 SharePoint 文档库。此版本只读，不提供上传、删除、移动或重命名云端文件。
+
+目录支持分页、名称／时间／大小排序，以及当前已加载内容的搜索。可将当前目录设为默认入口；目录、下载与播放进度按账号区分并保存在本机，不会跨设备同步。预览使用系统 Quick Look，支持常见图片、PDF、文本与系统可识别的文档，大小上限为 **30 MB（30,000,000 字节）**；超出上限的文件可先下载，关闭预览会清理临时文件。
+
+下载在前台进行，支持查看进度和取消；不提供后台传输或断点续传保证，应用被系统终止后需重新下载。完成的文件保留为本地副本，退出账号或断网后仍可访问，不会自动同步云端后续修改。MP4／M4V／MOV 可直接交给系统播放器在线播放，实际支持取决于编码格式与服务端内容；保存本机进度，下次打开可续播。文件版本变化后不会沿用旧版本的进度。
+
+预览、下载和播放每次从 Graph 获取临时内容地址。该地址不写入下载记录或进度文件；Graph Bearer 不发送到内容下载主机，认证请求不跟随重定向。协议参考：[授权码与 PKCE](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow)、[目录读取](https://learn.microsoft.com/en-us/graph/api/driveitem-list-children?view=graph-rest-1.0)、[文件内容](https://learn.microsoft.com/en-us/graph/api/driveitem-get-content?view=graph-rest-1.0)。
+
 ## 测试
 
 在 Xcode 的 Test Navigator 中选择对应测试。测试中的示例账号、令牌、文件内容与 `.invalid` 域名均为合成数据。模拟 NAS 入口仅在指定 DEBUG 测试构建中启用，不包含于正式 Release 包。
@@ -86,6 +105,8 @@ iOS App Group 默认为 `group.dev.kylon.MoriPhotos.calendar`；换用自己的 
 
 放假安排测试独立核对两个年份的全部放假、补班日期，并覆盖跨月边界、普通周末、未收录年份和不同时区的页面日期。界面测试核对中秋放假、国庆补班及未收录提示；小组件保留紧凑六行、深色和日程样式截图供检查。
 
+OneDrive 验证通过 32 项相关单元测试，覆盖 PKCE／回调验证、分页地址边界、Graph 401 有限重试、并发单次刷新、令牌轮换、退出期间的旧请求、下载凭据隔离、文件大小与本地记录，以及首次目录加载取消后的恢复与默认目录隔离。另通过视频播放和进度回归测试，使用合成视频实际解码画面并验证续播、停止及 NAS 进度隔离。手机和 iPad 界面测试使用合成目录与文件验证导航、预览、下载、退出后离线访问和配置校验。模拟 OneDrive 同样只在指定 DEBUG 测试构建中启用。截至本版开发验收，尚未提供真实 Client ID，因此这些结果不代表真实微软账号登录、组织权限、云端下载或视频播放已经完成验证；这些步骤仍需配置真实应用后实测。
+
 此前已验证目录导航、文件预览与下载和 iPad 导航。尚未逐一验证所有办公格式、Mac 窄窗口和真实 NAS 大文件预览。
 
 个人截图和详细本地验收记录不随源码上传。运行界面测试前应使用隔离模拟器；视频测试可通过 `Scripts/PrepareVideoTests.command <SIMULATOR_UDID>` 安装合成视频。
@@ -94,7 +115,7 @@ iOS App Group 默认为 `group.dev.kylon.MoriPhotos.calendar`；换用自己的 
 
 | 路径 | 内容 |
 | --- | --- |
-| `MoriPhotos/` | SwiftUI 应用、NAS 客户端与本机服务 |
+| `MoriPhotos/` | SwiftUI 应用、NAS／OneDrive 客户端与本机服务 |
 | `CalendarWidgetShared/` | 应用和小组件共享的摘要、日期链接及视图 |
 | `MoriCalendarWidgets/` | iOS 与原生 Mac WidgetKit 扩展入口和签名权限 |
 | `MoriPhotosTests/` | 单元及集成测试 |

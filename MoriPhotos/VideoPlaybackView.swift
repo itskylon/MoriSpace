@@ -40,6 +40,7 @@ final class VideoPlaybackModel: ObservableObject {
     private var canSaveProgress = false
     private var lastSavedPosition = 0.0
     private var loader: VideoResourceLoader?
+    private var preparingAsset: AVURLAsset?
     private var itemObservation: NSKeyValueObservation?
     private var controlObservation: NSKeyValueObservation?
     private var timeObserver: Any?
@@ -76,68 +77,7 @@ final class VideoPlaybackModel: ObservableObject {
                 _ = try await source.metadata()
                 asset = loader.asset
             }
-            guard try await asset.load(.isPlayable) else { throw VideoPlaybackError.unsupportedFormat }
-            let seconds = try await asset.load(.duration).seconds
-            try Task.checkCancellation()
-            guard ticket == generation else { return }
-            duration = seconds.isFinite ? max(0, seconds) : 0
-            progressKey = VideoProgressStore.key(owner: owner, file: currentFile)
-            let owner = UUID(); audioOwner = owner
-            try await VideoAudioSession.shared.activate(owner)
-            if ticket != generation || Task.isCancelled {
-                await VideoAudioSession.shared.release(owner)
-                return
-            }
-            let item = AVPlayerItem(asset: asset)
-            item.preferredForwardBufferDuration = 5
-            player.allowsExternalPlayback = false
-            itemObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
-                let failed = item.status == .failed
-                Task { @MainActor in
-                    guard let self, ticket == self.generation, failed else { return }
-                    if self.error == nil { self.error = VideoPlaybackError.unsupportedFormat.localizedDescription }
-                    self.player.pause()
-                }
-            }
-            controlObservation = player.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
-                let state = player.timeControlStatus
-                Task { @MainActor in
-                    guard let self, ticket == self.generation else { return }
-                    self.buffering = state == .waitingToPlayAtSpecifiedRate
-                    self.playing = state != .paused
-                    if state == .paused { self.saveProgress() }
-                }
-            }
-            failureObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main) { [weak self] _ in
-                Task { @MainActor in
-                    guard let self, ticket == self.generation else { return }
-                    if self.error == nil { self.error = "视频播放中断，请检查网络后重试。" }
-                    self.player.pause()
-                }
-            }
-            endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
-                Task { @MainActor in
-                    guard let self, ticket == self.generation else { return }
-                    self.saveProgress()
-                    self.resumedFrom = nil
-                }
-            }
-            timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] time in
-                Task { @MainActor in
-                    guard let self, ticket == self.generation, time.seconds.isFinite else { return }
-                    self.elapsed = max(0, time.seconds)
-                    if abs(self.elapsed - self.lastSavedPosition) >= 5 { self.saveProgress() }
-                }
-            }
-            player.replaceCurrentItem(with: item)
-            if let key = progressKey, let position = progressStore.position(for: key, duration: duration) {
-                let completed = await player.seek(to: CMTime(seconds: position, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
-                guard ticket == generation, !Task.isCancelled else { return }
-                guard completed else { throw VideoPlaybackError.resumeFailed }
-                elapsed = position; resumedFrom = position; lastSavedPosition = position
-            } else { lastSavedPosition = 0 }
-            canSaveProgress = true
-            player.play()
+            try await prepare(asset: asset, key: VideoProgressStore.key(owner: owner, file: currentFile), ticket: ticket)
         } catch {
             guard ticket == generation, !Task.isCancelled else { return }
             if self.error == nil { self.error = friendlyError(error) }
@@ -146,6 +86,94 @@ final class VideoPlaybackModel: ObservableObject {
             player.pause()
         }
     }
+    /// A cloud provider supplies a fresh HTTPS content URL or an app-owned local file.
+    /// No account token, cookie, or signed URL is persisted by the player.
+    func openExternal(url: URL, progressKey: String, canPlayNatively: Bool) async {
+        stop(); error = nil; progressError = nil; resumedFrom = nil; elapsed = 0; duration = 0; preparing = true
+        let ticket = generation
+        defer { if ticket == generation { preparing = false } }
+        do {
+            guard canPlayNatively, url.isFileURL || (url.scheme?.lowercased() == "https" && url.host != nil && url.user == nil && url.password == nil) else {
+                throw VideoPlaybackError.unsupportedFormat
+            }
+            let asset = AVURLAsset(url: url, options: [AVURLAssetHTTPCookiesKey: [HTTPCookie]()])
+            try await prepare(asset: asset, key: progressKey, ticket: ticket)
+        } catch {
+            guard ticket == generation, !Task.isCancelled else { return }
+            self.error = "视频暂时无法播放，请重新获取播放地址或下载后打开。"
+            player.pause()
+        }
+    }
+
+    private func prepare(asset: AVURLAsset, key: String, ticket: UUID) async throws {
+        try Task.checkCancellation()
+        guard ticket == generation else { throw CancellationError() }
+        preparingAsset = asset
+        defer { if preparingAsset === asset { preparingAsset = nil } }
+        guard try await asset.load(.isPlayable) else { throw VideoPlaybackError.unsupportedFormat }
+        let seconds = try await asset.load(.duration).seconds
+        try Task.checkCancellation()
+        guard ticket == generation else { return }
+        duration = seconds.isFinite ? max(0, seconds) : 0
+        progressKey = key
+        let owner = UUID(); audioOwner = owner
+        try await VideoAudioSession.shared.activate(owner)
+        if ticket != generation || Task.isCancelled {
+            await VideoAudioSession.shared.release(owner)
+            return
+        }
+        let item = AVPlayerItem(asset: asset)
+        item.preferredForwardBufferDuration = 5
+        player.allowsExternalPlayback = false
+        itemObservation = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+            let failed = item.status == .failed
+            Task { @MainActor in
+                guard let self, ticket == self.generation, failed else { return }
+                if self.error == nil { self.error = VideoPlaybackError.unsupportedFormat.localizedDescription }
+                self.player.pause()
+            }
+        }
+        controlObservation = player.observe(\.timeControlStatus, options: [.new]) { [weak self] player, _ in
+            let state = player.timeControlStatus
+            Task { @MainActor in
+                guard let self, ticket == self.generation else { return }
+                self.buffering = state == .waitingToPlayAtSpecifiedRate
+                self.playing = state != .paused
+                if state == .paused { self.saveProgress() }
+            }
+        }
+        failureObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: item, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, ticket == self.generation else { return }
+                if self.error == nil { self.error = "视频播放中断，请检查网络后重试。" }
+                self.player.pause()
+            }
+        }
+        endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: item, queue: .main) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, ticket == self.generation else { return }
+                self.saveProgress()
+                self.resumedFrom = nil
+            }
+        }
+        timeObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.25, preferredTimescale: 600), queue: .main) { [weak self] time in
+            Task { @MainActor in
+                guard let self, ticket == self.generation, time.seconds.isFinite else { return }
+                self.elapsed = max(0, time.seconds)
+                if abs(self.elapsed - self.lastSavedPosition) >= 5 { self.saveProgress() }
+            }
+        }
+        player.replaceCurrentItem(with: item)
+        if let key = progressKey, let position = progressStore.position(for: key, duration: duration) {
+            let completed = await player.seek(to: CMTime(seconds: position, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+            guard ticket == generation, !Task.isCancelled else { return }
+            guard completed else { throw VideoPlaybackError.resumeFailed }
+            elapsed = position; resumedFrom = position; lastSavedPosition = position
+        } else { lastSavedPosition = 0 }
+        canSaveProgress = true
+        player.play()
+    }
+
     func toggle() {
         if playing { pause() }
         else {
@@ -188,6 +216,7 @@ final class VideoPlaybackModel: ObservableObject {
     func stop() {
         saveProgress(); canSaveProgress = false; progressKey = nil
         generation = UUID()
+        preparingAsset?.cancelLoading(); preparingAsset = nil
         player.pause(); player.replaceCurrentItem(with: nil)
         if let timeObserver { player.removeTimeObserver(timeObserver) }; timeObserver = nil
         itemObservation = nil; controlObservation = nil

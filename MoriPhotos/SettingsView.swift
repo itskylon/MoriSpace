@@ -4,6 +4,7 @@ struct SettingsView: View {
     @EnvironmentObject private var app: AppState
     @EnvironmentObject private var library: PhotoLibraryStore
     @EnvironmentObject private var backup: PhotoBackupManager
+    @EnvironmentObject private var oneDrive: OneDriveSession
     @State private var cleared = false
     var body: some View {
         List {
@@ -15,6 +16,9 @@ struct SettingsView: View {
                 }.padding(.vertical, 8)
             }
             Section("存储与连接") {
+                NavigationLink { OneDriveConnectionView() } label: {
+                    Label { HStack { Text("OneDrive"); Spacer(); Text(oneDrive.account == nil ? "未连接" : "已连接").foregroundStyle(.secondary).font(.caption) } } icon: { Image(systemName: "cloud") }
+                }.accessibilityIdentifier("oneDriveSettings")
                 NavigationLink { PhotoBackupView() } label: {
                     Label { HStack { Text("新照片备份"); Spacer(); Text(backup.configuration.enabled ? "已开启" : "未开启").foregroundStyle(.secondary).font(.caption) } } icon: { Image(systemName: "icloud.and.arrow.up") }
                 }.accessibilityIdentifier("newPhotoBackupSettings")
@@ -38,7 +42,7 @@ struct SettingsView: View {
             }
             Section("关于这一版") {
                 LabeledContent("版本", value: "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "") · 个人使用版").accessibilityIdentifier("appVersion")
-                Text("支持 iPhone、iPad（iOS 17 及以上）与 Mac（macOS 14 及以上）。群晖使用 DSM 7 / Synology Photos，可直连 HTTPS 地址。照片在设备与 NAS 间传输。").font(.footnote).foregroundStyle(.secondary)
+                Text("支持 iPhone、iPad（iOS 17 及以上）与 Mac（macOS 14 及以上）。群晖使用 DSM 7 / Synology Photos；OneDrive 使用微软授权登录。文件在设备与相应存储服务之间传输。").font(.footnote).foregroundStyle(.secondary)
                 Text(AppPlatform.isMac ? "支持本机照片管理与备份、群晖文件下载、视频播放和 NAS 状态查看。备份与下载需保持 App 运行；退出或休眠后暂停。暂不支持 QuickConnect 中继、视频转码与人脸识别。" : "支持新照片自动备份、照片管理、群晖文件浏览与下载、视频播放和 NAS 状态查看。备份可由系统安排后台补传；文件下载需保持 App 在前台。暂不支持 QuickConnect 中继、视频转码与人脸识别。").font(.footnote).foregroundStyle(.secondary)
             }
         }.workspaceNavigationTitle("设置")
