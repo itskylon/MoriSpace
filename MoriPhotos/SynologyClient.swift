@@ -50,10 +50,15 @@ actor SynologyClient {
         return url
     }
 
-    func login(_ credentials: NASCredentials, otp: String) async throws {
+    func login(_ credentials: NASCredentials, otp: String, progress: (@Sendable (NASConnectionPhase) async -> Void)? = nil) async throws {
         try Task.checkCancellation()
+        guard !closed else { throw CancellationError() }
         sid = ""; token = nil
+        await progress?(.reachingServer)
         info = try await call(api: "SYNO.API.Info", method: "query", parameters: ["query": "all"], discovery: true)
+        try Task.checkCancellation()
+        guard !closed else { throw CancellationError() }
+        await progress?(.authenticating)
         let auth = info["SYNO.API.Auth"]
         var parameters: [String: Any] = ["account": credentials.username, "passwd": credentials.password,
                                          "session": service.rawValue, "format": "sid", "enable_syno_token": "yes"]
@@ -64,7 +69,11 @@ actor SynologyClient {
         sid = result.sid
         token = result.synotoken
         sessionGeneration = UUID()
+        await progress?(.checkingService)
+        try Task.checkCancellation()
         info = try await call(api: "SYNO.API.Info", method: "query", parameters: ["query": "all"], discovery: true)
+        try Task.checkCancellation()
+        guard !closed else { throw CancellationError() }
         guard info[service.requiredAPI] != nil else { throw service == .files ? FileStationError.unavailable : NASError.unsupported(service.title) }
     }
 

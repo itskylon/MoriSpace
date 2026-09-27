@@ -534,6 +534,86 @@ final class MoriPhotosUITests: XCTestCase {
         }
     }
 
+    func testStalledNASLoginCanBeCancelledRetriedAndDismissed() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture", "--stall-nas-connection-fixture"]
+        app.launch()
+        let settings = app.tabBars.buttons["设置"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 10)); settings.tap()
+
+        let photosSettings = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "群晖照片")).firstMatch
+        XCTAssertTrue(photosSettings.waitForExistence(timeout: 5)); photosSettings.tap()
+        let address = app.textFields["nasAddress"]
+        let username = app.textFields["nasUsername"]
+        let password = app.secureTextFields["nasPassword"]
+        let login = app.buttons["loginNAS"]
+        let phase = app.staticTexts["nasConnectionPhase"]
+        let cancel = app.buttons["cancelNASConnection"]
+        let dismiss = app.buttons["dismissNASConnection"]
+        XCTAssertTrue(address.waitForExistence(timeout: 5))
+        let savedAddress = address.value as? String
+        let savedUsername = username.value as? String
+        XCTAssertFalse((savedAddress ?? "").isEmpty)
+        XCTAssertFalse((savedUsername ?? "").isEmpty)
+        XCTAssertTrue(login.isEnabled, "The fixture supplies the saved account without entering real credentials")
+
+        func reveal(_ element: XCUIElement) {
+            for _ in 0..<3 where !element.isHittable { app.swipeUp() }
+            XCTAssertTrue(element.isHittable)
+        }
+        func startPendingLogin() {
+            reveal(login); login.tap()
+            XCTAssertTrue(phase.waitForExistence(timeout: 5))
+            XCTAssertFalse(phase.label.isEmpty, "Pending discovery must explain the current connection phase")
+            reveal(phase)
+            XCTAssertFalse(address.isEnabled)
+            XCTAssertFalse(username.isEnabled)
+            XCTAssertFalse(password.isEnabled)
+            XCTAssertFalse(login.isEnabled)
+            XCTAssertTrue(dismiss.isEnabled, "The navigation action must remain available while fields are frozen")
+            XCTAssertEqual(dismiss.label, "取消")
+        }
+        func verifyCancelled() {
+            XCTAssertTrue(XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: address).waitForFulfillment(timeout: 5))
+            XCTAssertTrue(username.isEnabled)
+            XCTAssertTrue(password.isEnabled)
+            XCTAssertTrue(login.isEnabled)
+            XCTAssertEqual(address.value as? String, savedAddress)
+            XCTAssertEqual(username.value as? String, savedUsername)
+            XCTAssertTrue(XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: phase).waitForFulfillment(timeout: 5))
+            XCTAssertFalse(cancel.exists)
+            XCTAssertEqual(dismiss.label, "完成")
+            XCTAssertTrue(dismiss.isEnabled)
+        }
+
+        for attempt in 1...2 {
+            startPendingLogin()
+            reveal(cancel)
+            XCTAssertTrue(cancel.isEnabled)
+            if attempt == 1 {
+                let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                capture.name = "nas-pending-login-cancellation"; capture.lifetime = .keepAlways; add(capture)
+            }
+            cancel.tap()
+            verifyCancelled()
+        }
+        dismiss.tap()
+        XCTAssertTrue(photosSettings.waitForExistence(timeout: 5))
+        XCTAssertFalse(address.exists)
+
+        photosSettings.tap()
+        XCTAssertTrue(address.waitForExistence(timeout: 5))
+        startPendingLogin()
+        XCTAssertTrue(dismiss.isHittable)
+        dismiss.tap()
+        XCTAssertTrue(photosSettings.waitForExistence(timeout: 5), "Toolbar cancellation must leave a stalled login screen")
+        XCTAssertFalse(address.exists)
+        photosSettings.tap()
+        XCTAssertTrue(address.waitForExistence(timeout: 5))
+        verifyCancelled()
+    }
+
     func testNavigationAndConnectionValidation() {
         let app = XCUIApplication()
         app.launchArguments = ["--empty-connection-fixture"]

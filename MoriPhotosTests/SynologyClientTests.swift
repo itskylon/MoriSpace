@@ -3,9 +3,12 @@ import XCTest
 
 final class MockURLProtocol: URLProtocol {
     static var responder: ((URLRequest) throws -> (Int, Data))?
+    static var asyncLoader: ((MockURLProtocol) -> Void)?
+    static var stopped: ((MockURLProtocol) -> Void)?
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
+        if let loader = Self.asyncLoader { loader(self); return }
         do {
             let (status, data) = try Self.responder!(request)
             let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
@@ -14,7 +17,13 @@ final class MockURLProtocol: URLProtocol {
             client?.urlProtocolDidFinishLoading(self)
         } catch { client?.urlProtocol(self, didFailWithError: error) }
     }
-    override func stopLoading() {}
+    override func stopLoading() { Self.stopped?(self) }
+    func respond(status: Int, data: Data) {
+        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: data)
+        client?.urlProtocolDidFinishLoading(self)
+    }
 }
 
 final class SynologyClientTests: XCTestCase {
@@ -50,7 +59,7 @@ final class SynologyClientTests: XCTestCase {
         if fields["method"] == "login" { return try json(["success": true, "data": ["sid": "test-session", "synotoken": "test-token"]]) }
         return nil
     }
-    override func tearDown() { MockURLProtocol.responder = nil; super.tearDown() }
+    override func tearDown() { MockURLProtocol.responder = nil; MockURLProtocol.asyncLoader = nil; MockURLProtocol.stopped = nil; super.tearDown() }
 
     func testAddressValidationAndNormalization() throws {
         XCTAssertEqual(try SynologyClient.normalizedAddress(" https://nas.example.com/photo/webapi/ ").absoluteString, "https://nas.example.com/photo")
@@ -77,6 +86,18 @@ final class SynologyClientTests: XCTestCase {
             return (200, try Self.authReply(fields)!)
         }
         try await client().login(credentials, otp: "123456")
+    }
+
+    func testLoginReportsActualNetworkStagesInOrder() async throws {
+        actor Phases {
+            var titles: [String] = []
+            func append(_ phase: NASConnectionPhase) { titles.append(phase.title) }
+        }
+        let phases = Phases()
+        MockURLProtocol.responder = { request in (200, try Self.authReply(Self.fields(request))!) }
+        try await client().login(credentials, otp: "") { await phases.append($0) }
+        let titles = await phases.titles
+        XCTAssertEqual(titles, [NASConnectionPhase.reachingServer.title, NASConnectionPhase.authenticating.title, NASConnectionPhase.checkingService.title])
     }
 
     func testSharedSpaceUsesJSONParametersAndAuthenticatedPagination() async throws {

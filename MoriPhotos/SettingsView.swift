@@ -156,7 +156,7 @@ struct ConnectionView: View {
                         .connectionInput()
                     Text(service == .photos ? "也可使用 /photo 地址。需从本机直接访问，暂不支持 QuickConnect 中继。" : "使用可从本机直接访问的 DSM HTTPS 地址。")
                         .font(.caption).foregroundStyle(.secondary)
-                }
+                }.disabled(app.connecting)
                 connectionSection("登录信息", index: "02") {
                     VStack(spacing: 0) {
                         TextField("账号", text: $app.credentials.username).textContentType(.username).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("nasUsername")
@@ -173,7 +173,7 @@ struct ConnectionView: View {
                     Toggle("在钥匙串中保存登录信息", isOn: $app.remember).font(.subheadline).frame(minHeight: 44)
                     Text("保存后自动恢复照片、文件和状态连接；主动断开后暂停自动连接。")
                         .font(.caption).foregroundStyle(.secondary)
-                }
+                }.disabled(app.connecting)
                 if let error = app.error { ErrorBanner(message: error) }
                 VStack(alignment: .leading, spacing: 12) {
                     Button {
@@ -182,21 +182,32 @@ struct ConnectionView: View {
                     } label: {
                         HStack {
                             if app.connecting { ProgressView().tint(NASStyle.ink) }
-                            Text(app.connecting ? "正在验证连接…" : "登录并连接").font(.headline)
+                            Text(app.connecting ? (app.connectionPhase?.title ?? "正在连接…") : "登录并连接").font(.headline)
                             Spacer()
                             Image(systemName: "arrow.up.right").font(.system(size: 17, weight: .semibold))
                         }.padding(.horizontal, 20).frame(minHeight: 56).foregroundStyle(NASStyle.ink)
                             .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 16))
                     }.buttonStyle(.plain)
                         .disabled(app.connecting || app.credentials.address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || app.credentials.username.isEmpty || app.credentials.password.isEmpty).accessibilityIdentifier("loginNAS")
+                    if app.connecting {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(app.connectionPhase?.detail ?? "正在准备连接。")
+                                .font(.subheadline).accessibilityIdentifier("nasConnectionPhase")
+                            Text("最多等待 30 秒，可随时取消。")
+                                .font(.caption).foregroundStyle(.secondary)
+                            Button("取消连接") { app.cancelConnection() }
+                                .font(.subheadline.weight(.semibold)).frame(minHeight: 44)
+                                .accessibilityIdentifier("cancelNASConnection")
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     Text("账号密码通过加密连接提交。此版本不支持 QuickConnect 中继与交互式 Secure SignIn 审批，也不会跳过 HTTPS 证书校验。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 if app.client != nil || app.fileClient != nil || app.monitorClient != nil {
-                    Button("断开连接", role: .destructive) { Task { await app.disconnect(); dismiss() } }.frame(minHeight: 44)
+                    Button("断开连接", role: .destructive) { Task { await app.disconnect(); dismiss() } }.frame(minHeight: 44).disabled(app.connecting)
                 }
                 if app.hasSavedConnection {
-                    Button("移除保存的账号", role: .destructive) { forget = true }.frame(minHeight: 44)
+                    Button("移除保存的账号", role: .destructive) { forget = true }.frame(minHeight: 44).disabled(app.connecting)
                 }
             }.padding(AppPlatform.isMac ? 28 : 20).frame(maxWidth: 660).frame(maxWidth: .infinity)
         }
@@ -204,11 +215,13 @@ struct ConnectionView: View {
         .tint(NASStyle.accent)
         .navigationTitle(service == .photos ? "连接设置" : (service == .files ? "文件连接设置" : "状态连接设置")).navigationBarTitleDisplayMode(.inline)
             .onAppear { app.error = nil }
+            .onDisappear { app.cancelConnection() }
             .scrollDismissesKeyboard(.interactively)
-            .disabled(app.connecting)
-            .interactiveDismissDisabled(app.connecting)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() }.disabled(app.connecting) }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(app.connecting ? "取消" : "完成") { app.cancelConnection(); dismiss() }
+                        .accessibilityIdentifier("dismissNASConnection")
+                }
                 ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("收起键盘") { focus = nil } }
             }
             .confirmationDialog("移除本机保存的 NAS 登录信息？", isPresented: $forget, titleVisibility: .visible) {

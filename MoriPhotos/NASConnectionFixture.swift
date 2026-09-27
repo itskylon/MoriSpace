@@ -84,6 +84,13 @@ final class NASConnectionFixture: URLProtocol {
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
+        if Self.enabled,
+           ProcessInfo.processInfo.arguments.contains("--stall-nas-connection-fixture"),
+           FileStationFixture.fields(request)["api"] == "SYNO.API.Info" {
+            // Leave discovery pending without starting a worker or touching the network.
+            // URLSession still cancels the request normally and calls stopLoading().
+            return
+        }
         do {
             let (status, headers, data) = try Self.reply(request)
             client?.urlProtocol(self, didReceive: HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers)!, cacheStoragePolicy: .notAllowed)

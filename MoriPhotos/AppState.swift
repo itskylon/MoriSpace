@@ -1,5 +1,64 @@
 import SwiftUI
 
+enum NASConnectionPhase: Sendable {
+    case waiting, reachingServer, authenticating, checkingService
+    var title: String {
+        switch self {
+        case .waiting: return "等待已有连接结束…"
+        case .reachingServer: return "正在连接服务器…"
+        case .authenticating: return "正在验证账号…"
+        case .checkingService: return "正在检查服务权限…"
+        }
+    }
+    var detail: String {
+        switch self {
+        case .waiting: return "已有恢复或验证请求正在处理。可以随时取消本次连接。"
+        case .reachingServer: return "建立 HTTPS 连接并读取 NAS 接口；此时尚未提交密码。"
+        case .authenticating: return "正在通过加密连接验证账号与验证码。"
+        case .checkingService: return "账号已验证，正在确认所选服务可用。"
+        }
+    }
+    var failureTitle: String {
+        switch self {
+        case .waiting: return "等待已有连接未完成"
+        case .reachingServer: return "连接服务器未完成"
+        case .authenticating: return "验证账号失败"
+        case .checkingService: return "检查服务权限未完成"
+        }
+    }
+}
+
+// Waiting for another task's value does not inherit cancellation. This waiter releases
+// the caller immediately without cancelling a task owned by another NAS service.
+private final class NASConnectionWaiter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<Void, Error>?
+    private var result: Result<Void, Error>?
+    func attach(_ continuation: CheckedContinuation<Void, Error>) {
+        lock.lock()
+        if let result { lock.unlock(); continuation.resume(with: result) }
+        else { self.continuation = continuation; lock.unlock() }
+    }
+    func finish(_ result: Result<Void, Error>) {
+        lock.lock()
+        guard self.result == nil else { lock.unlock(); return }
+        self.result = result
+        let continuation = self.continuation; self.continuation = nil
+        lock.unlock()
+        continuation?.resume(with: result)
+    }
+}
+
+private func waitForNASConnectionTask<Value: Sendable, Failure: Error>(_ task: Task<Value, Failure>) async throws {
+    let waiter = NASConnectionWaiter()
+    let observer = Task { _ = await task.result; waiter.finish(.success(())) }
+    defer { observer.cancel() }
+    try await withTaskCancellationHandler {
+        try await withCheckedThrowingContinuation { waiter.attach($0) }
+    } onCancel: { waiter.finish(.failure(CancellationError())) }
+    try Task.checkCancellation()
+}
+
 @MainActor
 final class AppState: ObservableObject {
     @Published var credentials = NASCredentials()
@@ -12,6 +71,7 @@ final class AppState: ObservableObject {
     let downloads: NASDownloadManager
     var fileAccountID: String { NASService.accountID(activeCredentials ?? credentials) }
     @Published var connecting = false
+    @Published private(set) var connectionPhase: NASConnectionPhase?
     @Published var error: String?
     @Published var connectionID = UUID()
     @Published var remember = true
@@ -29,10 +89,18 @@ final class AppState: ObservableObject {
     private var restoreID = UUID()
     private var authenticationTask: Task<NASSession, Error>?
     private var authenticationID = UUID()
+    private var authenticationClient: SynologyClient?
+    private let connectionTimeout: Duration
+    private var manualConnectionID: UUID?
+    private var manualConnectionTask: Task<Bool, Never>?
+    private var manualConnectionDeadline: Task<Void, Never>?
+    private var manualCandidate: SynologyClient?
 
     init(persistence: ConnectionPersistence? = nil,
          makeClient: ((NASCredentials, NASService) throws -> SynologyClient)? = nil,
-         downloads: NASDownloadManager? = nil) {
+         downloads: NASDownloadManager? = nil,
+         connectionTimeout: Duration = .seconds(30)) {
+        self.connectionTimeout = connectionTimeout
         #if DEBUG && (targetEnvironment(simulator) || MORI_DESKTOP_QA)
         self.persistence = persistence ?? (NASConnectionFixture.enabled ? NASConnectionFixture.persistence() : .keychain)
         self.makeClient = makeClient ?? { account, service in
@@ -167,28 +235,35 @@ final class AppState: ObservableObject {
         }
     }
 
-    private func authenticate(_ next: SynologyClient, account: NASCredentials, otp: String, automaticAttempt: Bool) async throws -> NASSession {
+    private func authenticate(_ next: SynologyClient, account: NASCredentials, otp: String, automaticAttempt: Bool,
+                              progress: (@Sendable (NASConnectionPhase) async -> Void)? = nil) async throws -> NASSession {
         // Serialize password submissions across all services, including renewals.
         while let pending = authenticationTask {
             let id = authenticationID
-            _ = try? await pending.value
-            if authenticationID == id { authenticationTask = nil }
+            await progress?(.waiting)
+            try await waitForNASConnectionTask(pending)
+            if authenticationID == id { authenticationTask = nil; authenticationClient = nil }
         }
         try Task.checkCancellation()
         if automaticAttempt && (manualLoginRequired || !automatic) { throw NASError.api(119) }
         let id = UUID(); authenticationID = id
         let task = Task {
             do {
-                try await next.login(account, otp: otp)
+                try await next.login(account, otp: otp, progress: progress)
                 return await next.sessionSnapshot()
             } catch {
-                if account == self.activeCredentials { self.markAuthenticationFailure(error) }
+                if !Task.isCancelled, account == self.activeCredentials { self.markAuthenticationFailure(error) }
                 throw error
             }
         }
-        authenticationTask = task
-        defer { if authenticationID == id { authenticationTask = nil } }
-        return try await task.value
+        authenticationTask = task; authenticationClient = next
+        defer { if authenticationID == id { authenticationTask = nil; authenticationClient = nil } }
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+            Task { await next.close() }
+        }
     }
 
     private func markAuthenticationFailure(_ error: Error) {
@@ -212,43 +287,121 @@ final class AppState: ObservableObject {
     @discardableResult
     func connect(otp: String = "", service: NASService = .photos) async -> Bool {
         guard !connecting else { return false }
-        connecting = true; error = nil
-        defer { connecting = false }
-        let account = credentials
-        if let restoreTask { await restoreTask.value }
+        let id = UUID(), account = credentials, ticket = epoch
+        manualConnectionID = id; connecting = true; error = nil; connectionPhase = .waiting
+        let task = Task { await self.performConnection(id: id, ticket: ticket, account: account, otp: otp, service: service) }
+        manualConnectionTask = task
+        manualConnectionDeadline = Task { [weak self] in
+            guard let self else { return }
+            do { try await Task.sleep(for: self.connectionTimeout) } catch { return }
+            guard self.manualConnectionID == id else { return }
+            let phase = self.connectionPhase ?? .reachingServer
+            self.cancelConnection(id: id)
+            self.error = phase.failureTitle + "：本次连接已超时，请检查 NAS 地址、HTTPS 服务及当前网络后重试。"
+        }
+        defer {
+            if manualConnectionID == id {
+                manualConnectionDeadline?.cancel(); manualConnectionDeadline = nil
+                manualConnectionTask = nil; manualCandidate = nil; manualConnectionID = nil
+                connecting = false; connectionPhase = nil
+            }
+        }
+        return await withTaskCancellationHandler { await task.value } onCancel: {
+            Task { @MainActor [weak self] in self?.cancelConnection(id: id) }
+        }
+    }
+
+    func cancelConnection() {
+        guard let id = manualConnectionID else { return }
+        cancelConnection(id: id)
+    }
+
+    private func cancelConnection(id: UUID) {
+        guard manualConnectionID == id else { return }
+        manualConnectionID = nil
+        manualConnectionTask?.cancel(); manualConnectionTask = nil
+        manualConnectionDeadline?.cancel(); manualConnectionDeadline = nil
+        let candidate = manualCandidate; manualCandidate = nil
+        connecting = false; connectionPhase = nil
+        if let candidate { Task { await candidate.close() } }
+    }
+
+    private func checkConnection(id: UUID, ticket: UUID) throws {
+        try Task.checkCancellation()
+        guard manualConnectionID == id, epoch == ticket else { throw CancellationError() }
+    }
+
+    private func reportConnectionPhase(_ phase: NASConnectionPhase, id: UUID) {
+        if manualConnectionID == id { connectionPhase = phase }
+    }
+
+    private func performConnection(id: UUID, ticket: UUID, account: NASCredentials, otp: String, service: NASService) async -> Bool {
         var candidate: SynologyClient?
         do {
-            let next = try makeClient(account, service); candidate = next
-            _ = try await authenticate(next, account: account, otp: otp.trimmingCharacters(in: .whitespacesAndNewlines), automaticAttempt: false)
-            let session = await next.sessionSnapshot()
-            if let previous = activeCredentials, previous != account { await closeConnections(logout: true) }
-            else if let previous = connected(service) {
-                switch service {
-                case .files: downloads.cancelActive(owner: fileAccountID); fileClient = nil
-                case .photos: client = nil
-                case .monitor: monitorClient = nil
-                }
-                await previous.close()
+            if let restoreTask { try await waitForNASConnectionTask(restoreTask) }
+            try checkConnection(id: id, ticket: ticket)
+            let next = try makeClient(account, service); candidate = next; manualCandidate = next
+            _ = try await authenticate(next, account: account, otp: otp.trimmingCharacters(in: .whitespacesAndNewlines), automaticAttempt: false) { [weak self] phase in
+                await self?.reportConnectionPhase(phase, id: id)
             }
+            try checkConnection(id: id, ticket: ticket)
+            let session = await next.sessionSnapshot()
+            let changesAccount = activeCredentials != nil && activeCredentials != account
+            let installedEpoch = changesAccount ? UUID() : ticket
+            await next.setRecovery { [weak self, weak next] in
+                guard let self, let next else { throw CancellationError() }
+                return try await self.renew(service: service, account: account, client: next, ticket: installedEpoch)
+            }
+            try checkConnection(id: id, ticket: ticket)
             var saved = savedConnection?.credentials == account ? savedConnection! : SavedNASConnection(credentials: account)
             saved.automatic = true; saved.requiresLogin = false
             saved.sessions[service.rawValue] = session
+            // Keep usable sessions intact until validation and local persistence succeed.
+            // No suspension between this final guard, persistence, and publishing the client.
             if remember { try persistence.save(saved) } else { try persistence.delete() }
+            var obsolete: [SynologyClient] = []
+            if changesAccount {
+                epoch = installedEpoch; restoreTask?.cancel()
+                authenticationTask?.cancel()
+                if let pending = authenticationClient { Task { await pending.close() } }
+                downloads.cancelActive(owner: fileAccountID)
+                obsolete = [client, fileClient, monitorClient].compactMap { $0 }
+                client = nil; fileClient = nil; monitorClient = nil
+                connectionID = UUID(); fileConnectionID = UUID(); monitorConnectionID = UUID()
+            } else if let previous = connected(service) {
+                obsolete = [previous]
+                if service == .files { downloads.cancelActive(owner: fileAccountID) }
+            }
             activeCredentials = account; automatic = true; manualLoginRequired = false
             savedConnection = remember ? saved : nil; hasSavedConnection = remember
             restoreErrors.removeAll(); attempted.removeAll()
-            await install(next, service: service, account: account)
+            switch service {
+            case .photos: client = next; connectionID = UUID()
+            case .files: fileClient = next; fileConnectionID = UUID()
+            case .monitor: monitorClient = next; monitorConnectionID = UUID()
+            }
+            manualCandidate = nil
+            // Finish in the same actor turn as publication: a queued deadline must not
+            // report a timeout after the new session has already been committed.
+            manualConnectionDeadline?.cancel(); manualConnectionDeadline = nil
+            manualConnectionTask = nil; manualConnectionID = nil
+            connecting = false; connectionPhase = nil
+            Task { for previous in obsolete { await previous.close() } }
             return true
         } catch {
-            if let candidate { await candidate.logout() }
-            self.error = friendlyError(error)
+            // Failure must not wait for a second network request to log out.
+            if let candidate { await candidate.close() }
+            guard manualConnectionID == id, epoch == ticket, !Task.isCancelled else { return false }
+            self.error = (connectionPhase ?? .reachingServer).failureTitle + "：" + friendlyError(error)
             if account == activeCredentials { markAuthenticationFailure(error) }
             return false
         }
     }
 
     private func closeConnections(logout: Bool) async {
-        epoch = UUID(); restoreTask?.cancel()
+        cancelConnection()
+        epoch = UUID(); restoreTask?.cancel(); authenticationTask?.cancel()
+        if let pending = authenticationClient { Task { await pending.close() } }
         downloads.cancelActive(owner: fileAccountID)
         let oldPhotos = client, oldFiles = fileClient, oldMonitor = monitorClient
         client = nil; fileClient = nil; monitorClient = nil
