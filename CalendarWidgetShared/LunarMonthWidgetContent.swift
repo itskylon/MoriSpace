@@ -7,7 +7,7 @@ struct LunarMonthWidgetContent: View {
     @Environment(\.colorScheme) private var colorScheme
     private var layout: CalendarLayout { CalendarLayout() }
     private var accent: Color {
-        colorScheme == .dark ? Color(red: 0.40, green: 0.79, blue: 0.66) : Color(red: 0.15, green: 0.46, blue: 0.37)
+        colorScheme == .dark ? Color(red: 0.43, green: 0.79, blue: 0.69) : Color(red: 0.12, green: 0.43, blue: 0.35)
     }
 
     var body: some View {
@@ -21,7 +21,7 @@ struct LunarMonthWidgetContent: View {
                         .foregroundStyle(index >= 5 ? accent : .secondary)
                         .frame(maxWidth: .infinity)
                 }
-            }.frame(height: isLarge ? 26 : 14)
+            }.frame(height: isLarge ? 24 : 14)
             GeometryReader { geometry in
                 let rowHeight = geometry.size.height / CGFloat(rows)
                 VStack(spacing: 0) {
@@ -43,9 +43,9 @@ struct LunarMonthWidgetContent: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text("\(layout.calendar.component(.month, from: date))月")
-                .font(.system(size: isLarge ? 24 : 17, weight: .bold, design: .rounded))
+                .font(.system(size: isLarge ? 25 : 17, weight: .semibold, design: .rounded))
             Text(String(layout.calendar.component(.year, from: date)))
-                .font(.system(size: isLarge ? 12 : 10)).foregroundStyle(.secondary)
+                .font(.system(size: isLarge ? 12 : 10, weight: .medium)).foregroundStyle(.secondary)
             Spacer(minLength: 8)
             Text(ChinaHolidaySchedule.coverage(on: date) == nil ? "放假安排未收录" : layout.lunarDate(on: date).description)
                 .font(.system(size: isLarge ? 12 : 10, weight: .medium))
@@ -60,11 +60,11 @@ struct LunarMonthWidgetContent: View {
         let inMonth = layout.calendar.isDate(day, equalTo: date, toGranularity: .month)
         // On compact six-week widgets, a single line keeps the lunar text readable.
         let inline = !isLarge && rowHeight < 26
-        let dayColor: Color = today ? (colorScheme == .dark ? .black : .white) : inMonth ? .primary : .secondary.opacity(0.45)
-        let lunarColor: Color = today ? dayColor : !inMonth ? .secondary.opacity(0.4) : lunar.festival != nil ? .orange : .secondary
+        let dayColor: Color = today ? (colorScheme == .dark ? .black : .white) : inMonth ? .primary : .secondary.opacity(0.4)
+        let lunarColor: Color = today ? (inline ? dayColor : accent) : !inMonth ? .secondary.opacity(0.4) : lunar.festival != nil ? accent : .secondary
         return Link(destination: CalendarWidgetRoute.url(for: day)) {
             let dayNumber = Text(String(layout.calendar.component(.day, from: day)))
-                .font(.system(size: isLarge ? 19 : inline ? 10 : 12, weight: today ? .bold : .medium, design: .rounded))
+                .font(.system(size: isLarge ? 18 : inline ? 10 : 12, weight: today ? .bold : .medium, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(dayColor)
                 .lineLimit(1).minimumScaleFactor(0.9)
@@ -84,8 +84,10 @@ struct LunarMonthWidgetContent: View {
                             .frame(width: 6)
                     }
                 } else {
-                    VStack(spacing: isLarge ? 3 : 0) {
+                    VStack(spacing: isLarge ? 2 : 0) {
                         dayNumber
+                            .frame(width: min(isLarge ? 28 : 18, rowHeight - 14), height: min(isLarge ? 28 : 18, rowHeight - 14))
+                            .background(today ? accent : .clear, in: Circle())
                             .overlay(alignment: .topTrailing) {
                                 if let holiday {
                                     HolidayBadge(kind: holiday.kind, fontSize: 8)
@@ -100,7 +102,7 @@ struct LunarMonthWidgetContent: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(today ? accent : .clear, in: RoundedRectangle(cornerRadius: isLarge ? 10 : 6))
+            .background(today ? (inline ? accent : accent.opacity(0.07)) : .clear, in: RoundedRectangle(cornerRadius: isLarge ? 10 : 6))
             .padding(.horizontal, isLarge ? 3 : 1)
             .padding(.vertical, 1)
             .contentShape(Rectangle())

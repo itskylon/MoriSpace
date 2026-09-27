@@ -78,15 +78,19 @@ struct DesktopWorkspaceView: View {
     @State private var visibility: NavigationSplitViewVisibility = .all
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
-            List {
-                Section("图库") { row(.local); row(.photos) }
-                Section("日程") { row(.calendar) }
-                Section("群晖 NAS") { row(.files); row(.downloads); row(.monitor) }
-                Section("云盘") { row(.oneDrive) }
-                Section("管理") { row(.backup); row(.settings) }
-            }.listStyle(.sidebar).environment(\.defaultMinListRowHeight, 28).navigationTitle("森空间")
-                .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 280)
+            List(selection: Binding<WorkspacePage?>(get: { navigation.selection }, set: { if let page = $0 { navigation.selection = page } })) {
+                Section("资料库") { row(.local); row(.photos); row(.files); row(.oneDrive) }
+                Section("工具") { row(.calendar); row(.downloads); row(.monitor); row(.backup) }
+            }.listStyle(.sidebar).environment(\.defaultMinListRowHeight, 32).navigationTitle("森空间")
+                .listSectionSpacing(16)
                 .accessibilityIdentifier("workspaceSidebar")
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    VStack(spacing: 12) {
+                        Divider()
+                        row(.settings)
+                    }.padding(.horizontal, 12).padding(.bottom, 14)
+                }
+                .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
         } detail: {
             NavigationStack(path: path) {
                 ZStack {
@@ -116,12 +120,21 @@ struct DesktopWorkspaceView: View {
     }
     private func row(_ page: WorkspacePage) -> some View {
         Button { navigation.selection = page } label: {
-            Label(page.title, systemImage: page.symbol)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 5)
-                .foregroundStyle(navigation.selection == page ? Theme.accent : Color.primary)
-                .contentShape(Rectangle())
+            HStack(spacing: 10) {
+                Image(systemName: page.symbol).font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(navigation.selection == page ? Theme.accent : .secondary)
+                    .frame(width: 24, height: 26)
+                Text(page.title).font(.subheadline.weight(navigation.selection == page ? .semibold : .regular))
+                    .foregroundStyle(navigation.selection == page ? Theme.accent : Color.primary)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }.padding(.horizontal, 10).padding(.vertical, 7)
+                .background(navigation.selection == page ? Theme.accent.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 8))
+                .contentShape(RoundedRectangle(cornerRadius: 8))
         }.buttonStyle(.plain)
-            .listRowBackground(navigation.selection == page ? Theme.accent.opacity(0.14) : Color.clear)
+            .tag(page)
+            .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+            .listRowBackground(Color.clear)
             .accessibilityAddTraits(navigation.selection == page ? .isSelected : [])
             .accessibilityIdentifier("sidebar_" + page.rawValue)
     }
@@ -132,7 +145,7 @@ struct DesktopWorkspaceView: View {
         case .files: NASFilesHomeView(isActive: navigation.selection == page)
         case .downloads: NASDownloadsView(manager: app.downloads, owner: app.fileAccountID)
         case .monitor: NASMonitorHomeView(isActive: navigation.selection == page)
-        case .backup: PhotoBackupView().readableFormWidth()
+        case .backup: PhotoBackupView()
         case .settings: SettingsView().readableFormWidth()
         case .calendar: CalendarHomeView(isActive: navigation.selection == page)
         case .oneDrive: OneDriveHomeView(isActive: navigation.selection == page)
@@ -155,7 +168,7 @@ private struct MacWindowConfiguration: UIViewRepresentable {
 
 extension View {
     @ViewBuilder func readableFormWidth() -> some View {
-        if AppPlatform.isMac { frame(maxWidth: 780).frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.canvas) }
+        if AppPlatform.isMac { frame(maxWidth: 760).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top).background(Theme.canvas) }
         else { self }
     }
     @ViewBuilder func desktopSheet(width: CGFloat = 760, height: CGFloat = 600) -> some View {

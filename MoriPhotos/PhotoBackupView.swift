@@ -7,64 +7,27 @@ struct PhotoBackupView: View {
     @EnvironmentObject private var library: PhotoLibraryStore
     @State private var wifiOnly = true
     @State private var choosingFolder = false
+    @State private var showDetails = false
+
     var body: some View {
-        Form {
-            Section {
-                Toggle("自动备份新照片", isOn: Binding(get: { backup.configuration.enabled }, set: { enabled in
-                    if enabled { Task { await backup.enable(folder: backup.configuration.folder, wifiOnly: wifiOnly) } }
-                    else { backup.disable() }
-                })).accessibilityIdentifier("enableNewPhotoBackup").disabled(backup.preparing)
-                if backup.preparing { Label("正在检查备份位置…", systemImage: "network") }
-                LabeledContent("当前状态", value: backup.status).accessibilityIdentifier("photoBackupStatus")
-                if backup.configuration.enabled {
-                    LabeledContent("已备份", value: "\(backup.ledger.completed.count) 张")
-                    if backup.pendingCount > 0 { LabeledContent("待备份", value: "\(backup.pendingCount) 张") }
-                    if let date = backup.ledger.lastCompletedAt { LabeledContent("上次完成", value: date.formatted(date: .abbreviated, time: .shortened)) }
-                    Button("立即检查新照片") { backup.checkNow() }.disabled(backup.running).accessibilityIdentifier("checkNewPhotoBackup")
-                }
-            } footer: {
-                if let date = backup.configuration.startedAt {
-                    Text("只备份 \(date.formatted(date: .abbreviated, time: .shortened)) 起的新照片，不回传更早的图库。关闭后重新开启同一位置，会补传期间的新照片。")
-                } else { Text("首次开启后，只备份新拍摄的照片，不上传本机已有的照片。") }
-            }
-            if let error = backup.error { Section { ErrorBanner(message: error) } }
-            Section {
-                Button { backup.clearFolderError(); choosingFolder = true } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "folder.fill").foregroundStyle(Theme.accent)
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text("选择备份文件夹").foregroundStyle(.primary)
-                            Text(backup.configuration.folder).font(.caption).foregroundStyle(.secondary)
-                                .lineLimit(2).accessibilityIdentifier("photoBackupFolder")
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
-                    }.padding(.vertical, 3)
-                }.accessibilityIdentifier("chooseBackupFolder").disabled(backup.preparing)
-                NavigationLink("File Station 连接设置") { ConnectionView(service: .files) }
-            } header: { Text("备份位置") } footer: {
-                Text("点上方文件夹即可浏览群晖目录并选择，无需输入路径。新照片按年/月归档；更换位置后从选择时开始备份，旧备份留在原目录。")
-            }
-            Section {
-                Toggle("仅 Wi-Fi 备份", isOn: $wifiOnly).disabled(backup.configuration.enabled || backup.preparing)
-                LabeledContent("照片权限", value: library.authorization == .authorized ? "全部照片" : "需要全部照片")
-                if library.authorization != .authorized {
-                    if library.authorization == .notDetermined {
-                        Button("允许访问照片") { Task { await library.requestAccess() } }
-                    } else {
-                        Button("打开系统权限设置") { AppPlatform.openPhotoSettings() }
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    overview
+                    if let error = backup.error { ErrorBanner(message: error) }
+                    let layout = geometry.size.width >= 800 ? AnyLayout(HStackLayout(alignment: .top, spacing: 16)) : AnyLayout(VStackLayout(spacing: 16))
+                    layout {
+                        destination.frame(maxWidth: .infinity, alignment: .topLeading)
+                        preferences.frame(maxWidth: .infinity, alignment: .topLeading)
                     }
+                    backupDetails
                 }
-            } footer: {
-                Text("保存静态原图与 Live Photo 的原始视频，不压缩、不删除本机照片。跳过截图和独立视频；新保存或同步到本机、且拍摄时间在开启之后的图片也可能纳入备份。")
-            }
-            Section(AppPlatform.isMac ? "Mac 备份运行方式" : "后台备份") {
-                Text(AppPlatform.isMac ? "森空间运行时会检查 Mac 照片图库并备份新照片，切换到其他窗口也可继续。退出 App 或 Mac 休眠后暂停，下次打开会补传；这里读取的是 Mac 图库，手机照片需由手机端备份或先同步到 Mac。" : "打开森空间时自动检查并补传；后台由 iOS 安排运行，无法保证拍照后立即上传。系统中关闭后台 App 刷新、低电量或强制退出 App 时，可能要等下次打开才能继续。")
-                    .font(.footnote).foregroundStyle(.secondary)
-                Text("断网会保留备份记录并稍后重试。每个原始文件通过 NAS 大小与内容校验后，才记为已备份；同名但内容不同的文件不会被覆盖。")
-                    .font(.footnote).foregroundStyle(.secondary)
-            }
+                .padding(AppPlatform.isMac ? 28 : 20)
+                .frame(maxWidth: 960)
+                .frame(maxWidth: .infinity, alignment: .top)
+            }.background(NASStyle.canvas)
         }
+        .tint(NASStyle.accent)
         .workspaceNavigationTitle("新照片备份").navigationBarTitleDisplayMode(.inline)
         .onAppear { wifiOnly = backup.configuration.wifiOnly }
         .sheet(isPresented: $choosingFolder) {
@@ -78,6 +41,131 @@ struct PhotoBackupView: View {
                 .environmentObject(backup)
                 .interactiveDismissDisabled(backup.preparing)
         }
+    }
+
+    private var overview: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Toggle(isOn: Binding(get: { backup.configuration.enabled }, set: { enabled in
+                if enabled { Task { await backup.enable(folder: backup.configuration.folder, wifiOnly: wifiOnly) } }
+                else { backup.disable() }
+            })) {
+                HStack(spacing: 12) {
+                    Image(systemName: "icloud.and.arrow.up").font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(NASStyle.accent).frame(width: 46, height: 46)
+                        .background(NASStyle.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("自动备份新照片").font(.headline)
+                        Text("将新的原始照片保存到群晖").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }.accessibilityIdentifier("enableNewPhotoBackup").disabled(backup.preparing)
+
+            Divider()
+            HStack(spacing: 8) {
+                if backup.preparing || backup.running { ProgressView().controlSize(.small) }
+                else { Circle().fill(backup.error != nil ? Color.orange : (backup.configuration.enabled ? NASStyle.accent : .secondary)).frame(width: 6, height: 6) }
+                Text(backup.preparing ? "正在检查备份位置…" : backup.status)
+                    .font(.subheadline.weight(.medium)).accessibilityIdentifier("photoBackupStatus")
+            }
+
+            if backup.configuration.enabled {
+                HStack(alignment: .firstTextBaseline, spacing: 32) {
+                    backupMetric("已备份", value: backup.ledger.completed.count)
+                    backupMetric("待备份", value: backup.pendingCount)
+                    Spacer(minLength: 0)
+                }
+                if let date = backup.ledger.lastCompletedAt {
+                    Text("上次完成 \(date.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Button { backup.checkNow() } label: {
+                    Label("立即检查新照片", systemImage: "arrow.clockwise").font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity).padding(.vertical, 5)
+                }.buttonStyle(.borderedProminent).disabled(backup.running).accessibilityIdentifier("checkNewPhotoBackup")
+            }
+            Text(backup.configuration.startedAt.map { "从 \($0.formatted(date: .abbreviated, time: .shortened)) 起备份新照片。" } ?? "开启后从新照片开始，本机已有照片不会上传。")
+                .font(.caption).foregroundStyle(.secondary)
+        }.backupPanel()
+    }
+
+    private func backupMetric(_ title: String, value: Int) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(value.formatted()).font(.system(size: 27, weight: .semibold)).monospacedDigit()
+                Text("张").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var destination: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("备份位置").font(.subheadline.weight(.semibold))
+            Button { backup.clearFolderError(); choosingFolder = true } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "folder.fill").font(.title3).foregroundStyle(NASStyle.accent)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("选择备份文件夹").font(.subheadline.weight(.medium)).foregroundStyle(.primary)
+                        Text(backup.configuration.folder).font(.caption).foregroundStyle(.secondary)
+                            .lineLimit(3).truncationMode(.middle).accessibilityIdentifier("photoBackupFolder")
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                }.padding(12).frame(maxWidth: .infinity, minHeight: 62, alignment: .leading)
+                    .background(NASStyle.canvas, in: RoundedRectangle(cornerRadius: 10)).contentShape(Rectangle())
+            }.buttonStyle(.plain).accessibilityIdentifier("chooseBackupFolder").disabled(backup.preparing)
+            Text("浏览群晖目录，选择保存位置。照片会按年 / 月归档。")
+                .font(.caption).foregroundStyle(.secondary)
+            NavigationLink { ConnectionView(service: .files) } label: {
+                HStack {
+                    Text("File Station 连接设置").font(.caption.weight(.medium))
+                    Spacer()
+                    Image(systemName: "arrow.up.right").font(.caption2)
+                }.frame(minHeight: 28).contentShape(Rectangle())
+            }.buttonStyle(.plain).foregroundStyle(NASStyle.accent)
+        }.backupPanel()
+    }
+
+    private var preferences: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("备份偏好").font(.subheadline.weight(.semibold))
+            Toggle("仅 Wi-Fi 备份", isOn: $wifiOnly).font(.subheadline).disabled(backup.configuration.enabled || backup.preparing)
+            if backup.configuration.enabled {
+                Text("关闭自动备份后可修改网络偏好。").font(.caption).foregroundStyle(.secondary)
+            }
+            Divider()
+            HStack {
+                Label("照片权限", systemImage: "photo").font(.subheadline)
+                Spacer()
+                Text(library.authorization == .authorized ? "全部照片" : "需要全部照片")
+                    .font(.caption).foregroundStyle(library.authorization == .authorized ? Color.secondary : .orange)
+            }
+            if library.authorization != .authorized {
+                if library.authorization == .notDetermined {
+                    Button("允许访问照片") { Task { await library.requestAccess() } }.font(.subheadline)
+                } else {
+                    Button("打开系统权限设置") { AppPlatform.openPhotoSettings() }.font(.subheadline)
+                }
+            }
+        }.backupPanel()
+    }
+
+    private var backupDetails: some View {
+        DisclosureGroup("备份范围与运行方式", isExpanded: $showDetails) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("保存静态原图与 Live Photo 的原始视频，不压缩、不删除本机照片。跳过截图和独立视频；新保存或同步到本机、且拍摄时间在开启之后的图片也可能纳入备份。")
+                Text("关闭后重新开启同一位置，会补传期间的新照片。更换位置后从选择时开始备份，旧备份留在原目录。")
+                Text(AppPlatform.isMac ? "森空间运行时检查 Mac 照片图库，切换到其他窗口也可继续。退出 App 或 Mac 休眠后暂停，下次打开会补传。手机照片需由手机端备份，或先同步到 Mac 图库。" : "打开森空间时自动检查并补传；后台由 iOS 安排运行，无法保证拍照后立即上传。关闭后台 App 刷新、低电量或强制退出 App 时，可能要等下次打开才能继续。")
+                Text("断网会保留备份记录并稍后重试。每个原始文件通过 NAS 大小与内容校验后，才记为已备份；同名但内容不同的文件不会被覆盖。")
+            }.font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
+        }.font(.subheadline).tint(.secondary).padding(.horizontal, 4)
+    }
+}
+
+private extension View {
+    func backupPanel() -> some View {
+        padding(18).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
     }
 }
 
@@ -118,6 +206,9 @@ private struct BackupFolderPicker: View {
                 }
             }
         }
+        .scrollContentBackground(.hidden)
+        .background(NASStyle.canvas)
+        .tint(NASStyle.accent)
         .safeAreaInset(edge: .bottom) {
             VStack(alignment: .leading, spacing: 10) {
                 if let error = backup.folderError { ErrorBanner(message: error) }

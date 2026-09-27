@@ -118,7 +118,12 @@ final class CalendarUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["calendarSelectedLunarDay"].label.hasPrefix("农历"))
         XCTAssertGreaterThan(day.frame.minX, grid.frame.midX)
         XCTAssertLessThanOrEqual(day.frame.maxX, app.frame.maxX)
-        capture(app, "calendar-ipad-wide")
+        XCTAssertGreaterThan(app.frame.width, app.frame.height, "The iPad window must finish rotating before visual capture")
+        XCTAssertTrue(app.buttons["calendarNextMonth"].isHittable, "The month controls on the right must stay visible")
+        XCTAssertTrue(row(app, "周末徒步（示例）").isHittable, "The selected-day agenda must remain inside the visible window")
+        // On rotated iPad simulators, app.screenshot() may crop using stale portrait bounds.
+        let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        screenshot.name = "calendar-ipad-wide"; screenshot.lifetime = .keepAlways; add(screenshot)
         app.buttons["calendarNextMonth"].tap()
         let title = app.staticTexts["calendarMonthTitle"].label
         app.descendants(matching: .any)["sidebar_settings"].firstMatch.tap()

@@ -1,6 +1,28 @@
 import XCTest
 
 final class MoriPhotosUITests: XCTestCase {
+    func testFileSearchDismissesKeyboardAndPreservesFilterAcrossSections() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
+        app.launch()
+        app.tabBars.buttons["存储"].tap()
+        app.buttons["nasSectionFiles"].tap()
+        XCTAssertTrue(app.buttons["nasFolder_测试共享"].waitForExistence(timeout: 10))
+        app.buttons["toggleNASFileSearch"].tap()
+        let search = app.textFields["nasFileSearch"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap(); search.typeText("测试")
+        app.buttons["nasSectionPhotos"].tap()
+        XCTAssertTrue(app.buttons.matching(identifier: "nasPhotoCell").firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(XCTNSPredicateExpectation(predicate: NSPredicate(format: "count == 0"), object: app.keyboards).waitForFulfillment(timeout: 5))
+        app.buttons["nasSectionFiles"].tap()
+        XCTAssertEqual(search.value as? String, "测试")
+        app.buttons["toggleNASFileSearch"].tap()
+        XCTAssertFalse(search.exists)
+        XCTAssertTrue(app.buttons["nasFolder_测试共享"].exists)
+    }
+
     func testDesktopFileBrowserHistoryViewsInspectorAndPreview() {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .landscapeLeft
@@ -27,7 +49,7 @@ final class MoriPhotosUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["96 bytes"].exists || app.staticTexts["96字节"].exists || app.staticTexts["位置"].exists)
         app.buttons["filesOpen"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["quickLookContent"].firstMatch.waitForExistence(timeout: 15))
-        let previewShot = XCTAttachment(screenshot: app.screenshot()); previewShot.name = "51-desktop-quick-look"; previewShot.lifetime = .keepAlways; add(previewShot)
+        let previewShot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); previewShot.name = "51-desktop-quick-look"; previewShot.lifetime = .keepAlways; add(previewShot)
         app.buttons["完成"].firstMatch.tap()
         app.buttons["filesBack"].tap()
         XCTAssertTrue(share.waitForExistence(timeout: 5))
@@ -48,7 +70,11 @@ final class MoriPhotosUITests: XCTestCase {
         app.buttons["filesView_list"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["desktopFileTable"].firstMatch.waitForExistence(timeout: 5))
         app.buttons["filesView_icons"].tap()
-        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "50-desktop-file-browser"; shot.lifetime = .keepAlways; add(shot)
+        XCTAssertGreaterThan(app.frame.width, app.frame.height, "The iPad window must finish rotating before visual capture")
+        XCTAssertTrue(search.isHittable, "The search field on the right must remain visible")
+        XCTAssertTrue(app.buttons["filesInspector"].isHittable, "The trailing inspector control must remain visible")
+        // Capture the display; app.screenshot() can retain portrait crop bounds after rotation.
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); shot.name = "50-desktop-file-browser"; shot.lifetime = .keepAlways; add(shot)
         app.buttons["filesRoot"].tap()
         XCTAssertTrue(share.waitForExistence(timeout: 5))
     }
@@ -463,7 +489,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--empty-connection-fixture"]
         app.launch()
-        XCTAssertTrue(app.navigationBars["森空间"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["照片"].waitForExistence(timeout: 10))
         let home = XCTAttachment(screenshot: app.screenshot())
         home.name = "01-照片首页"; home.lifetime = .keepAlways; add(home)
         app.tabBars.buttons["存储"].tap()

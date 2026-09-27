@@ -78,7 +78,7 @@ struct MoriPhotosApp: App {
 
 enum Theme {
     static let accent = NASStyle.accent
-    static let canvas = Color(uiColor: .systemGroupedBackground)
+    static let canvas = NASStyle.canvas
 }
 
 struct EmptyCard: View {
@@ -86,24 +86,27 @@ struct EmptyCard: View {
     let title: String
     let message: String
     var body: some View {
-        VStack(spacing: 18) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 30).fill(Theme.accent.opacity(0.09)).frame(width: 100, height: 100).rotationEffect(.degrees(-7))
-                Image(systemName: icon).font(.system(size: 38, weight: .light)).foregroundStyle(Theme.accent)
-            }
-            Text(title).font(.title3.bold())
-            Text(message).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center).lineSpacing(5)
-        }.frame(maxWidth: .infinity).padding(.horizontal, 28).padding(.vertical, 40)
+        VStack(spacing: 12) {
+            Image(systemName: icon).font(.system(size: 27, weight: .regular))
+                .foregroundStyle(Theme.accent).frame(width: 62, height: 62)
+                .background(Theme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 18))
+                .accessibilityHidden(true)
+            Text(title).font(.headline)
+            Text(message).font(.subheadline).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+        }.frame(maxWidth: 380).padding(.horizontal, 20).padding(.vertical, 28)
+            .frame(maxWidth: .infinity)
     }
 }
 
 struct ErrorBanner: View {
     let message: String
     var body: some View {
-        Label(message, systemImage: "exclamationmark.circle.fill")
-            .font(.subheadline).foregroundStyle(.red)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding().background(.red.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.red).padding(.top, 2)
+            Text(message).foregroundStyle(.primary).fixedSize(horizontal: false, vertical: true)
+        }.font(.subheadline).frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14).background(.red.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
             .accessibilityIdentifier("errorBanner")
     }
 }

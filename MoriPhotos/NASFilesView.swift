@@ -20,7 +20,13 @@ struct NASFilesHomeView: View {
                 }.id(app.fileConnectionID)
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image(systemName: "folder").font(.system(size: 28, weight: .light)).foregroundStyle(NASStyle.accent)
+                                .frame(width: 56, height: 56).background(NASStyle.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 16))
+                            Text("群晖文件").font(.title2.weight(.semibold))
+                            Text("浏览共享文件夹，预览和下载需要的文件。").font(.subheadline).foregroundStyle(.secondary)
+                        }
                         NASConnectionStatus(service: .files)
                         Button { connect = true } label: {
                             NASActionLabel(title: app.hasSavedConnection ? "文件连接设置" : "连接群晖文件", subtitle: "File Station", symbol: "folder")
@@ -28,10 +34,11 @@ struct NASFilesHomeView: View {
                         NavigationLink { NASDownloadsView(manager: app.downloads, owner: app.fileAccountID) } label: {
                             NASActionLabel(title: "下载", subtitle: "任务与离线文件", symbol: "arrow.down.circle")
                         }.buttonStyle(.plain).accessibilityIdentifier("openDownloads")
-                    }.padding(.horizontal, 16).padding(.vertical, 12)
+                    }.padding(24).frame(maxWidth: 520, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .center).padding(.top, 24)
                 }.background(NASStyle.canvas)
             }
-        }.sheet(isPresented: $connect) { NavigationStack { ConnectionView(service: .files) } }
+        }.sheet(isPresented: $connect) { NavigationStack { ConnectionView(service: .files) }.desktopSheet() }
             .task(id: isActive) { if isActive { await app.restoreConnection(service: .files) } }
     }
 }
@@ -48,6 +55,10 @@ struct NASFileBrowserView: View {
     @State private var ascending = true
     @State private var selected: NASFile?
     @State private var connection = false
+    @State private var query = ""
+    @State private var showingSearch = false
+    @FocusState private var searchFocused: Bool
+    private var filteredItems: [NASFile] { store.items.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) } }
     private var sorting: String { sort.rawValue + String(ascending) }
     var body: some View {
         mobileBrowser
@@ -69,16 +80,39 @@ struct NASFileBrowserView: View {
         .refreshable { await refresh() }
         .sheet(item: $selected) { file in NavigationStack { NASFileDetailView(file: file, client: client, owner: owner) }.desktopSheet() }
         .sheet(isPresented: $connection) { NavigationStack { ConnectionView(service: .files) }.desktopSheet() }
+        .onChange(of: isActive) { _, active in if !active { searchFocused = false } }
+        .onDisappear { searchFocused = false }
+    }
+    private var searchToggle: some View {
+        Button {
+            withAnimation(.easeOut(duration: 0.18)) { showingSearch.toggle(); if !showingSearch { query = "" } }
+            searchFocused = showingSearch
+        } label: {
+            Image(systemName: showingSearch ? "xmark" : "magnifyingglass").frame(width: 44, height: 44)
+        }.buttonStyle(.plain).foregroundStyle(NASStyle.accent)
+            .accessibilityLabel(showingSearch ? "关闭搜索" : "搜索文件")
+            .accessibilityIdentifier("toggleNASFileSearch")
     }
     private var mobileBrowser: some View {
         List {
             Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    if let folder { Text(folder.path).font(.footnote).foregroundStyle(.secondary).textSelection(.enabled) }
-                    HStack {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 10) {
                         Text(folder == nil ? "共享文件夹" : "文件").font(.subheadline.weight(.semibold))
                         Spacer()
-                        Text("\(store.items.count) / \(store.total) 项").font(.caption.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
+                        Text(query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "\(filteredItems.count) 项匹配")
+                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
+                        searchToggle
+                    }
+                    if let folder { Text(folder.path).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle).textSelection(.enabled) }
+                    if showingSearch {
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                            TextField("搜索已载入的文件", text: $query).textInputAutocapitalization(.never).autocorrectionDisabled()
+                                .focused($searchFocused).submitLabel(.search).onSubmit { searchFocused = false }
+                                .accessibilityIdentifier("nasFileSearch")
+                        }.font(.subheadline).padding(11).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 10))
+                            .overlay { RoundedRectangle(cornerRadius: 10).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
                     }
                 }.padding(.vertical, 4)
             }.listRowBackground(NASStyle.canvas).listRowSeparator(.hidden)
@@ -89,7 +123,7 @@ struct NASFileBrowserView: View {
                 }.listRowBackground(NASStyle.canvas)
             }
             Section {
-                ForEach(store.items) { file in
+                ForEach(filteredItems) { file in
                     if file.isdir {
                         if wideWorkspace {
                             NavigationLink(value: file) { NASFileRow(file: file) }.accessibilityIdentifier("nasFolder_" + file.name)
@@ -98,15 +132,15 @@ struct NASFileBrowserView: View {
                                 .accessibilityIdentifier("nasFolder_" + file.name)
                         }
                     } else {
-                        Button { selected = file } label: { NASFileRow(file: file) }
+                        Button { searchFocused = false; selected = file } label: { NASFileRow(file: file) }
                             .buttonStyle(.plain).accessibilityIdentifier("nasFile_" + file.name)
                     }
                 }
                 if store.loading { HStack { Spacer(); ProgressView("正在读取文件…"); Spacer() }.padding() }
                 else if store.hasMore && store.error == nil {
                     Button("载入更多") { Task { await store.loadMore(client: client, path: folder?.path, sort: sort, ascending: ascending) } }.accessibilityIdentifier("moreFiles")
-                } else if store.items.isEmpty && store.error == nil {
-                    ContentUnavailableView(folder == nil ? "没有可访问的共享文件夹" : "这是一个空文件夹", systemImage: "folder", description: Text(folder == nil ? "请检查账号的共享文件夹权限。" : "可以返回上级继续浏览。"))
+                } else if filteredItems.isEmpty && store.error == nil {
+                    ContentUnavailableView(query.isEmpty ? (folder == nil ? "没有可访问的共享文件夹" : "这是一个空文件夹") : "没有匹配的文件", systemImage: query.isEmpty ? "folder" : "magnifyingglass", description: Text(query.isEmpty ? (folder == nil ? "请检查账号的共享文件夹权限。" : "可以返回上级继续浏览。") : "搜索范围为当前已载入的文件。"))
                 }
             }.listRowBackground(NASStyle.canvas)
         }.listStyle(.plain).scrollContentBackground(.hidden).background(NASStyle.canvas)
@@ -118,16 +152,17 @@ struct NASFileRow: View {
     let file: NASFile
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: file.icon).font(.system(size: 20)).foregroundStyle(NASStyle.accent).frame(width: 36, height: 36)
-                .background(NASStyle.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 10))
+            Image(systemName: file.isdir ? "folder.fill" : file.icon).font(.system(size: 21, weight: .regular)).symbolRenderingMode(.hierarchical)
+                .foregroundStyle(file.isdir ? NASStyle.accent : Color.secondary).frame(width: 42, height: 42)
+                .background(file.isdir ? NASStyle.accent.opacity(0.09) : Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 11))
             VStack(alignment: .leading, spacing: 5) {
-                Text(file.name).foregroundStyle(.primary).lineLimit(2)
+                Text(file.name).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
                 HStack(spacing: 8) {
                     if !file.isdir, let size = file.size { Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
                     if let date = file.modified { Text(date.formatted(date: .abbreviated, time: .shortened)) }
                 }.font(.caption).foregroundStyle(.secondary)
             }
-        }.padding(.vertical, 5)
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 7)
     }
 }
 
@@ -156,7 +191,8 @@ struct NASFileDetailView: View {
                 }.disabled(added).accessibilityIdentifier("downloadFile")
                 NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner) } label: { Label("查看下载任务", systemImage: "list.bullet") }.accessibilityIdentifier("detailDownloads")
             } footer: { Text("下载期间请保持 App 在前台。下载完成后，可在“已下载”中选择保存位置。") }
-        }.navigationTitle("文件详情").navigationBarTitleDisplayMode(.inline)
+        }.scrollContentBackground(.hidden).background(NASStyle.canvas)
+            .navigationTitle("文件详情").navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(item: $video) { selection in VideoPlaybackView(selection: selection, client: client) }
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
     }
@@ -178,8 +214,8 @@ struct NASDownloadsView: View {
             Section {
                 Picker("下载列表", selection: $completed) {
                     Text("下载任务").tag(false); Text("已下载").tag(true)
-                }.pickerStyle(.segmented)
-            }
+                }.pickerStyle(.segmented).frame(maxWidth: 360)
+            }.listRowBackground(Color.clear)
             if exported { Section { Label("已保存到所选位置", systemImage: "checkmark.circle").foregroundStyle(Theme.accent).accessibilityIdentifier("exportSuccess") } }
             if let error = manager.error { Section { ErrorBanner(message: error) } }
             if !completed {
@@ -223,7 +259,11 @@ struct NASDownloadsView: View {
                     }.padding(.vertical, 6)
                 }
             }
-        }.workspaceNavigationTitle("下载").navigationBarTitleDisplayMode(.inline)
+        }.scrollContentBackground(.hidden).background(NASStyle.canvas)
+            .frame(maxWidth: AppPlatform.isMac ? 880 : .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(NASStyle.canvas)
+            .workspaceNavigationTitle("下载").navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(item: $video) { selection in VideoPlaybackView(selection: selection) }
             .sheet(item: $export) { item in FileExportSheet(url: item.url) { success in exported = success; export = nil } }
             .sheet(isPresented: $connection) { NavigationStack { ConnectionView(service: .files) } }

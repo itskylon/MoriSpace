@@ -6,12 +6,12 @@ struct NASMonitorDesktopDashboard: View {
     let snapshot: NASMonitorSnapshot
     let samples: [NASLoadSample]
     let width: CGFloat
-    private let memoryColor = Color(red: 0.61, green: 0.65, blue: 0.89)
+    private let memoryColor = Color.indigo
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if let resources = snapshot.resources {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: width >= 780 ? 4 : 2), spacing: 12) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: width >= 820 ? 4 : 2), spacing: 12) {
                     metric("CPU", symbol: "cpu", value: NASMonitorFormat.percent(resources.cpu),
                            detail: "处理器负载", percentage: resources.cpu, color: NASStyle.accent, identifier: "monitorCPU")
                     metric("内存", symbol: "memorychip", value: NASMonitorFormat.percent(resources.memory),
@@ -22,9 +22,9 @@ struct NASMonitorDesktopDashboard: View {
                            detail: "NAS 实时发送", percentage: nil, color: NASStyle.accent, identifier: "monitorSend")
                 }
             }
-            if width >= 780, snapshot.resources != nil, let storage = snapshot.storage {
+            if width >= 820, snapshot.resources != nil, let storage = snapshot.storage {
                 HStack(alignment: .top, spacing: 16) {
-                    trend.frame(maxWidth: .infinity)
+                    trend.frame(width: (width - 16) * 0.55)
                     volumes(storage).frame(maxWidth: .infinity)
                 }
             } else {
@@ -38,14 +38,14 @@ struct NASMonitorDesktopDashboard: View {
     private func metric(_ title: String, symbol: String, value: String, detail: String, percentage: Double?, color: Color, identifier: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(title).font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
+                Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
                 Spacer()
                 Image(systemName: symbol).font(.system(size: 13)).foregroundStyle(color)
             }
-            Text(value).font(.system(size: 28, weight: .semibold)).monospacedDigit()
+            Text(value).font(.system(size: 31, weight: .semibold)).monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.75).accessibilityIdentifier(identifier)
             HStack(spacing: 12) {
-                Text(detail).font(.system(size: 10)).foregroundStyle(.secondary).fixedSize()
+                Text(detail).font(.caption).foregroundStyle(.secondary).fixedSize()
                 if let percentage { MonitorUsageBar(fraction: percentage / 100, color: color).frame(maxWidth: 80) }
                 else { Spacer(minLength: 0) }
             }
@@ -55,7 +55,7 @@ struct NASMonitorDesktopDashboard: View {
     private var trend: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Text("负载趋势").font(.system(size: 13, weight: .semibold))
+                Text("负载趋势").font(.subheadline.weight(.semibold))
                 Spacer()
                 legend("CPU", color: NASStyle.accent)
                 legend("内存", color: memoryColor)
@@ -80,23 +80,23 @@ struct NASMonitorDesktopDashboard: View {
                     .chartYAxis {
                         AxisMarks(position: .leading, values: [0, 50, 100]) { value in
                             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3, 4])).foregroundStyle(Color.primary.opacity(0.08))
-                            AxisValueLabel { if let number = value.as(Int.self) { Text("\(number)%").font(.system(size: 9)) } }
+                            AxisValueLabel { if let number = value.as(Int.self) { Text("\(number)%").font(.caption2) } }
                         }
                     }
                     .chartXAxis {
                         AxisMarks(values: .automatic(desiredCount: 3)) { _ in
-                            AxisValueLabel(format: .dateTime.hour().minute()).font(.system(size: 9))
+                            AxisValueLabel(format: .dateTime.hour().minute()).font(.caption2)
                         }
                     }
                 } else {
                     VStack(spacing: 10) {
                         Image(systemName: "waveform.path").font(.system(size: 26, weight: .light)).foregroundStyle(NASStyle.accent.opacity(0.65))
                         Text("正在积累采样数据").font(.caption).foregroundStyle(.secondary)
-                        Text("再次刷新后显示趋势").font(.system(size: 10)).foregroundStyle(.tertiary)
+                        Text("再次刷新后显示趋势").font(.caption).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-            }.frame(height: 164)
-            Text("本次查看的 CPU 与内存使用率").font(.system(size: 10)).foregroundStyle(.tertiary)
+            }.frame(height: 166)
+            Text("本次查看的 CPU 与内存使用率").font(.caption).foregroundStyle(.secondary)
         }.desktopMonitorPanel().accessibilityIdentifier("monitorTrend")
     }
 
@@ -110,7 +110,7 @@ struct NASMonitorDesktopDashboard: View {
             ForEach(items) { volume in
                 VStack(alignment: .leading, spacing: 11) {
                     HStack {
-                        Text(volume.id.replacingOccurrences(of: "volume_", with: "存储空间 ")).font(.system(size: 12, weight: .medium))
+                        Text(volume.id.replacingOccurrences(of: "volume_", with: "存储空间 ")).font(.subheadline.weight(.medium))
                         Spacer()
                         health(volume.health, raw: volume.rawStatus)
                     }
@@ -127,7 +127,7 @@ struct NASMonitorDesktopDashboard: View {
                 }.accessibilityIdentifier("monitorVolume_" + volume.id)
                 if volume.id != items.last?.id { Divider().overlay(NASStyle.outline) }
             }
-        }.frame(maxWidth: .infinity, minHeight: width >= 780 && snapshot.resources != nil ? 228 : nil, alignment: .topLeading).desktopMonitorPanel()
+        }.frame(maxWidth: .infinity, minHeight: width >= 820 && snapshot.resources != nil ? 230 : nil, alignment: .topLeading).desktopMonitorPanel()
     }
 
     private func disks(_ storage: NASStorageStatus) -> some View {
@@ -140,15 +140,15 @@ struct NASMonitorDesktopDashboard: View {
                     Text("硬盘").frame(maxWidth: .infinity, alignment: .leading)
                     Text("状态").frame(width: 180, alignment: .leading)
                     Text("温度").frame(width: 70, alignment: .trailing)
-                }.font(.system(size: 10)).foregroundStyle(.tertiary).padding(.bottom, 8)
+                }.font(.caption).foregroundStyle(.secondary).padding(.bottom, 8)
                 ForEach(storage.disks.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) { disk in
                     Divider().overlay(NASStyle.outline)
                     HStack(spacing: 8) {
                         Label(disk.name, systemImage: "internaldrive")
-                            .font(.system(size: 12, weight: .medium)).frame(maxWidth: .infinity, alignment: .leading)
+                            .font(.subheadline.weight(.medium)).frame(maxWidth: .infinity, alignment: .leading)
                         health(disk.health, raw: disk.rawStatus).frame(width: 180, alignment: .leading)
                         Text(disk.temperature.map { String(format: "%.0f°C", $0) } ?? "—")
-                            .font(.system(size: 12)).monospacedDigit().foregroundStyle(.secondary).frame(width: 70, alignment: .trailing)
+                            .font(.subheadline).monospacedDigit().foregroundStyle(.secondary).frame(width: 70, alignment: .trailing)
                     }.padding(.vertical, 14).accessibilityIdentifier("monitorDisk_" + disk.id)
                 }
             }
@@ -157,17 +157,17 @@ struct NASMonitorDesktopDashboard: View {
 
     private func panelTitle(_ title: String, count: Int) -> some View {
         HStack {
-            Text(title).font(.system(size: 13, weight: .semibold))
+            Text(title).font(.subheadline.weight(.semibold))
             Spacer()
-            Text("\(count) 项").font(.system(size: 10)).foregroundStyle(.tertiary)
+            Text("\(count) 项").font(.caption).foregroundStyle(.secondary)
         }
     }
     private func legend(_ title: String, color: Color) -> some View {
-        HStack(spacing: 5) { Circle().fill(color).frame(width: 5, height: 5); Text(title).font(.system(size: 10)).foregroundStyle(.secondary) }
+        HStack(spacing: 5) { Circle().fill(color).frame(width: 5, height: 5); Text(title).font(.caption).foregroundStyle(.secondary) }
     }
     private func health(_ value: NASHealth, raw: String?) -> some View {
         Label(value.title + (value == .normal || raw == nil ? "" : " · " + raw!), systemImage: value == .normal ? "checkmark.circle" : "exclamationmark.circle")
-            .font(.system(size: 10, weight: .medium)).foregroundStyle(value == .normal ? NASStyle.accent : (value == .unknown ? .secondary : Color.orange))
+            .font(.caption.weight(.medium)).foregroundStyle(value == .normal ? NASStyle.accent : (value == .unknown ? .secondary : Color.orange))
     }
     private func rate(_ value: Double?) -> String { value.map { NASMonitorFormat.bytes($0) + "/s" } ?? "—" }
 }
@@ -187,7 +187,7 @@ private struct MonitorUsageBar: View {
 
 private extension View {
     func desktopMonitorPanel() -> some View {
-        padding(18).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 12))
-            .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
+        padding(18).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
     }
 }

@@ -18,7 +18,7 @@ struct NASMonitorHomeView: View {
                         }.buttonStyle(.plain).accessibilityIdentifier("connectMonitor")
                         Text("使用已保存账号读取运行状态。部分 DSM 系统监控项目需要管理员权限。")
                             .font(.footnote).foregroundStyle(.secondary)
-                    }.padding(16)
+                    }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity, alignment: .top)
                 }.background(NASStyle.canvas)
             }
         }.workspaceNavigationTitle("NAS 状态").navigationBarTitleDisplayMode(.inline)
@@ -39,8 +39,8 @@ struct NASMonitorView: View {
     var body: some View {
         GeometryReader { geometry in
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                if AppPlatform.isMac { desktopHeader.padding(.bottom, 6) }
+            VStack(alignment: .leading, spacing: 18) {
+                if geometry.size.width >= 700 { desktopHeader.padding(.bottom, 2) }
                 else { statusHeader }
                 if store.loading && snapshot == nil { ProgressView("正在读取运行状态…").frame(maxWidth: .infinity).padding(24) }
                 if let snapshot {
@@ -53,8 +53,8 @@ struct NASMonitorView: View {
                             .accessibilityIdentifier("monitorIssue_" + issue.section)
                     }
                     if snapshot.hasData {
-                        if AppPlatform.isMac {
-                            NASMonitorDesktopDashboard(snapshot: snapshot, samples: store.samples, width: geometry.size.width - 48)
+                        if geometry.size.width >= 700 {
+                            NASMonitorDesktopDashboard(snapshot: snapshot, samples: store.samples, width: min(1180, geometry.size.width) - 48)
                         } else {
                             if let system = snapshot.system { systemSummary(system) }
                             if let resources = snapshot.resources { resourceCards(resources) }
@@ -62,9 +62,12 @@ struct NASMonitorView: View {
                         }
                     }
                 }
-                Text(AppPlatform.isMac ? "仅在此页面打开且 App 位于前台时更新" : "仅在此页打开且 App 位于前台时刷新。锁屏或离开后暂停；不提供后台告警推送。")
+                Label(AppPlatform.isMac ? "仅在当前页面且 App 位于前台时更新" : "离开此页或锁屏后暂停更新，不提供后台告警。", systemImage: "info.circle")
                     .font(.caption).foregroundStyle(.secondary).padding(.top, 2)
-            }.frame(maxWidth: .infinity, alignment: .leading).padding(AppPlatform.isMac ? 24 : 16)
+            }
+            .padding(geometry.size.width >= 700 ? 24 : 16)
+            .frame(maxWidth: 1180, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .top)
         }.background(NASStyle.canvas)
             .refreshable { await store.refresh(client: client) }
         }
@@ -94,19 +97,37 @@ struct NASMonitorView: View {
     }
 
     private var desktopHeader: some View {
-        HStack(alignment: .top, spacing: 20) {
-            VStack(alignment: .leading, spacing: 9) {
-                HStack(spacing: 12) {
-                    Text(snapshot?.system?.model ?? "Synology NAS").font(.system(size: 24, weight: .semibold))
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: 20) {
+                deviceIdentity
+                Spacer(minLength: 12)
+                desktopRefreshControls
+            }
+            VStack(alignment: .leading, spacing: 16) {
+                deviceIdentity
+                desktopRefreshControls
+            }
+        }
+    }
+
+    private var deviceIdentity: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "externaldrive.fill").font(.system(size: 24, weight: .medium)).foregroundStyle(NASStyle.accent)
+                .frame(width: 50, height: 50).background(NASStyle.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 13))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 10) {
+                    Text(snapshot?.system?.model ?? "Synology NAS").font(.title2.weight(.semibold))
                     HStack(spacing: 5) {
                         Circle().fill(statusColor).frame(width: 6, height: 6)
                         Text(statusTitle).font(.caption).foregroundStyle(statusColor).accessibilityIdentifier("monitorStatus")
-                    }
+                    }.padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(statusColor.opacity(0.07), in: Capsule())
                 }
                 if let system = snapshot?.system {
                     HStack(spacing: 10) {
                         Text(system.version ?? "系统版本未提供")
-                        Text("·")
+                        Text("·").accessibilityHidden(true)
                         Text("运行 " + NASMonitorFormat.uptime(system.uptime))
                         if let temperature = system.temperature {
                             Label(String(format: "%.0f°C", temperature), systemImage: "thermometer.medium")
@@ -115,24 +136,28 @@ struct NASMonitorView: View {
                         }
                     }.font(.caption).foregroundStyle(.secondary)
                 }
-            }.lineLimit(1)
-            Spacer(minLength: 0)
-            VStack(alignment: .trailing, spacing: 8) {
-                HStack(spacing: 8) {
-                    Button { automatic.toggle() } label: {
-                        Label(automatic && !store.halted ? "每 15 秒刷新" : "手动刷新", systemImage: automatic && !store.halted ? "arrow.triangle.2.circlepath" : "pause.circle")
-                            .font(.caption.weight(.medium)).padding(.horizontal, 10).frame(height: 30)
-                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 7))
-                    }.buttonStyle(.plain).foregroundStyle(.secondary).accessibilityIdentifier("monitorAutoRefresh")
-                    Button { Task { await store.refresh(client: client) } } label: {
-                        Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .medium)).frame(width: 30, height: 30)
-                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 7))
-                    }.buttonStyle(.plain).disabled(store.loading).accessibilityLabel("刷新运行状态").accessibilityIdentifier("refreshMonitor")
-                }
-                Text(snapshot.map { "更新于 " + $0.updatedAt.formatted(date: .omitted, time: .standard) } ?? "等待读取")
-                    .font(.system(size: 10)).foregroundStyle(.tertiary).accessibilityIdentifier("monitorUpdated")
-            }.fixedSize()
+            }
         }
+    }
+
+    private var desktopRefreshControls: some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            HStack(spacing: 8) {
+                Button { automatic.toggle() } label: {
+                    Label(automatic && !store.halted ? "每 15 秒刷新" : "手动刷新", systemImage: automatic && !store.halted ? "arrow.triangle.2.circlepath" : "pause.circle")
+                        .font(.caption.weight(.medium)).padding(.horizontal, 12).frame(height: 34)
+                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 9))
+                        .overlay { RoundedRectangle(cornerRadius: 9).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
+                }.buttonStyle(.plain).foregroundStyle(.secondary).accessibilityIdentifier("monitorAutoRefresh")
+                Button { Task { await store.refresh(client: client) } } label: {
+                    Image(systemName: "arrow.clockwise").font(.system(size: 13, weight: .medium)).frame(width: 34, height: 34)
+                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 9))
+                        .overlay { RoundedRectangle(cornerRadius: 9).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
+                }.buttonStyle(.plain).disabled(store.loading).accessibilityLabel("刷新运行状态").accessibilityIdentifier("refreshMonitor")
+            }
+            Text(snapshot.map { "更新于 " + $0.updatedAt.formatted(date: .omitted, time: .standard) } ?? "等待读取")
+                .font(.caption2).foregroundStyle(.secondary).accessibilityIdentifier("monitorUpdated")
+        }.fixedSize()
     }
 
     private var statusHeader: some View {
@@ -186,41 +211,54 @@ struct NASMonitorView: View {
     }
     private func resourceCards(_ resources: NASResourceStatus) -> some View {
         VStack(spacing: 12) {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                 percentageCard("CPU", value: resources.cpu, symbol: "cpu", subtitle: "当前负载", identifier: "monitorCPU")
                 percentageCard("内存", value: resources.memory, symbol: "memorychip", subtitle: "共 " + NASMonitorFormat.bytes(resources.memoryBytes), identifier: "monitorMemory")
             }
-            HStack(spacing: 12) {
-                networkRate("接收", symbol: "arrow.down", value: resources.receivedBytesPerSecond)
+            HStack(spacing: 16) {
+                networkRate("接收", symbol: "arrow.down.left", value: resources.receivedBytesPerSecond)
                 Divider()
-                networkRate("发送", symbol: "arrow.up", value: resources.sentBytesPerSecond)
+                networkRate("发送", symbol: "arrow.up.right", value: resources.sentBytesPerSecond)
             }.fixedSize(horizontal: false, vertical: true).monitorCard()
-            if store.samples.count >= 2 {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("负载趋势").font(.subheadline.weight(.semibold))
-                        Spacer()
-                        Text("本次查看 · 最多 40 次").font(.caption2).foregroundStyle(.secondary)
-                    }
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("负载趋势").font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Text("本次查看").font(.caption).foregroundStyle(.secondary)
+                }
+                if store.samples.count >= 2 {
                     Chart(store.samples) { sample in
                         if let cpu = sample.cpu {
                             LineMark(x: .value("时间", sample.date), y: .value("使用率", cpu))
-                                .foregroundStyle(by: .value("指标", "CPU"))
+                                .foregroundStyle(by: .value("指标", "CPU")).lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
                         }
                         if let memory = sample.memory {
                             LineMark(x: .value("时间", sample.date), y: .value("使用率", memory))
-                                .foregroundStyle(by: .value("指标", "内存"))
+                                .foregroundStyle(by: .value("指标", "内存")).lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
                         }
-                    }.chartYScale(domain: 0...100).chartForegroundStyleScale(["CPU": NASStyle.accent, "内存": Color.blue])
-                        .chartXAxis(.hidden).frame(height: 86)
-                }.monitorCard().accessibilityIdentifier("monitorTrend")
-            }
+                    }
+                    .chartYScale(domain: 0...100).chartForegroundStyleScale(["CPU": NASStyle.accent, "内存": Color.indigo])
+                    .chartXAxis(.hidden)
+                    .chartYAxis {
+                        AxisMarks(values: [0, 50, 100]) { value in
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3, 4])).foregroundStyle(NASStyle.outline)
+                            AxisValueLabel { if let number = value.as(Int.self) { Text("\(number)%").font(.caption2) } }
+                        }
+                    }
+                    .frame(height: 120)
+                } else {
+                    VStack(spacing: 8) {
+                        Image(systemName: "waveform.path").font(.title2).foregroundStyle(NASStyle.accent)
+                        Text("再次刷新后显示趋势").font(.caption).foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity).frame(height: 120)
+                }
+            }.monitorCard().accessibilityIdentifier("monitorTrend")
         }
     }
     private func percentageCard(_ title: String, value: Double?, symbol: String, subtitle: String, identifier: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Label(title, systemImage: symbol).font(.caption.weight(.medium)).foregroundStyle(.secondary)
-            Text(NASMonitorFormat.percent(value)).font(.system(size: 30, weight: .semibold, design: .rounded)).monospacedDigit()
+            Text(NASMonitorFormat.percent(value)).font(.system(size: 30, weight: .semibold)).monospacedDigit()
                 .accessibilityIdentifier(identifier)
             ProgressView(value: value ?? 0, total: 100).tint(NASStyle.accent).opacity(value == nil ? 0 : 1).accessibilityHidden(true)
             Text(subtitle).font(.caption2).foregroundStyle(.secondary)
@@ -233,41 +271,57 @@ struct NASMonitorView: View {
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
     private func storageSection(_ storage: NASStorageStatus) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("存储空间").font(.subheadline.weight(.semibold)).padding(.top, 4)
-            if storage.volumes.isEmpty {
-                Text(storage.volumesReported ? "未返回存储空间" : "NAS 未提供存储空间数据").font(.caption).foregroundStyle(.secondary)
-            }
-            ForEach(storage.volumes) { volume in
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text(volume.id.replacingOccurrences(of: "volume_", with: "存储空间 ")).font(.subheadline.weight(.semibold))
-                        Spacer()
-                        healthLabel(volume.health, raw: volume.rawStatus)
-                    }
-                    if let fraction = volume.fraction {
-                        ProgressView(value: fraction).tint(volume.lowSpace ? .orange : NASStyle.accent)
-                        Text(NASMonitorFormat.bytes(volume.used) + " / " + NASMonitorFormat.bytes(volume.total) + " · " + NASMonitorFormat.percent(fraction * 100))
-                            .font(.caption).foregroundStyle(.secondary)
-                    } else { Text("容量信息不可用").font(.caption).foregroundStyle(.secondary) }
-                    if volume.lowSpace { Label("已用空间达到 90%，建议清理", systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.orange) }
-                }.monitorCard().accessibilityIdentifier("monitorVolume_" + volume.id)
-            }
-            Text("硬盘健康").font(.subheadline.weight(.semibold)).padding(.top, 4)
-            if storage.disks.isEmpty {
-                Text(storage.disksReported ? "未返回硬盘信息" : "NAS 未提供硬盘数据").font(.caption).foregroundStyle(.secondary)
-            }
-            ForEach(storage.disks) { disk in
-                HStack(spacing: 10) {
-                    Image(systemName: "internaldrive").foregroundStyle(NASStyle.accent)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(disk.name).font(.subheadline.weight(.medium))
-                        healthLabel(disk.health, raw: disk.rawStatus)
-                    }
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("存储空间").font(.subheadline.weight(.semibold))
+                if storage.volumes.isEmpty {
+                    Text(storage.volumesReported ? "未返回存储空间" : "NAS 未提供存储空间数据").font(.caption).foregroundStyle(.secondary)
+                }
+                let volumes = storage.volumes.sorted { $0.id.localizedStandardCompare($1.id) == .orderedAscending }
+                ForEach(volumes) { volume in
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text(volume.id.replacingOccurrences(of: "volume_", with: "存储空间 ")).font(.subheadline.weight(.medium))
+                            Spacer()
+                            healthLabel(volume.health, raw: volume.rawStatus)
+                        }
+                        if let fraction = volume.fraction {
+                            ProgressView(value: fraction).tint(volume.lowSpace ? .orange : NASStyle.accent)
+                            HStack {
+                                Text(NASMonitorFormat.bytes(volume.used) + " / " + NASMonitorFormat.bytes(volume.total))
+                                Spacer()
+                                Text(NASMonitorFormat.percent(fraction * 100)).monospacedDigit()
+                            }.font(.caption).foregroundStyle(.secondary)
+                        } else { Text("容量信息不可用").font(.caption).foregroundStyle(.secondary) }
+                        if volume.lowSpace { Label("已用空间达到 90%，建议清理", systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.orange) }
+                    }.accessibilityIdentifier("monitorVolume_" + volume.id)
+                    if volume.id != volumes.last?.id { Divider() }
+                }
+            }.monitorCard()
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("硬盘健康").font(.subheadline.weight(.semibold))
                     Spacer()
-                    Text(disk.temperature.map { String(format: "%.0f°C", $0) } ?? "—").font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
-                }.monitorCard().accessibilityIdentifier("monitorDisk_" + disk.id)
-            }
+                    Text("\(storage.disks.count) 块").font(.caption).foregroundStyle(.secondary)
+                }
+                if storage.disks.isEmpty {
+                    Text(storage.disksReported ? "未返回硬盘信息" : "NAS 未提供硬盘数据").font(.caption).foregroundStyle(.secondary)
+                }
+                let disks = storage.disks.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+                ForEach(disks) { disk in
+                    HStack(spacing: 10) {
+                        Image(systemName: "internaldrive").foregroundStyle(NASStyle.accent).frame(width: 26)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(disk.name).font(.subheadline.weight(.medium))
+                            healthLabel(disk.health, raw: disk.rawStatus)
+                        }
+                        Spacer()
+                        Text(disk.temperature.map { String(format: "%.0f°C", $0) } ?? "—")
+                            .font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
+                    }.padding(.vertical, 4).accessibilityIdentifier("monitorDisk_" + disk.id)
+                    if disk.id != disks.last?.id { Divider().padding(.leading, 36) }
+                }
+            }.monitorCard()
         }
     }
     private func healthLabel(_ health: NASHealth, raw: String?) -> some View {
@@ -278,7 +332,7 @@ struct NASMonitorView: View {
 
 private extension View {
     func monitorCard() -> some View {
-        padding(14).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+        padding(16).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
             .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
     }
 }

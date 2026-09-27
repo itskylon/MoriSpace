@@ -245,16 +245,19 @@ struct VideoPlaybackView: View {
                         ProgressView(model.preparing ? "正在准备视频…" : "正在缓冲…").padding(18).background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
                     }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                VStack(spacing: 14) {
+                VStack(spacing: 10) {
                     if let error = model.error {
                         Text(error).font(.subheadline).foregroundStyle(.red).accessibilityIdentifier("videoError")
                         Button("重试播放") { attempt = UUID() }.buttonStyle(.bordered)
                     } else {
-                        HStack(spacing: 38) {
-                            Button { model.jump(-15) } label: { Image(systemName: "gobackward.15") }.accessibilityLabel("后退15秒").accessibilityIdentifier("videoBack")
-                            Button { model.toggle() } label: { Image(systemName: model.playing ? "pause.fill" : "play.fill") }.accessibilityLabel(model.playing ? "暂停" : "播放").accessibilityIdentifier("videoToggle")
-                            Button { model.jump(15) } label: { Image(systemName: "goforward.15") }.accessibilityLabel("前进15秒").accessibilityIdentifier("videoForward")
-                        }.font(.title2).disabled(model.preparing || model.duration <= 0)
+                        HStack(spacing: 24) {
+                            Button { model.jump(-15) } label: { Image(systemName: "gobackward.15").frame(width: 44, height: 44) }.accessibilityLabel("后退15秒").accessibilityIdentifier("videoBack")
+                            Button { model.toggle() } label: {
+                                Image(systemName: model.playing ? "pause.fill" : "play.fill").frame(width: 48, height: 48)
+                                    .background(.white.opacity(0.12), in: Circle())
+                            }.accessibilityLabel(model.playing ? "暂停" : "播放").accessibilityIdentifier("videoToggle")
+                            Button { model.jump(15) } label: { Image(systemName: "goforward.15").frame(width: 44, height: 44) }.accessibilityLabel("前进15秒").accessibilityIdentifier("videoForward")
+                        }.font(.title3).buttonStyle(.plain).disabled(model.preparing || model.duration <= 0)
                         Text("\(time(model.elapsed)) / \(time(model.duration))").font(.caption.monospacedDigit())
                             .accessibilityIdentifier("videoElapsed").accessibilityValue(String(Int(model.elapsed)))
                     }
@@ -269,12 +272,12 @@ struct VideoPlaybackView: View {
                     }
                     if let progressError = model.progressError { Text(progressError).font(.caption).foregroundStyle(.orange) }
                     Text(selection.file.name).font(.footnote).foregroundStyle(.secondary).lineLimit(2)
-                }.padding(20)
+                }.frame(maxWidth: 640).padding(.horizontal, 20).padding(.vertical, 14)
             }.background(.black).preferredColorScheme(.dark)
                 .navigationTitle(selection.localURL == nil ? "在线播放" : "本地播放").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { model.stop(); dismiss() }.accessibilityIdentifier("closeVideo") } }
         }
-        .tint(.mint)
+        .tint(NASStyle.accent)
         .task(id: attempt) {
             var configuration = URLSessionConfiguration.ephemeral
             #if DEBUG && (targetEnvironment(simulator) || MORI_DESKTOP_QA)

@@ -44,12 +44,19 @@ struct NASPhotosHomeView: View {
                 NASBrowserView(client: client, isActive: isActive).id(app.connectionID)
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Image(systemName: "photo.stack").font(.system(size: 28, weight: .light)).foregroundStyle(NASStyle.accent)
+                                .frame(width: 56, height: 56).background(NASStyle.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 16))
+                            Text("群晖照片").font(.title2.weight(.semibold))
+                            Text("连接 NAS，浏览个人与共享照片。").font(.subheadline).foregroundStyle(.secondary)
+                        }
                         NASConnectionStatus(service: .photos)
                         Button { connect = true } label: {
                             NASActionLabel(title: app.hasSavedConnection ? "连接设置" : "连接群晖照片", subtitle: "Synology Photos", symbol: "photo.stack")
                         }.buttonStyle(.plain).accessibilityIdentifier("connectNAS")
-                    }.padding(.horizontal, 16).padding(.vertical, 12)
+                    }.padding(24).frame(maxWidth: 520, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .center).padding(.top, 24)
                 }.background(NASStyle.canvas)
             }
         }.sheet(isPresented: $connect) { NavigationStack { ConnectionView() }.desktopSheet() }
@@ -89,6 +96,8 @@ struct NASBrowserView: View {
     private var filteredFolders: [NASFolder] { store.folders.filter { query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) } }
     private var effectiveSpace: PhotoSpace { folder == nil ? space : initialSpace }
     @AppStorage("desktopThumbnailSize") private var thumbnailSize = 170.0
+    private var desktopLayout: Bool { AppPlatform.isMac || horizontalSizeClass == .regular }
+    private var contentInset: CGFloat { desktopLayout ? 24 : 16 }
     private var columns: [GridItem] {
         AppPlatform.isMac || horizontalSizeClass == .regular
             ? [GridItem(.adaptive(minimum: AppPlatform.isMac ? thumbnailSize : 160), spacing: 2)]
@@ -98,7 +107,7 @@ struct NASBrowserView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 browserControls
-                if showingSearch { searchField }
+                if showingSearch && !desktopLayout { searchField.padding(.horizontal, contentInset) }
                 if let error = store.error {
                     ErrorBanner(message: error).padding(.horizontal, 20)
                     Button("重试") { Task { await store.reset(client: client, space: effectiveSpace, folder: folder?.id) } }.buttonStyle(.bordered).padding(.horizontal, 20)
@@ -112,14 +121,15 @@ struct NASBrowserView: View {
                                 }.buttonStyle(.plain).accessibilityIdentifier("nasPhotoFolder_\(child.id)")
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, contentInset)
                     }.frame(height: folderRowHeight)
                 }
                 HStack {
-                    Text("\(filteredPhotos.count) 张照片").font(.caption.weight(.medium))
+                    Text(query.isEmpty ? "所有照片" : "搜索结果").font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                    Text("\(filteredPhotos.count)").font(.caption.monospacedDigit())
                     Spacer()
                     Text(query.isEmpty ? "最新优先" : "匹配已载入内容").font(.caption)
-                }.foregroundStyle(.secondary).padding(.horizontal, 16).padding(.top, 2)
+                }.foregroundStyle(.secondary).padding(.horizontal, contentInset).padding(.top, 4)
                 LazyVGrid(columns: columns, spacing: 2) {
                     ForEach(filteredPhotos) { photo in
                         Button { selected = photo } label: {
@@ -130,9 +140,10 @@ struct NASBrowserView: View {
                                         if photo.isVideo { Image(systemName: "video.fill").foregroundStyle(.white).shadow(radius: 2).padding(8) }
                                     }
                             }.aspectRatio(1, contentMode: .fit).clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: desktopLayout ? 5 : 0))
                         }.buttonStyle(.plain).accessibilityLabel(photo.filename).accessibilityIdentifier("nasPhotoCell")
                     }
-                }
+                }.padding(.horizontal, desktopLayout ? contentInset : 0)
                 if store.loading { ProgressView("正在读取 NAS…").frame(maxWidth: .infinity).padding(30) }
                 else if store.hasMore && store.error == nil {
                     Button("载入更多照片") { Task { await store.loadMore(client: client, space: effectiveSpace, folder: folder?.id) } }
@@ -142,7 +153,7 @@ struct NASBrowserView: View {
                     EmptyCard(icon: query.isEmpty ? "photo.on.rectangle" : "magnifyingglass", title: query.isEmpty ? "这个空间还没有照片" : "没有找到匹配内容", message: query.isEmpty ? "请检查 Photos 索引、空间选择和账号的访问权限。" : "搜索范围为已载入的照片与文件夹，可继续载入更多。")
                         .padding(.horizontal, 20)
                 }
-            }.padding(.top, 2).padding(.bottom, 12)
+            }.padding(.top, desktopLayout ? 10 : 2).padding(.bottom, 20)
         }.background(NASStyle.canvas)
             .workspaceNavigationTitle(folder?.title ?? "群晖", detail: folder != nil).navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -179,14 +190,15 @@ struct NASBrowserView: View {
             } else {
                 Text(effectiveSpace.title).font(.subheadline).foregroundStyle(.secondary)
             }
-            Spacer()
+            Spacer(minLength: 12)
+            if desktopLayout { searchField.frame(maxWidth: 260) }
             if AppPlatform.isMac {
-                Image(systemName: "square.grid.3x3").foregroundStyle(.secondary)
-                Slider(value: $thumbnailSize, in: 110...280).frame(width: 120).accessibilityLabel("缩略图大小")
+                Image(systemName: "square.grid.3x3").font(.caption).foregroundStyle(.secondary)
+                Slider(value: $thumbnailSize, in: 110...280).frame(width: 88).accessibilityLabel("缩略图大小")
                 Button { Task { await store.reset(client: client, space: effectiveSpace, folder: folder?.id) } } label: { Image(systemName: "arrow.clockwise") }
                     .keyboardShortcut("r").help("刷新照片 ⌘R").disabled(store.loading)
             }
-            Button {
+            if !desktopLayout { Button {
                 withAnimation(.easeOut(duration: 0.18)) {
                     showingSearch.toggle()
                     if !showingSearch { query = "" }
@@ -196,8 +208,8 @@ struct NASBrowserView: View {
                 Image(systemName: showingSearch ? "xmark" : "magnifyingglass")
                     .font(.system(size: 17, weight: .medium)).foregroundStyle(.primary)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
-            }.buttonStyle(.plain).accessibilityLabel(showingSearch ? "关闭搜索" : "搜索照片和文件夹").accessibilityIdentifier("toggleNASSearch")
-        }.padding(.leading, 16).padding(.trailing, 8)
+            }.buttonStyle(.plain).accessibilityLabel(showingSearch ? "关闭搜索" : "搜索照片和文件夹").accessibilityIdentifier("toggleNASSearch") }
+        }.buttonStyle(.borderless).padding(.leading, contentInset).padding(.trailing, desktopLayout ? contentInset : 8)
     }
 
     private var searchField: some View {
@@ -211,10 +223,9 @@ struct NASBrowserView: View {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
                     .buttonStyle(.plain).accessibilityLabel("清空搜索").accessibilityIdentifier("clearNASSearch")
             }
-        }.font(.subheadline).padding(12)
+        }.font(.subheadline).padding(.horizontal, 12).padding(.vertical, desktopLayout ? 9 : 11)
             .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 12))
             .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
-            .padding(.horizontal, 16)
     }
 }
 
@@ -259,7 +270,7 @@ struct NASDetailView: View {
                         Divider()
                         information.frame(width: 260)
                     }
-                } else { VStack(spacing: 16) { preview; information } }
+                } else { VStack(spacing: 0) { preview; Divider(); information } }
             }
             .navigationTitle(photo.filename).navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() }.keyboardShortcut(.cancelAction).disabled(saving) } }
@@ -270,14 +281,14 @@ struct NASDetailView: View {
     private var preview: some View {
         Group {
             if let image { ZoomableImage(image: image, onPrevious: { if index > 0 && !saving { photo = gallery[index - 1] } }, onNext: { if index + 1 < gallery.count && !saving { photo = gallery[index + 1] } }).id(photo.id) }
-            else if error == nil { ProgressView("正在加载预览…") }
-            else { Image(systemName: "photo.badge.exclamationmark").font(.largeTitle).foregroundStyle(.secondary) }
-        }.frame(maxWidth: .infinity, maxHeight: .infinity).background(.black.opacity(0.04))
+            else if error == nil { ProgressView("正在加载预览…").tint(.white).foregroundStyle(.white.opacity(0.8)) }
+            else { Image(systemName: "photo.badge.exclamationmark").font(.largeTitle).foregroundStyle(.white.opacity(0.6)) }
+        }.frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.black)
     }
     private var information: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: AppPlatform.isMac ? 18 : 12) {
             if AppPlatform.isMac { Spacer() }
-            Text(photo.filename).font(.headline).lineLimit(3)
+            if AppPlatform.isMac { Text(photo.filename).font(.headline).lineLimit(3) }
             if let date = photo.date { Text(date.formatted(date: .abbreviated, time: .omitted)).font(.caption).foregroundStyle(.secondary) }
             Text(PhotoFileSize.text(photo.filesize).map { (photo.isVideo ? "文件 " : "原图 ") + $0 } ?? "大小暂不可用")
                 .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("nasPhotoFileSize")
@@ -286,11 +297,11 @@ struct NASDetailView: View {
                     Button { photo = gallery[index - 1] } label: { Image(systemName: "chevron.left") }
                         .disabled(index == 0 || saving).keyboardShortcut(.leftArrow, modifiers: []).accessibilityIdentifier("previousNASPhoto").help("上一张 ←")
                     Spacer()
-                    Text("\(index + 1) / \(gallery.count)").font(.caption.monospacedDigit()).accessibilityIdentifier("nasPhotoPosition")
+                    Text("\(index + 1) / \(gallery.count)").font(.subheadline.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("nasPhotoPosition")
                     Spacer()
                     Button { photo = gallery[index + 1] } label: { Image(systemName: "chevron.right") }
                         .disabled(index >= gallery.count - 1 || saving).keyboardShortcut(.rightArrow, modifiers: []).accessibilityIdentifier("nextNASPhoto").help("下一张 →")
-                }
+                }.buttonStyle(.bordered).controlSize(.small)
             }
             if let error { ErrorBanner(message: error); Button("重新加载预览") { Task { await load() } } }
             if photo.isVideo { Text("这里显示视频封面，可在群晖文件中打开并播放原视频。").font(.footnote).foregroundStyle(.secondary) }
@@ -306,7 +317,7 @@ struct NASDetailView: View {
                 Text("双击或触控板缩放\n⌘ + / − 缩放 · ⌘ 0 适合窗口").font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 Spacer()
             }
-        }.padding(20)
+        }.padding(AppPlatform.isMac ? 24 : 16).background(NASStyle.surface)
     }
     private func load() async {
         error = nil
