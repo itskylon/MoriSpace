@@ -23,7 +23,7 @@ import XCTest
         ])
     }
     private func makeStore(allowsImport: Bool = true, reloadWidgets: @escaping () -> Void = {}) -> UsageStore {
-        UsageStore(cache: cache, allowsImport: allowsImport, now: { self.now }, useLocalHelper: false, reloadWidgets: reloadWidgets)
+        UsageStore(cache: cache, allowsImport: allowsImport, now: { self.now }, useLocalHelper: false, useRemoteSync: false, reloadWidgets: reloadWidgets)
     }
     private func importedFile(_ data: Data, name: String = "import.json") throws -> URL {
         let url = folder.appendingPathComponent(name)
@@ -146,7 +146,7 @@ import XCTest
     func testUnavailableSharedContainerRejectsImportWithoutDiscardingDisplayedData() async throws {
         let source = record()
         let input = try importedFile(source.encoded(now: now))
-        let store = UsageStore(cache: UsageWidgetCache(fileURL: nil), allowsImport: true, now: { self.now }, useLocalHelper: false, reloadWidgets: {})
+        let store = UsageStore(cache: UsageWidgetCache(fileURL: nil), allowsImport: true, now: { self.now }, useLocalHelper: false, useRemoteSync: false, reloadWidgets: {})
         let original = store.snapshot
         await store.importSnapshot(from: input)
         XCTAssertEqual(store.snapshot, original)
@@ -170,7 +170,7 @@ import XCTest
     func testLocalHelperSuccessWritesValidatedRecordWithoutChangingCollectorTimes() async throws {
         let source = record()
         var widgetReloads = 0
-        let store = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false,
+        let store = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false, useRemoteSync: false,
                                localReader: { source }, reloadWidgets: { widgetReloads += 1 })
         store.reload()
         await waitUntilIdle(store)
@@ -188,7 +188,7 @@ import XCTest
         let source = record()
         try cache.write(source, now: now)
         let originalBytes = try Data(contentsOf: XCTUnwrap(cache.fileURL))
-        let store = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false,
+        let store = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false, useRemoteSync: false,
                                localReader: { throw URLError(.cannotConnectToHost) }, reloadWidgets: {})
         store.reload()
         await waitUntilIdle(store)
@@ -201,7 +201,7 @@ import XCTest
         let source = record()
         try cache.write(source, now: now)
         for next in [UsageWidgetSnapshot.empty(.unavailable, now: now), record(fetchedAt: now.addingTimeInterval(60))] {
-            let store = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false,
+            let store = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false, useRemoteSync: false,
                                    localReader: { next }, reloadWidgets: {})
             store.reload()
             await waitUntilIdle(store)
@@ -213,7 +213,7 @@ import XCTest
 
     func testSupersededAndCancelledLocalResponsesCannotOverwriteLatestRecord() async throws {
         let reader = DeferredUsageReader()
-        let store = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false,
+        let store = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false, useRemoteSync: false,
                                localReader: { try await reader.read() }, reloadWidgets: {})
         store.reload()
         await reader.waitForRequests(1)
@@ -260,7 +260,7 @@ import XCTest
         XCTAssertEqual(store.snapshot, recent)
 
         let reader = DeferredUsageReader()
-        let concurrent = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false,
+        let concurrent = UsageStore(cache: cache, allowsImport: false, now: { self.now }, useLocalHelper: false, useRemoteSync: false,
                                     localReader: { try await reader.read() }, reloadWidgets: {})
         concurrent.reload()
         await reader.waitForRequests(1)
@@ -273,6 +273,145 @@ import XCTest
         XCTAssertEqual(concurrent.snapshot, latest)
     }
 
+    func testRemoteSwitchAcceptsDifferentSourcesOlderTimestampAndPollingCannotCancelConnection() async throws {
+        let previous = try remoteConfiguration("old")
+        let next = try remoteConfiguration("next")
+        let probe = UsageConfigurationProbe(previous)
+        let reader = DeferredUsageReader()
+        let oldRecord = record(fetchedAt: now.addingTimeInterval(-5), used: 12)
+        let nextRecord = record(fetchedAt: now.addingTimeInterval(-60), used: 87)
+        try cache.write(oldRecord, now: now)
+        let store = remoteStore(probe: probe) { configuration in
+            if configuration == previous { return oldRecord }
+            return try await reader.read()
+        }
+        store.reload(); await waitUntilIdle(store)
+        let input = try importedFile(next.encoded())
+        let connection = Task { await store.connectRemote(from: input) }
+        await reader.waitForRequests(1)
+        XCTAssertTrue(store.importing)
+        store.reload() // Scene activation and the foreground timer must not cancel provisioning.
+        reader.resolve(0, with: nextRecord)
+        let connected = await connection.value
+        XCTAssertTrue(connected)
+        XCTAssertEqual(probe.value, next)
+        XCTAssertEqual(store.remoteConfiguration, next)
+        XCTAssertEqual(store.snapshot, nextRecord)
+        XCTAssertEqual(cache.read(now: now), nextRecord)
+        XCTAssertNil(store.error)
+    }
+
+    func testFailedRemoteSaveRestoresOriginalCredentialAndQuota() async throws {
+        let previous = try remoteConfiguration("old")
+        let next = try remoteConfiguration("next")
+        let probe = UsageConfigurationProbe(previous)
+        probe.rejectedSave = next
+        let original = record(used: 12)
+        try cache.write(original, now: now)
+        let store = remoteStore(probe: probe) { configuration in
+            configuration == previous ? original : self.record(used: 87)
+        }
+        store.reload(); await waitUntilIdle(store)
+        let connected = await store.connectRemote(from: try importedFile(next.encoded()))
+        XCTAssertFalse(connected)
+        XCTAssertEqual(probe.value, previous)
+        XCTAssertEqual(store.remoteConfiguration, previous)
+        XCTAssertEqual(store.snapshot, original)
+        XCTAssertEqual(cache.read(now: now), original)
+        XCTAssertNotNil(store.error)
+    }
+
+    func testFailedRemoteDeleteRestoresQuotaAndConnectedState() async throws {
+        let configuration = try remoteConfiguration("old")
+        let probe = UsageConfigurationProbe(configuration)
+        probe.rejectDelete = true
+        let original = record()
+        try cache.write(original, now: now)
+        let store = remoteStore(probe: probe) { _ in original }
+        store.reload(); await waitUntilIdle(store)
+        store.disconnectRemote()
+        XCTAssertEqual(probe.value, configuration)
+        XCTAssertTrue(store.syncEnabled)
+        XCTAssertEqual(store.snapshot, original)
+        XCTAssertEqual(cache.read(now: now), original)
+        XCTAssertNotNil(store.error)
+    }
+
+    func testLateRemoteRefreshCannotRecreateCacheAfterDisconnect() async throws {
+        let probe = UsageConfigurationProbe(try remoteConfiguration("old"))
+        let reader = DeferredUsageReader()
+        try cache.write(record(), now: now)
+        let store = remoteStore(probe: probe) { _ in try await reader.read() }
+        store.reload(); await reader.waitForRequests(1)
+        store.disconnectRemote()
+        reader.resolve(0, with: record(fetchedAt: now, used: 99))
+        await reader.waitForCompletions(1)
+        await Task.yield()
+        XCTAssertNil(probe.value)
+        XCTAssertFalse(store.syncEnabled)
+        XCTAssertEqual(store.snapshot.status, .notConnected)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: try XCTUnwrap(cache.fileURL).path))
+        XCTAssertNil(store.error)
+    }
+
+    func testPendingConnectionPreservesCancelledAndReplacedFilesAndDeletesOnlyConsumedFile() async throws {
+        let previous = try remoteConfiguration("old")
+        let next = try remoteConfiguration("next")
+        let later = try remoteConfiguration("later")
+        let probe = UsageConfigurationProbe(previous)
+        let reader = DeferredUsageReader()
+        let input = try importedFile(next.encoded(), name: "connection.json")
+        let store = remoteStore(probe: probe, pending: input) { _ in try await reader.read() }
+        let cancelled = Task { await store.connectPendingRemote() }
+        await reader.waitForRequests(1)
+        store.cancelRefresh()
+        reader.resolve(0, with: record())
+        await cancelled.value
+        XCTAssertEqual(try Data(contentsOf: input), try next.encoded())
+        XCTAssertEqual(probe.value, previous)
+
+        let replaced = Task { await store.connectPendingRemote() }
+        await reader.waitForRequests(2)
+        try later.encoded().write(to: input, options: .atomic)
+        reader.resolve(1, with: record(used: 65))
+        await replaced.value
+        XCTAssertEqual(probe.value, next)
+        XCTAssertEqual(try Data(contentsOf: input), try later.encoded())
+
+        let consumed = Task { await store.connectPendingRemote() }
+        await reader.waitForRequests(3)
+        reader.resolve(2, with: record(used: 66))
+        await consumed.value
+        XCTAssertEqual(probe.value, later)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: input.path))
+        XCTAssertNil(store.error)
+    }
+
+    func testOfflineImportCannotReplaceAnEnabledRemoteSource() async throws {
+        let probe = UsageConfigurationProbe(try remoteConfiguration("old"))
+        let original = record()
+        try cache.write(original, now: now)
+        let store = remoteStore(probe: probe) { _ in original }
+        store.reload(); await waitUntilIdle(store)
+        await store.importSnapshot(from: try importedFile(record(fetchedAt: now, used: 99).encoded(now: now)))
+        XCTAssertEqual(store.snapshot, original)
+        XCTAssertEqual(cache.read(now: now), original)
+        XCTAssertTrue(store.syncEnabled)
+        XCTAssertNotNil(store.error)
+    }
+
+    private func remoteConfiguration(_ path: String) throws -> UsageRemoteConfiguration {
+        try UsageRemoteConfiguration(baseURL: "https://example.invalid/" + path, readToken: String(repeating: "ab", count: 32))
+    }
+
+    private func remoteStore(probe: UsageConfigurationProbe, pending: URL? = nil,
+                             fetch: @escaping (UsageRemoteConfiguration) async throws -> UsageWidgetSnapshot) -> UsageStore {
+        UsageStore(cache: cache, allowsImport: true, now: { self.now }, useLocalHelper: false, useRemoteSync: true,
+                   configurationLoad: { probe.value }, configurationSave: { try probe.save($0) },
+                   configurationDelete: { try probe.delete() }, remoteFetch: fetch,
+                   pendingConfigurationURL: pending, reloadWidgets: {})
+    }
+
     private func waitUntilIdle(_ store: UsageStore) async {
         for _ in 0..<1_000 {
             if !store.refreshing { return }
@@ -281,6 +420,21 @@ import XCTest
         XCTFail("Local reader did not finish")
     }
 
+}
+
+@MainActor private final class UsageConfigurationProbe {
+    var value: UsageRemoteConfiguration?
+    var rejectedSave: UsageRemoteConfiguration?
+    var rejectDelete = false
+    init(_ value: UsageRemoteConfiguration?) { self.value = value }
+    func save(_ configuration: UsageRemoteConfiguration) throws {
+        if configuration == rejectedSave { throw CocoaError(.fileWriteUnknown) }
+        value = configuration
+    }
+    func delete() throws {
+        if rejectDelete { throw CocoaError(.fileWriteUnknown) }
+        value = nil
+    }
 }
 
 

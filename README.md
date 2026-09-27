@@ -2,7 +2,7 @@
 
 自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、OneDrive 文件、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口与 Microsoft Graph，没有第三方运行时 SDK，也不通过中转服务器传输照片和文件。
 
-当前版本：**0.18.0（30）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+当前版本：**0.19.0（31）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
 
 ## Codex 额度小组件
 
@@ -20,7 +20,20 @@ bash Scripts/install-codex-usage-helper.sh \
 
 助手作为当前用户的 LaunchAgent 运行，约每 5 分钟采集一次；Mac 休眠、退出登录或无法联网时无法保证采集。应用前台额度页每 15 秒读取助手的已有记录，刷新按钮只重新读取记录。Mac 小组件可独立读取助手，不要求森空间主程序常驻。小组件刷新由 WidgetKit 调度，不能保证固定间隔。读取失败保留上次记录；超过 15 分钟或到达重置时间会显示「待更新」，不会自行把剩余量重置成 100%。未提供的窗口、百分比和重置时间会明确显示缺失，不按零处理。
 
-**iPhone / iPad 当前支持导入记录，尚未接入自动跨设备同步。** 在 Mac 额度页导出 JSON 文件，通过自己的文件传输方式送到手机，再在手机额度页点「导入额度记录」。采集时间保持原样，过期记录仍标为待更新。Mac 的 App Group 不会自动同步到 iPhone，也不会复制 Codex 登录凭据到手机。
+**iPhone / iPad 支持通过自己的 HTTPS 中转自动同步，在移动网络也能读取。** Mac 助手每次成功采集后，可将剩余比例、周期、重置时间和采集时间上传到中转。手机和小组件使用独立的只读凭证拉取，不传输 Codex 登录凭据、聊天记录、照片或文件。中转只保留最新一份额度摘要；未配置中转时继续仅本机读取。
+
+中转部署见 [Server/usage-relay/README.md](Server/usage-relay/README.md)。服务端写入凭证与手机读取凭证必须分别生成；实际地址和凭证放在仓库外的私有配置文件，不提交 Git。先安装上述读取助手，再配置上传：
+
+```sh
+bash Scripts/configure-codex-usage-relay.sh \
+  --config-file /absolute/private/helper-relay.json
+```
+
+Mac 配置为 `version`、`baseURL`、`writeToken` 三个字段；`version` 为 `1`，`baseURL` 是受信任的 HTTPS 地址，`writeToken` 是服务端生成的 64 位小写十六进制写入凭证。文件必须归当前用户所有且权限为 `0600`。脚本校验后保存到助手自己的目录并重启助手，不修改 Codex 登录。
+
+在手机「设置 → Codex 额度 → 连接自动同步」选择只含 `version`、`baseURL`、`readToken` 的连接 JSON，首次验证成功后保存在应用与小组件共享的设备钥匙串中。更换或断开连接会清除旧来源的额度缓存；迟到的旧请求不能覆盖新来源。开发安装也可将同一私有文件复制到应用 Documents 的 `MoriSpace-Usage-Connection.json`，再打开 `morispace://usage/connect`，导入成功后删除临时文件；链接本身不携带凭证。
+
+手机额度页在前台时每 15 秒读取中转，小组件也可独立访问中转，不要求主应用常驻。**采集约每 5 分钟一次，小组件刷新由 WidgetKit 安排，并非秒级实时。** Mac 休眠或断网时仍显示上次记录及真实采集时间，过期后标为「待更新」。HTTPS 或鉴权失败不会跳过证书校验，也不会把旧记录当成新数据。手机离线导入 JSON 作为未开启自动同步时的备用入口，原采集时间保持不变。
 
 停止并移除本机读取助手：
 
@@ -30,7 +43,7 @@ bash Scripts/uninstall-codex-usage-helper.sh
 
 此操作保留 Codex 登录和森空间的其他数据；旧额度记录会按原采集时间过期。
 
-验证：36 项助手测试、32 项 Swift 单元测试，以及 2 项 iPhone / 1 项 iPad 界面测试通过；iPhone 与 Mac Release 构建及签名校验通过。Mac 已安装并验证真实 Codex 额度读取；iPhone 模拟器验证小组件库、桌面显示和点击进入详情，iPad 验证横屏布局。模拟器数值为隔离测试数据。Mac 桌面小组件实际添加仍待人工验收；iPhone 真机已重试覆盖安装并启动，设备回读版本为 0.18.0（30），系统小组件列表仍待用户核对。
+验证：50 项助手测试、25 项中转测试、47 项 Swift 单元测试，以及 2 项 iPhone / 1 项 iPad 界面测试通过；iPhone 与 Mac Release 构建及签名校验通过。Mac 已覆盖安装 0.19.0（31）并验证真实额度读取；HTTPS 中转已验证公信证书、真实摘要上传／读取、未授权读取拒绝和只读凭证不能写入。iPhone 模拟器验证小组件库、桌面显示和点击详情，iPad 验证横屏；这些界面测试使用隔离数据。iPhone 真机已覆盖安装 0.19.0，首次自动同步仍待解锁后验证；真机小组件的后台刷新时机不在测试保证范围内。
 
 ## 0.17.1 连接等待修复
 
@@ -116,6 +129,8 @@ xcodegen generate
 
 Mac 启用了沙盒、网络客户端、照片图库、日历和用户选择文件访问权限；钥匙串访问需要有效的开发签名。个人开发签名并非可通用分发的公证安装包。本仓库不包含证书、描述文件和开发团队配置。
 
+iOS 主应用和小组件还需共享 `MORI_USAGE_KEYCHAIN_GROUP` 所指定的额度只读凭证访问组；默认钥匙串组保留，用于兼容原有 NAS 登录。
+
 iOS App Group 默认为 `group.dev.kylon.MoriPhotos.calendar`；换用自己的 bundle identifier 时，也需同时修改两份 iOS entitlements 及 `MORI_CALENDAR_APP_GROUP`。Mac 使用 `$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar`。模拟器验证主应用与小组件共享日程时应保留默认的本地签名，不要设置 `CODE_SIGNING_ALLOWED=NO`。
 
 ## 连接群晖
@@ -172,7 +187,8 @@ OneDrive 验证通过 32 项相关单元测试，覆盖 PKCE／回调验证、�
 | `MoriPhotosUITests/` | iPhone / iPad 界面测试 |
 | `MoriPhotosMacUITests/` | Mac 界面测试入口 |
 | `Branding/` | 应用图标原稿与设计说明 |
-| `Scripts/` | 图标处理、合成视频测试工具 |
+| `Scripts/` | 图标处理、合成视频测试与 Codex 额度采集助手 |
+| `Server/usage-relay/` | 只保存最新额度摘要的 HTTPS 中转后端 |
 | `project.yml` | XcodeGen 工程配置 |
 
 工程及 bundle identifier 继续使用 `MoriPhotos`，以保持已有安装、钥匙串和本机数据的升级兼容。

@@ -17,12 +17,17 @@ from pathlib import Path
 import re
 import selectors
 import signal
+import ssl
+import stat
 import subprocess
 import sys
 import tempfile
 import threading
 import time
 import unicodedata
+import urllib.error
+import urllib.parse
+import urllib.request
 
 SNAPSHOT_NAME = "usage-widget-v1.json"
 MAX_AGE = 900
@@ -35,6 +40,11 @@ COLLECTION_INTERVAL = 300
 MAX_REQUEST_BYTES = 16_384
 MAX_REQUESTS_PER_MINUTE = 120
 ID_PATTERN = re.compile(r"[A-Za-z0-9_.-]{1,128}\Z")
+RELAY_CONFIG_NAME = "relay-config.json"
+RELAY_CONFIG_MAX_BYTES = 8192
+RELAY_MAX_BYTES = 65_536
+RELAY_RESPONSE_MAX_BYTES = 8192
+RELAY_TIMEOUT = 8.0
 
 
 class UsageError(Exception):
@@ -314,7 +324,139 @@ def read_limits(codex, timeout=DEFAULT_TIMEOUT, cancel_event=None):
             stop_process(process, grace)
 
 
-def run_once(codex, output, timeout=DEFAULT_TIMEOUT, reader=read_limits, clock=time.time, cancel_event=None):
+def validate_relay_config(value):
+    """Only an explicit HTTPS endpoint and a separate write-only token are accepted."""
+    if (not isinstance(value, dict) or set(value) != {"version", "baseURL", "writeToken"}
+            or type(value["version"]) is not int or value["version"] != 1
+            or not isinstance(value["writeToken"], str)
+            or not re.fullmatch(r"[0-9a-fA-F]{64}", value["writeToken"])):
+        raise UsageError("relay-config-invalid")
+    base = value["baseURL"]
+    if (not isinstance(base, str) or not 1 <= len(base) <= 2048
+            or any(character.isspace() or ord(character) < 32 for character in base)
+            or any(character in base for character in "\\?#")):
+        raise UsageError("relay-config-invalid")
+    try:
+        parts = urllib.parse.urlsplit(base)
+        if (parts.scheme != "https" or not parts.hostname or parts.username is not None
+                or parts.password is not None or parts.query or parts.fragment
+                or (parts.port is not None and not 1 <= parts.port <= 65535)
+                or not re.fullmatch(r"[A-Za-z0-9.:-]+", parts.hostname)
+                or parts.netloc.endswith(":")):
+            raise ValueError()
+        prefix = parts.path.rstrip("/")
+        if (parts.path not in {"", "/"} and ("//" in parts.path
+                or not re.fullmatch(r"(?:/[A-Za-z0-9._~-]+)+/?", parts.path)
+                or any(segment in {".", ".."} for segment in prefix.split("/")))):
+            raise ValueError()
+    except (ValueError, TypeError):
+        raise UsageError("relay-config-invalid") from None
+    return {"version": 1, "baseURL": urllib.parse.urlunsplit(("https", parts.netloc, prefix, "", "")),
+            "writeToken": value["writeToken"]}
+
+
+def read_relay_config(path=None, required=False):
+    """Opt-in config lives beside the installed helper, never in the App Group."""
+    path = Path(__file__).absolute().with_name(RELAY_CONFIG_NAME) if path is None else Path(path)
+    descriptor = None
+    try:
+        if not path.is_absolute() or path.resolve() != path:
+            raise UsageError("relay-config-invalid")
+        try:
+            metadata = path.lstat()
+        except FileNotFoundError:
+            if not required:
+                return None
+            raise UsageError("relay-config-invalid") from None
+        parent = path.parent.stat()
+        if (not stat.S_ISDIR(parent.st_mode) or parent.st_uid != os.getuid() or parent.st_mode & 0o022
+                or not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid()
+                or stat.S_IMODE(metadata.st_mode) != 0o600 or metadata.st_size > RELAY_CONFIG_MAX_BYTES):
+            raise UsageError("relay-config-invalid")
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        opened = os.fstat(descriptor)
+        if (not stat.S_ISREG(opened.st_mode) or opened.st_uid != os.getuid()
+                or stat.S_IMODE(opened.st_mode) != 0o600 or opened.st_size > RELAY_CONFIG_MAX_BYTES):
+            raise UsageError("relay-config-invalid")
+        with os.fdopen(descriptor, "rb") as handle:
+            descriptor = None
+            data = handle.read(RELAY_CONFIG_MAX_BYTES + 1)
+        if len(data) > RELAY_CONFIG_MAX_BYTES:
+            raise UsageError("relay-config-invalid")
+        return validate_relay_config(json.loads(data))
+    except (OSError, ValueError, UnicodeDecodeError):
+        raise UsageError("relay-config-invalid") from None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+class NoRelayRedirect(urllib.request.HTTPRedirectHandler):
+    def http_error_301(self, request, response, code, message, headers):
+        response.close()
+        raise UsageError("relay-redirect-rejected")
+
+    http_error_302 = http_error_301
+    http_error_303 = http_error_301
+    http_error_307 = http_error_301
+    http_error_308 = http_error_301
+
+
+def relay_opener():
+    # Use the default trust store and hostname validation. No ambient proxy,
+    # insecure context, or redirects can divert the write token.
+    return urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRelayRedirect(),
+                                      urllib.request.HTTPSHandler(context=ssl.create_default_context()))
+
+
+def upload_snapshot(snapshot, config, now=None, opener=None):
+    """Send only our validated quota whitelist; discard every bounded response."""
+    now = time.time() if now is None else now
+    config = validate_relay_config(config)
+    if not valid_snapshot(snapshot, now):
+        raise UsageError("relay-data-invalid")
+    data = json.dumps(snapshot, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode()
+    if len(data) > RELAY_MAX_BYTES:
+        raise UsageError("relay-data-too-large")
+    request = urllib.request.Request(config["baseURL"] + "/v1/usage", data=data, method="PUT", headers={
+        "Authorization": "Bearer " + config["writeToken"], "Content-Type": "application/json",
+        "Accept": "application/json", "Connection": "close", "User-Agent": "MoriUsage/1"})
+    deadline = time.monotonic() + RELAY_TIMEOUT
+    try:
+        with (relay_opener() if opener is None else opener).open(request, timeout=RELAY_TIMEOUT) as response:
+            if not 200 <= response.status < 300:
+                raise UsageError("relay-http-failed")
+            length = response.headers.get("Content-Length")
+            if length is not None and (not length.isascii() or not length.isdigit()
+                                       or len(length) > 10 or int(length) > RELAY_RESPONSE_MAX_BYTES):
+                raise UsageError("relay-response-too-large")
+            received = 0
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise UsageError("relay-timeout")
+                # read1 avoids waiting for the complete declared body and lets a
+                # drip-fed body be checked against the deadline after each read.
+                connection = getattr(getattr(getattr(response, "fp", None), "raw", None), "_sock", None)
+                if connection is not None:
+                    connection.settimeout(remaining)
+                chunk = response.read1(min(4096, RELAY_RESPONSE_MAX_BYTES + 1 - received))
+                received += len(chunk)
+                if received > RELAY_RESPONSE_MAX_BYTES:
+                    raise UsageError("relay-response-too-large")
+                if not chunk:
+                    break
+    except urllib.error.HTTPError as error:
+        error.close()
+        raise UsageError("relay-http-failed") from None
+    except TimeoutError:
+        raise UsageError("relay-timeout") from None
+    except (urllib.error.URLError, OSError, http.client.HTTPException):
+        raise UsageError("relay-network-failed") from None
+
+
+def run_once(codex, output, timeout=DEFAULT_TIMEOUT, reader=read_limits, clock=time.time, cancel_event=None,
+             relay_loader=read_relay_config, uploader=upload_snapshot):
     output = validate_output(output)
     try:
         upstream = reader(codex, timeout=timeout)
@@ -323,10 +465,20 @@ def run_once(codex, output, timeout=DEFAULT_TIMEOUT, reader=read_limits, clock=t
         fetched = clock()
         snapshot = parse_rate_limits(upstream, fetched, now=fetched)
         atomic_write(output, snapshot)
-        return None
     except UsageError as error:
         preserve_or_unavailable(output, clock())
         return error.category
+    # Cloud failure never changes this successful local reading. No config means
+    # no outbound upload; the next successful collection retries the latest data.
+    try:
+        config = relay_loader()
+        if config is not None:
+            if cancel_event is not None and cancel_event.is_set():
+                return "cancelled"
+            uploader(snapshot, config, now=fetched)
+    except UsageError as error:
+        return error.category
+    return None
 
 
 def cached_snapshot(output, now=None):

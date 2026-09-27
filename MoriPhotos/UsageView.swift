@@ -5,6 +5,7 @@ struct UsageView: View {
     @EnvironmentObject private var usage: UsageStore
     @Environment(\.scenePhase) private var scenePhase
     @State private var showImporter = false
+    @State private var importingConnection = false
     @State private var showExporter = false
     @State private var exportDocument: UsageRecordDocument?
 
@@ -37,7 +38,12 @@ struct UsageView: View {
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json], allowsMultipleSelection: false) { result in
             switch result {
             case .success(let urls):
-                if let url = urls.first { Task { await usage.importSnapshot(from: url) } }
+                if let url = urls.first {
+                    Task {
+                        if importingConnection { await usage.connectRemote(from: url) }
+                        else { await usage.importSnapshot(from: url) }
+                    }
+                }
             case .failure:
                 usage.reportFileError("未能读取所选文件，请重新选择额度 JSON 记录。")
             }
@@ -46,10 +52,10 @@ struct UsageView: View {
             if case .failure = result { usage.reportFileError("额度记录未能导出，请重新选择保存位置。") }
         }
         .onDisappear { usage.cancelRefresh() }
-        .task(id: scenePhase) {
+        .task(id: "\(scenePhase)-\(usage.syncEnabled)") {
             guard scenePhase == .active else { usage.cancelRefresh(); return }
             usage.reload()
-            guard AppPlatform.isMac else { return }
+            guard AppPlatform.isMac || usage.syncEnabled else { return }
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(15)) } catch { break }
                 guard !Task.isCancelled else { break }
@@ -89,7 +95,7 @@ struct UsageView: View {
         if usage.snapshot.windows.isEmpty { return "尚无额度记录" }
         if usage.snapshot.status != .ready { return "采集暂不可用 · 保留上次记录" }
         if usage.snapshot.isStale(at: date) { return "记录已过期" }
-        return AppPlatform.isMac ? "本机采集记录" : "导入记录 · 非实时同步"
+        return AppPlatform.isMac ? "本机采集记录" : (usage.syncEnabled ? "外网自动同步已连接" : "导入记录 · 非实时同步")
     }
 
     private func windowPanel(_ window: UsageWidgetWindow, at date: Date) -> some View {
@@ -140,7 +146,7 @@ struct UsageView: View {
             Text("先带入一份额度记录").font(.title2.weight(.bold))
             Text(AppPlatform.isMac
                  ? "请在本机 Codex 完成登录，并启用森空间读取助手。助手生成记录后，这里会自动显示。"
-                 : "尚未配置手机自动同步。可以导入 Mac 导出的额度记录，查看采集时的剩余额度。")
+                 : "连接同步服务后，手机和小组件会自动获取 Mac 采集的额度。只需配置一次。")
                 .font(.subheadline).foregroundStyle(.secondary)
         }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 22))
@@ -158,15 +164,31 @@ struct UsageView: View {
                     .buttonStyle(.plain).foregroundStyle(NASStyle.accent).disabled(usage.snapshot.windows.isEmpty)
                     .accessibilityIdentifier("usageExport")
             } else {
-                Text("导入记录，非实时同步。额度变化后需要重新从 Mac 导出并导入；导入不会修改原始采集时间。")
+                if usage.syncEnabled {
+                    Label("自动同步已连接", systemImage: "checkmark.shield.fill")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(NASStyle.accent)
+                        .accessibilityIdentifier("usageSyncConnected")
+                    if let host = usage.syncHost { Text(host).font(.caption).foregroundStyle(.secondary) }
+                }
+                Text(usage.syncEnabled
+                     ? "Mac 约每 5 分钟采集并上传；此页打开时每 15 秒获取一次最新记录。Mac 休眠或离线时保留上次数据。"
+                     : "导入一次连接文件，即可通过 HTTPS 在 Wi-Fi 和移动网络下自动同步。连接文件只包含额度服务的只读凭据。")
                     .font(.caption).foregroundStyle(.secondary)
-                Button { showImporter = true } label: {
+                Button { importingConnection = true; showImporter = true } label: {
                     HStack(spacing: 8) {
                         if usage.importing { ProgressView() }
-                        Label(usage.importing ? "正在导入…" : "导入额度记录", systemImage: "square.and.arrow.down")
+                        Label(usage.importing ? "正在验证连接…" : (usage.syncEnabled ? "更换同步连接" : "连接自动同步"), systemImage: "arrow.triangle.2.circlepath")
                     }.font(.subheadline.weight(.semibold)).padding(.horizontal, 16).frame(minHeight: 44)
                         .foregroundStyle(NASStyle.ink).background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
-                }.buttonStyle(.plain).disabled(usage.importing || usage.isFixture).accessibilityIdentifier("usageImport")
+                }.buttonStyle(.plain).disabled(usage.importing || usage.isFixture).accessibilityIdentifier("usageConnectSync")
+                if usage.syncEnabled {
+                    Button("停止此设备同步", role: .destructive) { usage.disconnectRemote() }
+                        .font(.caption).disabled(usage.importing).accessibilityIdentifier("usageDisconnectSync")
+                } else {
+                    Button { importingConnection = false; showImporter = true } label: {
+                        Label("或导入离线额度记录", systemImage: "square.and.arrow.down")
+                    }.font(.caption).disabled(usage.importing || usage.isFixture).accessibilityIdentifier("usageImport")
+                }
             }
             Text("小组件显示同一份记录，刷新时机由系统安排。")
                 .font(.caption).foregroundStyle(.secondary)

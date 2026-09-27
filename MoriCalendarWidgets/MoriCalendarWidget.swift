@@ -104,7 +104,17 @@ struct MoriUsageTimeline: TimelineProvider {
             completion(timeline())
         }
         #else
-        completion(timeline())
+        Task {
+            if let configuration = try? UsageRemoteKeychain.load(),
+               let fresh = try? await UsageRemoteClient.fetch(configuration: configuration),
+               fresh.status == .ready {
+                try? UsageRemoteTransaction.withLock {
+                    guard try UsageRemoteKeychain.load() == configuration else { return }
+                    try UsageWidgetCache.shared.write(fresh)
+                }
+            }
+            completion(timeline())
+        }
         #endif
     }
     private func timeline() -> Timeline<MoriUsageEntry> {

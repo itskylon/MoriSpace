@@ -57,6 +57,11 @@ struct MoriPhotosApp: App {
                 .desktopSheet(width: 660, height: 680)
             }
             .onOpenURL { url in
+                if UsageWidgetRoute.matchesConnection(url) {
+                    showUsage = true
+                    Task { await usage.connectPendingRemote() }
+                    return
+                }
                 if UsageWidgetRoute.matches(url) {
                     usage.reload(); showUsage = true
                     return

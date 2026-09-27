@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>MoriCalendarAppGroup</key>
 	<string>$(MORI_CALENDAR_APP_GROUP)</string>
+	<key>MoriUsageKeychainGroup</key>
+	<string>$(MORI_USAGE_KEYCHAIN_GROUP)</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>

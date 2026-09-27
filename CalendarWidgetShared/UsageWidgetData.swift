@@ -215,6 +215,16 @@ struct UsageWidgetCache {
         return snapshot
     }
 
+    func remove() throws {
+        guard let fileURL else { throw UsageWidgetError.unavailableContainer }
+        let descriptor = open(fileURL.appendingPathExtension("lock").path, O_CREAT | O_RDWR | O_NOFOLLOW, S_IRUSR | S_IWUSR)
+        guard descriptor >= 0 else { throw CocoaError(.fileWriteUnknown) }
+        defer { close(descriptor) }
+        guard flock(descriptor, LOCK_EX) == 0 else { throw CocoaError(.fileWriteUnknown) }
+        defer { _ = flock(descriptor, LOCK_UN) }
+        if FileManager.default.fileExists(atPath: fileURL.path) { try FileManager.default.removeItem(at: fileURL) }
+    }
+
     private func readValidated(now: Date) throws -> UsageWidgetSnapshot {
         guard let fileURL else { throw UsageWidgetError.unavailableContainer }
         let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
@@ -231,6 +241,10 @@ struct UsageWidgetCache {
 
 enum UsageWidgetRoute {
     static let url = URL(string: "morispace://usage")!
+    static func matchesConnection(_ url: URL) -> Bool {
+        guard url == URL(string: "morispace://usage/connect") else { return false }
+        return true
+    }
     static func matches(_ url: URL) -> Bool {
         guard let parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return false }
         return parts.scheme == "morispace" && parts.host == "usage" && parts.user == nil && parts.password == nil

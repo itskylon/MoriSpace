@@ -6,8 +6,10 @@ import io
 import json
 import os
 from pathlib import Path
+import plistlib
 import signal
 import socket
+import ssl
 import stat
 import subprocess
 import sys
@@ -15,6 +17,7 @@ import tempfile
 import threading
 import time
 import unittest
+import urllib.response
 from unittest import mock
 
 SOURCE = Path(__file__).with_name("codex-usage-helper.py").resolve()
@@ -279,6 +282,256 @@ while True: time.sleep(1)
             with self.assertRaises(ProcessLookupError): os.kill(int(pid_file.read_text()), 0)
         finally:
             if process.poll() is None: process.kill(); process.wait()
+
+
+class UsageRelayTests(UsageHelperFixtures):
+    def setUp(self):
+        super().setUp()
+        self.config = {"version": 1, "baseURL": "https://relay.example.invalid/mori", "writeToken": "a" * 64}
+        self.config_path = self.directory / helper.RELAY_CONFIG_NAME
+
+    def write_config(self, value=None, mode=0o600):
+        if self.config_path.exists():
+            self.config_path.chmod(0o600)
+        self.config_path.write_text(json.dumps(self.config if value is None else value))
+        self.config_path.chmod(mode)
+        return self.config_path
+
+    def reply(self, body=b"", status=204, headers=None):
+        result = io.BytesIO(body)
+        result.status = status
+        result.headers = {} if headers is None else headers
+        return result
+
+    def upload(self, reply=None, error=None, snapshot=None):
+        opener = mock.Mock()
+        opener.open.side_effect = error
+        opener.open.return_value = self.reply() if reply is None else reply
+        helper.upload_snapshot(self.parse(response(limits())) if snapshot is None else snapshot,
+                               self.config, now=NOW, opener=opener)
+        return opener
+
+    def test_absent_configuration_is_opt_in_and_never_uploads(self):
+        self.assertIsNone(helper.read_relay_config(self.config_path))
+        upload = mock.Mock()
+        self.assertIsNone(helper.run_once("unused", self.output, reader=lambda *a, **kw: response(limits()),
+                                         clock=lambda: NOW, relay_loader=lambda: None, uploader=upload))
+        upload.assert_not_called()
+        self.assertEqual(json.loads(self.output.read_bytes())["status"], "ready")
+
+    def test_private_config_loads_only_exact_schema(self):
+        self.write_config()
+        self.assertEqual(helper.read_relay_config(self.config_path), self.config)
+        with self.assertRaisesRegex(helper.UsageError, "relay-config-invalid"):
+            helper.read_relay_config(self.directory / "missing.json", required=True)
+        invalid = [dict(self.config, version=True), dict(self.config, version=1.0),
+                   dict(self.config, token="extra"), dict(self.config, writeToken="a" * 63),
+                   dict(self.config, writeToken="x" * 64), {"version": 1}]
+        for config in invalid:
+            with self.subTest(config_keys=list(config)):
+                self.write_config(config)
+                with self.assertRaisesRegex(helper.UsageError, "relay-config-invalid"):
+                    helper.read_relay_config(self.config_path)
+
+    def test_relay_url_rejects_downgrade_userinfo_queries_fragments_and_ambiguous_paths(self):
+        urls = ["http://relay.example.invalid", "https://user:pass@relay.example.invalid",
+                "https://relay.example.invalid?", "https://relay.example.invalid/#",
+                "https://relay.example.invalid/path?secret=x", "https://relay.example.invalid/path#fragment",
+                "https://relay.example.invalid/../other", "https://relay.example.invalid/a//b",
+                "https://relay.example.invalid/%2e%2e/path", "https://relay.example.invalid:0",
+                "https://relay.example.invalid:65536", "https://relay.example.invalid:",
+                "https://relay.example.invalid/\npath", "https://relay.example.invalid\\other", "https:///path"]
+        for url in urls:
+            with self.subTest(url=url):
+                with self.assertRaisesRegex(helper.UsageError, "relay-config-invalid"):
+                    helper.validate_relay_config(dict(self.config, baseURL=url))
+        for url in ("https://relay.example.invalid", "https://relay.example.invalid/",
+                    "https://relay.example.invalid:443/path/sub-path/", "https://[::1]:8443/prefix"):
+            config = helper.validate_relay_config(dict(self.config, baseURL=url))
+            self.assertEqual(config["baseURL"], url.rstrip("/"))
+
+    def test_config_file_permissions_symlinks_size_and_parent_are_checked(self):
+        for mode in (0o644, 0o660, 0o400):
+            self.write_config(mode=mode)
+            with self.assertRaisesRegex(helper.UsageError, "relay-config-invalid"):
+                helper.read_relay_config(self.config_path)
+        self.write_config()
+        real = self.directory / "private.json"
+        self.config_path.rename(real)
+        self.config_path.symlink_to(real)
+        with self.assertRaisesRegex(helper.UsageError, "relay-config-invalid"):
+            helper.read_relay_config(self.config_path)
+        self.config_path.unlink()
+        self.config_path.write_bytes(b" " * (helper.RELAY_CONFIG_MAX_BYTES + 1))
+        self.config_path.chmod(0o600)
+        with self.assertRaisesRegex(helper.UsageError, "relay-config-invalid"):
+            helper.read_relay_config(self.config_path)
+        self.write_config()
+        self.directory.chmod(0o777)
+        try:
+            with self.assertRaisesRegex(helper.UsageError, "relay-config-invalid"):
+                helper.read_relay_config(self.config_path)
+        finally:
+            self.directory.chmod(0o700)
+        self.config_path.write_bytes(b"not json")
+        with self.assertRaisesRegex(helper.UsageError, "relay-config-invalid"):
+            helper.read_relay_config(self.config_path)
+
+    def test_opener_requires_certificate_and_hostname_validation_and_disables_proxy(self):
+        opener = helper.relay_opener()
+        https = next(handler for handler in opener.handlers if isinstance(handler, helper.urllib.request.HTTPSHandler))
+        self.assertEqual(https._context.verify_mode, ssl.CERT_REQUIRED)
+        self.assertTrue(https._context.check_hostname)
+        self.assertEqual(sum(isinstance(handler, helper.urllib.request.HTTPRedirectHandler) for handler in opener.handlers), 1)
+        self.assertTrue(any(isinstance(handler, helper.NoRelayRedirect) for handler in opener.handlers))
+        self.assertFalse(any(isinstance(handler, helper.urllib.request.ProxyHandler) for handler in opener.handlers))
+
+    def test_put_contains_only_snapshot_and_write_token_with_eight_second_timeout(self):
+        opener = self.upload()
+        args, kwargs = opener.open.call_args
+        request = args[0]
+        self.assertEqual(request.method, "PUT")
+        self.assertEqual(request.full_url, "https://relay.example.invalid/mori/v1/usage")
+        self.assertEqual(request.get_header("Authorization"), "Bearer " + "a" * 64)
+        self.assertEqual(kwargs, {"timeout": 8.0})
+        exported = json.loads(request.data)
+        self.assertEqual(exported, self.parse(response(limits())))
+        self.assertLessEqual(len(request.data), 65_536)
+
+    def test_every_redirect_is_rejected_without_forwarding_authorization(self):
+        for code in (301, 302, 303, 307, 308):
+            captured = []
+            class FakeHTTPS(helper.urllib.request.HTTPSHandler):
+                def https_open(_self, request):
+                    captured.append(request)
+                    result = urllib.response.addinfourl(io.BytesIO(b"private response"),
+                            {"Location": "http://other.example.invalid/stolen"}, request.full_url, code)
+                    result.msg = "Redirect"
+                    return result
+            opener = helper.urllib.request.build_opener(helper.urllib.request.ProxyHandler({}), helper.NoRelayRedirect(), FakeHTTPS())
+            with self.subTest(code=code):
+                with self.assertRaisesRegex(helper.UsageError, "relay-redirect-rejected"):
+                    helper.upload_snapshot(self.parse(response(limits())), self.config, now=NOW, opener=opener)
+                self.assertEqual(len(captured), 1)
+                self.assertEqual(captured[0].full_url, self.config["baseURL"] + "/v1/usage")
+
+    def test_response_bodies_and_request_payload_are_bounded(self):
+        for result in (self.reply(headers={"Content-Length": "8193"}),
+                       self.reply(headers={"Content-Length": "-1"}),
+                       self.reply(b"x" * 8193), self.reply(headers={"Content-Length": "9" * 20})):
+            with self.assertRaisesRegex(helper.UsageError, "relay-response-too-large"):
+                self.upload(reply=result)
+            self.assertTrue(result.closed)
+        self.upload(reply=self.reply(b"x" * 8192))
+        big = self.parse(response(limits()))
+        big["windows"] = [dict(big["windows"][0], id=str(index) + "🌲" * 155, label="🌲" * 120) for index in range(64)]
+        self.assertTrue(helper.valid_snapshot(big, NOW))
+        with self.assertRaisesRegex(helper.UsageError, "relay-data-too-large"):
+            self.upload(snapshot=big)
+        invalid = dict(self.parse(response(limits())), token="unexpected secret")
+        with self.assertRaisesRegex(helper.UsageError, "relay-data-invalid"):
+            self.upload(snapshot=invalid)
+
+    def test_deadline_and_network_failures_emit_only_fixed_categories(self):
+        errors = [(TimeoutError("private diagnostic"), "relay-timeout"),
+                  (helper.urllib.error.URLError("private diagnostic"), "relay-network-failed"),
+                  (ssl.SSLCertVerificationError("private diagnostic"), "relay-network-failed"),
+                  (helper.urllib.error.HTTPError("https://private.invalid", 403, "private", {}, io.BytesIO(b"private")), "relay-http-failed")]
+        for error, category in errors:
+            with self.subTest(category=category):
+                with self.assertRaises(helper.UsageError) as caught:
+                    self.upload(error=error)
+                self.assertEqual(str(caught.exception), category)
+        with mock.patch.object(helper.time, "monotonic", side_effect=[100, 109]):
+            with self.assertRaisesRegex(helper.UsageError, "relay-timeout"):
+                self.upload(reply=self.reply(b"slow"))
+
+    def test_upload_failure_keeps_new_local_data_and_next_success_retries_latest(self):
+        upload = mock.Mock(side_effect=helper.UsageError("relay-network-failed"))
+        kwargs = {"clock": lambda: NOW, "relay_loader": lambda: self.config, "uploader": upload}
+        result = helper.run_once("unused", self.output, reader=lambda *a, **kw: response(limits(26)), **kwargs)
+        self.assertEqual(result, "relay-network-failed")
+        self.assertEqual(json.loads(self.output.read_bytes())["windows"][0]["usedPercent"], 26)
+        upload.side_effect = None
+        result = helper.run_once("unused", self.output, reader=lambda *a, **kw: response(limits(30)), **kwargs)
+        self.assertIsNone(result)
+        self.assertEqual(upload.call_count, 2)
+        self.assertEqual(upload.call_args.args[0]["windows"][0]["usedPercent"], 30)
+        self.assertEqual(json.loads(self.output.read_bytes())["fetchedAt"], NOW)
+
+    def test_bad_config_does_not_discard_local_snapshot_or_trigger_upload(self):
+        upload = mock.Mock()
+        loader = mock.Mock(side_effect=helper.UsageError("relay-config-invalid"))
+        result = helper.run_once("unused", self.output, reader=lambda *a, **kw: response(limits()), clock=lambda: NOW,
+                                 relay_loader=loader, uploader=upload)
+        self.assertEqual(result, "relay-config-invalid")
+        self.assertEqual(json.loads(self.output.read_bytes())["status"], "ready")
+        upload.assert_not_called()
+
+    def owned_install(self):
+        home = self.directory / "home"
+        support = home / "Library/Application Support/MoriSpaceUsage"
+        support.mkdir(parents=True, mode=0o700)
+        helper_path = support / "codex-usage-helper.py"
+        helper_path.write_bytes(SOURCE.read_bytes())
+        helper_path.chmod(0o700)
+        marker = support / ".installed-by-mori-usage"
+        marker.write_text("mori-usage-helper-v1")
+        marker.chmod(0o600)
+        agents = home / "Library/LaunchAgents"
+        agents.mkdir()
+        agent = agents / "dev.kylon.MoriSpace.usage-helper.plist"
+        agent.write_bytes(plistlib.dumps({"Label": "dev.kylon.MoriSpace.usage-helper", "ProgramArguments": [str(helper_path), "--serve"]}))
+        agent.chmod(0o600)
+        return home, support, agent
+
+    def script_body(self, name):
+        source = SOURCE.with_name(name).read_text()
+        return source.split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+
+    def test_explicit_configurator_copies_private_config_and_restarts_only_owned_helper(self):
+        home, support, agent = self.owned_install()
+        self.write_config()
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with mock.patch.object(Path, "home", return_value=home), mock.patch.object(sys, "platform", "darwin"), \
+             mock.patch.object(sys, "argv", ["configure", str(self.config_path)]), \
+             mock.patch.object(subprocess, "run", return_value=mock.Mock(returncode=0)) as command, \
+             mock.patch.object(sys, "stdout", stdout), mock.patch.object(sys, "stderr", stderr):
+            exec(compile(self.script_body("configure-codex-usage-relay.sh"), "configure-test", "exec"), {})
+        target = support / helper.RELAY_CONFIG_NAME
+        self.assertEqual(helper.read_relay_config(target), self.config)
+        self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o600)
+        service = "gui/" + str(os.getuid()) + "/dev.kylon.MoriSpace.usage-helper"
+        self.assertEqual([call.args[0] for call in command.call_args_list], [
+            ["/bin/launchctl", "print", service], ["/bin/launchctl", "kickstart", "-k", service], ["/bin/launchctl", "print", service]])
+        self.assertEqual(stderr.getvalue(), "")
+        self.assertNotIn(self.config["writeToken"], stdout.getvalue())
+        self.assertNotIn(self.config["baseURL"], stdout.getvalue())
+
+    def test_configurator_refuses_unowned_agent_before_copy_or_restart(self):
+        home, support, agent = self.owned_install()
+        agent.write_bytes(plistlib.dumps({"Label": "unrelated", "ProgramArguments": []}))
+        self.write_config()
+        with mock.patch.object(Path, "home", return_value=home), mock.patch.object(sys, "platform", "darwin"), \
+             mock.patch.object(sys, "argv", ["configure", str(self.config_path)]), mock.patch.object(subprocess, "run") as command, \
+             mock.patch.object(sys, "stderr", io.StringIO()), self.assertRaises(SystemExit) as caught:
+            exec(compile(self.script_body("configure-codex-usage-relay.sh"), "configure-test", "exec"), {})
+        self.assertEqual(caught.exception.code, 1)
+        command.assert_not_called()
+        self.assertFalse((support / helper.RELAY_CONFIG_NAME).exists())
+
+    def test_uninstall_cleans_only_owned_relay_config_and_preserves_other_data(self):
+        home, support, agent = self.owned_install()
+        (support / helper.RELAY_CONFIG_NAME).write_text(json.dumps(self.config))
+        unrelated = home / "other-app-data"
+        unrelated.write_text("preserve")
+        with mock.patch.object(Path, "home", return_value=home), mock.patch.object(sys, "platform", "darwin"), \
+             mock.patch.object(subprocess, "run", side_effect=[mock.Mock(returncode=0), mock.Mock(returncode=1)]), \
+             mock.patch.object(sys, "stdout", io.StringIO()):
+            exec(compile(self.script_body("uninstall-codex-usage-helper.sh"), "uninstall-test", "exec"), {})
+        self.assertFalse(support.exists())
+        self.assertFalse(agent.exists())
+        self.assertEqual(unrelated.read_text(), "preserve")
 
 
 class UsageServiceTests(UsageHelperFixtures):

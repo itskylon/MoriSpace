@@ -53,7 +53,8 @@ try:
     require(command(['/bin/launchctl', 'print', service]).returncode != 0, 'job-still-running')
     if agent.exists(): agent.unlink()
     if support.exists(): shutil.rmtree(support)
-    # Only the helper's own local quota cache is removed with its support folder.
+    # Remove this helper's local quota cache and optional private relay config
+    # together with its owned support folder. No other service config is touched.
     # Do not open/remove the App Group or touch Codex credentials/settings/calendars.
     print('Codex usage helper removed. Codex login and Mori Space data were preserved.')
 except UninstallError as error:
