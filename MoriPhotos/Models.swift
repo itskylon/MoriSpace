@@ -94,6 +94,8 @@ func friendlyError(_ error: Error) -> String {
     }
     if let error = error as? URLError {
         switch error.code {
+        case .secureConnectionFailed:
+            return "无法与 NAS 建立 HTTPS 安全连接（TLS 握手失败）。请检查 NAS 的 HTTPS 服务、端口以及当前 VPN 或代理设置，再重试。"
         case .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateHasUnknownRoot, .serverCertificateNotYetValid:
             return "NAS 的 HTTPS 证书不受系统信任。请为域名配置有效证书，或在本机安装并信任你的私有 CA。"
         case .cannotConnectToHost, .cannotFindHost, .notConnectedToInternet, .timedOut:

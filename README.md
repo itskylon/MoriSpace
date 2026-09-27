@@ -2,7 +2,9 @@
 
 自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、OneDrive 文件、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口与 Microsoft Graph，没有第三方运行时 SDK，也不通过中转服务器传输照片和文件。
 
-当前版本：**0.16.0（26）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+当前版本：**0.16.1（27）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+
+0.16.1 将 TLS 握手失败提示改为中文，明确检查 HTTPS 服务、端口及 VPN / 代理；保留系统证书校验。
 
 ## 0.16 界面更新
 
