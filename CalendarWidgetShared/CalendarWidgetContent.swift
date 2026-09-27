@@ -8,7 +8,7 @@ struct CalendarWidgetContent: View {
     let size: CalendarWidgetSize
     @Environment(\.colorScheme) private var colorScheme
     private var accent: Color {
-        colorScheme == .dark ? Color(red: 0.43, green: 0.79, blue: 0.69) : Color(red: 0.12, green: 0.43, blue: 0.35)
+        colorScheme == .dark ? Color(red: 0.34, green: 0.83, blue: 0.74) : Color(red: 0.02, green: 0.43, blue: 0.38)
     }
     private var layout: CalendarLayout { CalendarLayout() }
     private var lunar: LunarCalendarDate { layout.lunarDate(on: date) }
@@ -19,11 +19,21 @@ struct CalendarWidgetContent: View {
             if size == .small { small }
             else {
                 GeometryReader { geometry in
-                    HStack(alignment: .top, spacing: 14) {
-                        miniMonth.frame(width: max(100, geometry.size.width * 0.47))
-                        Rectangle().fill(Color.primary.opacity(0.08)).frame(width: 1)
-                        agenda(limit: geometry.size.height < 140 ? 2 : 3)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    VStack(spacing: 10) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("\(layout.calendar.component(.month, from: date))月")
+                                .font(.system(size: 20, weight: .semibold))
+                            Text(String(layout.calendar.component(.year, from: date)))
+                                .font(.system(size: 11)).foregroundStyle(.secondary)
+                            Spacer(minLength: 8)
+                            Text(ChinaHolidaySchedule.coverage(on: date) == nil ? "休班未收录" : lunar.description)
+                                .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+                        }
+                        HStack(alignment: .top, spacing: 20) {
+                            miniMonth.frame(width: max(100, geometry.size.width * 0.47))
+                            agenda(limit: geometry.size.height < 165 ? 2 : 3)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        }
                     }
                 }
             }
@@ -31,22 +41,24 @@ struct CalendarWidgetContent: View {
     }
 
     private var small: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 4) {
-                Text(date.formatted(.dateTime.month().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
-                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(accent)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 5) {
+                Text("\(layout.calendar.component(.month, from: date))月")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(date.formatted(.dateTime.weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
+                    .font(.system(size: 10)).foregroundStyle(.secondary)
                 Spacer(minLength: 0)
                 if let holiday = ChinaHolidaySchedule.day(on: date) { HolidayBadge(kind: holiday.kind, fontSize: 8) }
             }
-            HStack(alignment: .center, spacing: 10) {
+            HStack(alignment: .center, spacing: 12) {
                 Text(String(layout.calendar.component(.day, from: date)))
-                    .font(.system(size: 48, weight: .medium, design: .rounded)).monospacedDigit()
+                    .font(.system(size: 54, weight: .regular)).monospacedDigit()
                     .tracking(-2).lineLimit(1).minimumScaleFactor(0.8)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(lunar.monthName + lunar.dayName).font(.system(size: 11, weight: .medium))
+                    Text(lunar.monthName + lunar.dayName).font(.system(size: 11))
                         .lineLimit(1).minimumScaleFactor(0.8)
                     if let holiday = ChinaHolidaySchedule.day(on: date) {
-                        Text(holiday.description).font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(2)
+                        Text(holiday.description).font(.system(size: 9)).foregroundStyle(accent).lineLimit(2)
                     } else if let festival = lunar.festival {
                         Text(festival).font(.system(size: 10)).foregroundStyle(accent).lineLimit(1)
                     } else if ChinaHolidaySchedule.coverage(on: date) == nil {
@@ -65,13 +77,6 @@ struct CalendarWidgetContent: View {
 
     private var miniMonth: some View {
         VStack(spacing: 5) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("\(layout.calendar.component(.month, from: date))月")
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                Spacer(minLength: 2)
-                Text(ChinaHolidaySchedule.coverage(on: date) == nil ? "休班未收录" : lunar.festival ?? (lunar.monthName + lunar.dayName))
-                    .font(.system(size: 9, weight: .medium)).foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.8)
-            }
             HStack(spacing: 0) {
                 ForEach(Array(["一", "二", "三", "四", "五", "六", "日"].enumerated()), id: \.offset) { index, title in
                     Text(title).font(.system(size: 8, weight: .medium))
@@ -102,7 +107,7 @@ struct CalendarWidgetContent: View {
         let holiday = ChinaHolidaySchedule.day(on: day)
         return Link(destination: CalendarWidgetRoute.url(for: day)) {
             Text(String(layout.calendar.component(.day, from: day)))
-                .font(.system(size: 10, weight: today ? .bold : .medium, design: .rounded)).monospacedDigit()
+                .font(.system(size: 10, weight: today ? .semibold : .regular)).monospacedDigit()
                 .foregroundStyle(today ? (colorScheme == .dark ? Color.black : .white) : inMonth ? Color.primary : Color.secondary.opacity(0.4))
                 .frame(width: min(20, height), height: min(20, height))
                 .background(today ? accent : .clear, in: Circle())
@@ -114,11 +119,8 @@ struct CalendarWidgetContent: View {
     }
 
     private func agenda(limit: Int) -> some View {
-        VStack(alignment: .leading, spacing: 11) {
-            HStack(spacing: 5) {
-                Circle().fill(accent).frame(width: 5, height: 5)
-                Text("接下来").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
-            }.padding(.top, 2)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("接下来").font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
             if upcoming.isEmpty {
                 Text(snapshot.emptyMessage(at: date)).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(3)
             } else {
@@ -131,10 +133,11 @@ struct CalendarWidgetContent: View {
     }
     private func eventContent(_ event: CalendarWidgetEvent) -> some View {
         HStack(alignment: .top, spacing: 7) {
-            RoundedRectangle(cornerRadius: 2).fill(Color(red: event.red, green: event.green, blue: event.blue)).frame(width: 3)
+            Circle().fill(Color(red: event.red, green: event.green, blue: event.blue))
+                .frame(width: 5, height: 5).padding(.top, 4)
             VStack(alignment: .leading, spacing: 3) {
-                Text(event.title).font(.system(size: 12, weight: .semibold)).lineLimit(1)
-                Text(timeLabel(event)).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                Text(event.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                Text(timeLabel(event)).font(.system(size: 10)).monospacedDigit().foregroundStyle(.secondary).lineLimit(1)
             }.frame(maxWidth: .infinity, alignment: .leading)
         }.fixedSize(horizontal: false, vertical: true).privacySensitive()
     }

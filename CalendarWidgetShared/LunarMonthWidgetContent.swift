@@ -7,14 +7,14 @@ struct LunarMonthWidgetContent: View {
     @Environment(\.colorScheme) private var colorScheme
     private var layout: CalendarLayout { CalendarLayout() }
     private var accent: Color {
-        colorScheme == .dark ? Color(red: 0.43, green: 0.79, blue: 0.69) : Color(red: 0.12, green: 0.43, blue: 0.35)
+        colorScheme == .dark ? Color(red: 0.34, green: 0.83, blue: 0.74) : Color(red: 0.02, green: 0.43, blue: 0.38)
     }
 
     var body: some View {
         let days = layout.days(in: date)
         let rows = days.count / 7
         VStack(spacing: 0) {
-            header.frame(height: isLarge ? 42 : 22)
+            header.frame(height: isLarge ? 50 : 24)
             HStack(spacing: 0) {
                 ForEach(Array(["一", "二", "三", "四", "五", "六", "日"].enumerated()), id: \.offset) { index, title in
                     Text(title).font(.system(size: isLarge ? 11 : 9, weight: .medium))
@@ -35,21 +35,29 @@ struct LunarMonthWidgetContent: View {
                 }
             }
         }
-        .padding(.horizontal, isLarge ? 16 : 10)
-        .padding(.vertical, isLarge ? 12 : 8)
+        .padding(.horizontal, isLarge ? 18 : 12)
+        .padding(.vertical, isLarge ? 14 : 8)
         .foregroundStyle(.primary)
     }
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text("\(layout.calendar.component(.month, from: date))月")
-                .font(.system(size: isLarge ? 25 : 17, weight: .semibold, design: .rounded))
-            Text(String(layout.calendar.component(.year, from: date)))
-                .font(.system(size: isLarge ? 12 : 10, weight: .medium)).foregroundStyle(.secondary)
-            Spacer(minLength: 8)
-            Text(ChinaHolidaySchedule.coverage(on: date) == nil ? "放假安排未收录" : layout.lunarDate(on: date).description)
-                .font(.system(size: isLarge ? 12 : 10, weight: .medium))
-                .foregroundStyle(accent).lineLimit(1).minimumScaleFactor(0.8)
+        HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text("\(layout.calendar.component(.month, from: date))月")
+                    .font(.system(size: isLarge ? 28 : 18, weight: .semibold))
+                Text(String(layout.calendar.component(.year, from: date)))
+                    .font(.system(size: isLarge ? 12 : 10)).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 6)
+            VStack(alignment: .trailing, spacing: 4) {
+                if isLarge {
+                    Text(date.formatted(.dateTime.weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
+                        .font(.system(size: 12, weight: .medium))
+                }
+                Text(ChinaHolidaySchedule.coverage(on: date) == nil ? "放假安排未收录" : layout.lunarDate(on: date).description)
+                    .font(.system(size: isLarge ? 10 : 9)).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
         }
     }
 
@@ -60,11 +68,11 @@ struct LunarMonthWidgetContent: View {
         let inMonth = layout.calendar.isDate(day, equalTo: date, toGranularity: .month)
         // On compact six-week widgets, a single line keeps the lunar text readable.
         let inline = !isLarge && rowHeight < 26
-        let dayColor: Color = today ? (colorScheme == .dark ? .black : .white) : inMonth ? .primary : .secondary.opacity(0.4)
-        let lunarColor: Color = today ? (inline ? dayColor : accent) : !inMonth ? .secondary.opacity(0.4) : lunar.festival != nil ? accent : .secondary
+        let dayColor: Color = today ? (inline ? accent : (colorScheme == .dark ? .black : .white)) : inMonth ? .primary : .secondary.opacity(0.4)
+        let lunarColor: Color = today ? accent : !inMonth ? .secondary.opacity(0.4) : lunar.festival != nil ? accent : .secondary
         return Link(destination: CalendarWidgetRoute.url(for: day)) {
             let dayNumber = Text(String(layout.calendar.component(.day, from: day)))
-                .font(.system(size: isLarge ? 18 : inline ? 10 : 12, weight: today ? .bold : .medium, design: .rounded))
+                .font(.system(size: isLarge ? 18 : inline ? 10 : 12, weight: today ? .semibold : .regular))
                 .monospacedDigit()
                 .foregroundStyle(dayColor)
                 .lineLimit(1).minimumScaleFactor(0.9)
@@ -86,7 +94,7 @@ struct LunarMonthWidgetContent: View {
                 } else {
                     VStack(spacing: isLarge ? 2 : 0) {
                         dayNumber
-                            .frame(width: min(isLarge ? 28 : 18, rowHeight - 14), height: min(isLarge ? 28 : 18, rowHeight - 14))
+                            .frame(width: max(14, min(isLarge ? 28 : 18, rowHeight - 18)), height: max(14, min(isLarge ? 28 : 18, rowHeight - 18)))
                             .background(today ? accent : .clear, in: Circle())
                             .overlay(alignment: .topTrailing) {
                                 if let holiday {
@@ -102,7 +110,9 @@ struct LunarMonthWidgetContent: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(today ? (inline ? accent : accent.opacity(0.07)) : .clear, in: RoundedRectangle(cornerRadius: isLarge ? 10 : 6))
+            .overlay(alignment: .bottom) {
+                if today && inline { Rectangle().fill(accent).frame(height: 1.5).padding(.horizontal, 3) }
+            }
             .padding(.horizontal, isLarge ? 3 : 1)
             .padding(.vertical, 1)
             .contentShape(Rectangle())

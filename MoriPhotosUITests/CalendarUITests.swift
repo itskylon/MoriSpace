@@ -65,7 +65,7 @@ final class CalendarUITests: XCTestCase {
         app.tabBars.buttons["设置"].tap(); app.tabBars.buttons["日历"].tap()
         XCTAssertEqual(app.staticTexts["calendarMonthTitle"].label, month)
         app.buttons["calendarToday"].tap()
-        app.segmentedControls["calendarDisplayMode"].buttons["日程"].tap()
+        app.buttons["calendarMode_日程"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["calendarAgendaList"].firstMatch.waitForExistence(timeout: 5))
         capture(app, "calendar-phone-agenda")
     }

@@ -87,11 +87,10 @@ struct EmptyCard: View {
     let message: String
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: icon).font(.system(size: 27, weight: .regular))
-                .foregroundStyle(Theme.accent).frame(width: 62, height: 62)
-                .background(Theme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 18))
+            Image(systemName: icon).font(.system(size: 36, weight: .ultraLight))
+                .foregroundStyle(.secondary).frame(width: 62, height: 62)
                 .accessibilityHidden(true)
-            Text(title).font(.headline)
+            Text(title).font(.title3.weight(.semibold))
             Text(message).font(.subheadline).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
         }.frame(maxWidth: 380).padding(.horizontal, 20).padding(.vertical, 28)

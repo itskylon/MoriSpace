@@ -1,6 +1,36 @@
 import XCTest
 
 final class MoriPhotosUITests: XCTestCase {
+    func testModernOverviewKeepsPhotosAndStorageAboveFold() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
+        app.launch()
+        func capture(_ name: String) {
+            let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+            image.name = name; image.lifetime = .keepAlways; add(image)
+        }
+        let local = app.buttons.matching(identifier: "localPhotoCell").firstMatch
+        XCTAssertTrue(local.waitForExistence(timeout: 10))
+        XCTAssertLessThan(local.frame.minY, app.frame.height * 0.3, "Photo controls must leave most of the viewport for photos")
+        capture("modern-local")
+        app.tabBars.buttons["存储"].tap()
+        let remote = app.buttons.matching(identifier: "nasPhotoCell").firstMatch
+        XCTAssertTrue(remote.waitForExistence(timeout: 10))
+        XCTAssertLessThan(remote.frame.minY, app.frame.height * 0.35, "NAS controls must not push photos below the first third of the screen")
+        capture("modern-nas-photos")
+        app.buttons["nasSectionMonitor"].tap()
+        XCTAssertTrue(app.staticTexts["monitorCPU"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["存储空间"].isHittable, "Capacity must be visible on the first monitor screen")
+        capture("modern-monitor")
+        app.tabBars.buttons["设置"].tap()
+        XCTAssertTrue(app.buttons["newPhotoBackupSettings"].waitForExistence(timeout: 5))
+        capture("modern-settings")
+        app.buttons["newPhotoBackupSettings"].tap()
+        XCTAssertTrue(app.buttons["chooseBackupFolder"].waitForExistence(timeout: 5))
+        capture("modern-backup")
+    }
+
     func testFileSearchDismissesKeyboardAndPreservesFilterAcrossSections() {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -489,7 +519,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--empty-connection-fixture"]
         app.launch()
-        XCTAssertTrue(app.navigationBars["照片"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["localLibraryTitle"].waitForExistence(timeout: 10))
         let home = XCTAttachment(screenshot: app.screenshot())
         home.name = "01-照片首页"; home.lifetime = .keepAlways; add(home)
         app.tabBars.buttons["存储"].tap()

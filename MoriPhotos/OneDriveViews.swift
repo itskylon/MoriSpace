@@ -82,10 +82,20 @@ struct StorageHomeView: View {
     @State private var visitedOneDrive = false
     var body: some View {
         ZStack {
-            NavigationStack { NASHomeView(isActive: isActive && !oneDrive).toolbar { ToolbarItem(placement: .topBarLeading) { sourceMenu } } }
+            NavigationStack { NASHomeView(isActive: isActive && !oneDrive, sourceControl: oneDrive ? nil : AnyView(sourceMenu)) }
                 .opacity(oneDrive ? 0 : 1).allowsHitTesting(!oneDrive).accessibilityHidden(oneDrive)
             if visitedOneDrive {
-                NavigationStack { OneDriveHomeView(isActive: isActive && oneDrive).toolbar { ToolbarItem(placement: .topBarLeading) { sourceMenu } } }
+                NavigationStack {
+                    VStack(spacing: 0) {
+                        HStack {
+                            if oneDrive { sourceMenu }
+                            Spacer()
+                            Text("文件").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                        }.padding(.horizontal, 16).frame(minHeight: 48).background(NASStyle.canvas)
+                        Rectangle().fill(NASStyle.outline).frame(height: 0.5)
+                        OneDriveHomeView(isActive: isActive && oneDrive).frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }.toolbar(.hidden, for: .navigationBar)
+                }
                     .opacity(oneDrive ? 1 : 0).allowsHitTesting(oneDrive).accessibilityHidden(!oneDrive)
             }
         }
@@ -97,7 +107,10 @@ struct StorageHomeView: View {
             Button { visitedOneDrive = true; oneDrive = true } label: { Label("OneDrive", systemImage: "cloud") }
                 .accessibilityIdentifier("storageChooseOneDrive")
         } label: {
-            HStack(spacing: 4) { Image(systemName: oneDrive ? "cloud" : "externaldrive"); Image(systemName: "chevron.down").font(.caption2) }
+            HStack(spacing: 5) {
+                Text(oneDrive ? "OneDrive" : "群晖").font(.headline)
+                Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+            }.foregroundStyle(.primary).frame(minHeight: 44).contentShape(Rectangle())
         }.accessibilityLabel("切换存储位置").accessibilityIdentifier("storageSourceMenu")
     }
 }
@@ -114,12 +127,8 @@ struct OneDriveHomeView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Image(systemName: "cloud").font(.system(size: 28, weight: .light)).foregroundStyle(Theme.accent)
-                                .frame(width: 56, height: 56).background(Theme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 16))
-                            Text("OneDrive").font(.title2.weight(.semibold))
-                            Text("浏览照片和文件，按需下载到本机。").font(.subheadline).foregroundStyle(.secondary)
-                        }
+                        Text("OneDrive 连接").font(.headline)
+                        Text("登录后浏览文件，按需下载到本机。").font(.subheadline).foregroundStyle(.secondary)
                         if session.isConnecting { ProgressView("正在连接…") }
                         if let error = session.error {
                             ErrorBanner(message: error)
@@ -132,7 +141,7 @@ struct OneDriveHomeView: View {
                             Label("查看本机下载", systemImage: "arrow.down.circle").font(.subheadline)
                         }.buttonStyle(.borderless).accessibilityIdentifier("oneDriveOfflineDownloads")
                     }.padding(24).frame(maxWidth: 520, alignment: .leading)
-                        .frame(maxWidth: .infinity, alignment: .center).padding(.top, 24)
+                        .frame(maxWidth: .infinity, alignment: .center).padding(.top, 8)
                 }.background(NASStyle.canvas)
             }
         }.workspaceNavigationTitle("OneDrive").navigationBarTitleDisplayMode(.inline)
@@ -244,7 +253,7 @@ struct OneDriveBrowserView: View {
                 if wide, let selected {
                     Divider()
                     ScrollView { itemDetails(selected).padding(20) }.frame(width: 272)
-                        .background(NASStyle.surface)
+                        .background(NASStyle.inset.opacity(0.65))
                 }
             }
             Divider()
@@ -253,8 +262,8 @@ struct OneDriveBrowserView: View {
                 Spacer()
                 if store.loading { ProgressView().controlSize(.small) }
                 else if store.nextLink != nil { Button("加载更多") { Task { await store.more(client: client) } }.accessibilityIdentifier("oneDriveLoadMore") }
-            }.font(.caption).foregroundStyle(.secondary).padding(.horizontal, wide ? 22 : 16).frame(minHeight: 36)
-                .background(NASStyle.surface.opacity(0.65))
+            }.font(.caption).foregroundStyle(.secondary).padding(.horizontal, wide ? 22 : 16).frame(minHeight: 44)
+                .background(NASStyle.canvas)
         }.background(NASStyle.canvas)
             .onChange(of: isActive) { _, active in if !active { searchFocused = false } }
             .task(id: isActive) { if isActive { await store.start(client: client, accountID: account.driveID) } }
@@ -265,49 +274,58 @@ struct OneDriveBrowserView: View {
             .sheet(isPresented: $downloads) { NavigationStack { OneDriveDownloadsView(accountID: account.driveID) }.desktopSheet() }
     }
     private var controls: some View {
-        VStack(spacing: wide ? 14 : 10) {
-            HStack(spacing: 14) {
+        Group {
+            if wide {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 16) { navigationControls; displayControls }
+                    VStack(spacing: 4) { navigationControls; displayControls }
+                }
+            } else {
+                VStack(spacing: 6) {
+                    navigationControls
+                    if showingSearch { searchField.padding(.bottom, 8) }
+                }
+            }
+        }.buttonStyle(.plain).padding(.horizontal, 16).padding(.vertical, 4)
+    }
+    private var navigationControls: some View {
+        HStack(spacing: wide ? 4 : 2) {
                 if wide {
-                    Button { selected = nil; Task { await store.back(client: client) } } label: { Image(systemName: "chevron.left") }.disabled(!store.canBack).accessibilityLabel("后退")
-                    Button { selected = nil; Task { await store.forward(client: client) } } label: { Image(systemName: "chevron.right") }.disabled(!store.canForward).accessibilityLabel("前进")
+                    Button { selected = nil; Task { await store.back(client: client) } } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }.disabled(!store.canBack).accessibilityLabel("后退")
+                    Button { selected = nil; Task { await store.forward(client: client) } } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }.disabled(!store.canForward).accessibilityLabel("前进")
                     Divider().frame(height: 16)
                 }
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        Button { go([]) } label: { Label("我的文件", systemImage: "cloud") }.accessibilityIdentifier("oneDriveRoot")
+                        Button { go([]) } label: { Label("我的文件", systemImage: "cloud").frame(minHeight: 44) }.accessibilityIdentifier("oneDriveRoot")
                         ForEach(Array(store.path.enumerated()), id: \.element.id) { index, folder in
                             Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
-                            Button(folder.name) { go(Array(store.path.prefix(index + 1))) }.lineLimit(1)
+                            Button(folder.name) { go(Array(store.path.prefix(index + 1))) }.lineLimit(1).frame(minHeight: 44)
                                 .foregroundStyle(index == store.path.count - 1 ? Color.primary : Color.secondary)
                         }
                     }.font(.subheadline).fixedSize(horizontal: true, vertical: false)
-                }
+                }.frame(minWidth: 90)
                 if !wide {
                     Button { withAnimation(.easeOut(duration: 0.18)) { showingSearch.toggle(); if !showingSearch { query = "" } }; searchFocused = showingSearch } label: {
-                        Image(systemName: showingSearch ? "xmark" : "magnifyingglass")
+                        Image(systemName: showingSearch ? "xmark" : "magnifyingglass").frame(width: 44, height: 44)
                     }.accessibilityLabel(showingSearch ? "关闭搜索" : "搜索文件")
                 }
-                Button { downloads = true } label: { Image(systemName: "arrow.down.circle") }.accessibilityLabel("OneDrive 下载").accessibilityIdentifier("oneDriveDownloads")
+                Button { downloads = true } label: { Image(systemName: "arrow.down.circle").frame(width: 44, height: 44) }.accessibilityLabel("OneDrive 下载").accessibilityIdentifier("oneDriveDownloads")
                 Menu {
                     Picker("排序已载入内容", selection: $sort) { ForEach(OneDriveSort.allCases, id: \.self) { Text($0.rawValue).tag($0) } }
                     Button(grid ? "列表显示" : "图标显示", systemImage: grid ? "list.bullet" : "square.grid.2x2") { grid.toggle() }
                     Button("将此目录设为默认入口", systemImage: "star") { store.saveDefault(accountID: account.driveID); savedDefault = true }
                     Button("刷新", systemImage: "arrow.clockwise") { Task { await store.refresh(client: client) } }
                     Button("账号设置", systemImage: "person.crop.circle") { settings = true }
-                } label: { Image(systemName: "ellipsis") }.accessibilityLabel("OneDrive 更多操作").accessibilityIdentifier("oneDriveMore")
-            }.frame(minHeight: 30)
-            if wide {
-                HStack(spacing: 16) {
-                    Text(store.path.last?.name ?? "我的文件").font(.headline).lineLimit(1)
-                    Spacer(minLength: 12)
-                    searchField.frame(width: 240)
-                    HStack(spacing: 2) {
-                        layoutButton(isGrid: true, symbol: "square.grid.2x2", label: "图标视图")
-                        layoutButton(isGrid: false, symbol: "list.bullet", label: "列表视图")
-                    }.padding(3).background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 8))
-                }
-            } else if showingSearch { searchField }
-        }.buttonStyle(.borderless).padding(.horizontal, wide ? 22 : 16).padding(.vertical, 12)
+                } label: { Image(systemName: "ellipsis").frame(width: 44, height: 44) }.accessibilityLabel("OneDrive 更多操作").accessibilityIdentifier("oneDriveMore")
+            }.frame(minHeight: 44)
+    }
+    private var displayControls: some View {
+        HStack(spacing: 6) {
+            searchField.frame(width: 220)
+            layoutButton(isGrid: true, symbol: "square.grid.2x2", label: "图标视图")
+            layoutButton(isGrid: false, symbol: "list.bullet", label: "列表视图")
+        }
     }
     private var searchField: some View {
         HStack(spacing: 8) {
@@ -315,16 +333,15 @@ struct OneDriveBrowserView: View {
             TextField("搜索当前已载入的文件", text: $query).textFieldStyle(.plain)
                 .textInputAutocapitalization(.never).autocorrectionDisabled().focused($searchFocused)
                 .accessibilityIdentifier("oneDriveSearch")
-            if !query.isEmpty { Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }.accessibilityLabel("清除搜索") }
-        }.font(.subheadline).padding(.horizontal, 10).frame(height: wide ? 32 : 40)
-            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 9))
-            .overlay { RoundedRectangle(cornerRadius: 9).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
+            if !query.isEmpty { Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary).frame(width: 44, height: 44) }.accessibilityLabel("清除搜索") }
+        }.font(.subheadline).padding(.horizontal, 10).frame(minHeight: 44)
+            .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 7))
     }
     private func layoutButton(isGrid: Bool, symbol: String, label: String) -> some View {
         Button { grid = isGrid } label: {
-            Image(systemName: symbol).frame(width: 30, height: 25)
+            Image(systemName: symbol).frame(width: 44, height: 44)
                 .foregroundStyle(grid == isGrid ? Theme.accent : Color.secondary)
-                .background(grid == isGrid ? Theme.accent.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 5))
+                .background(grid == isGrid ? Theme.accent.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 7))
         }.buttonStyle(.plain).accessibilityLabel(label).help(label)
     }
     @ViewBuilder private var fileContent: some View {
@@ -334,28 +351,26 @@ struct OneDriveBrowserView: View {
         } else {
             ScrollView {
                 if grid {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: wide ? 140 : 100, maximum: 190), spacing: 12)], spacing: 12) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: wide ? 112 : 96, maximum: 152), spacing: 12)], spacing: 8) {
                         ForEach(items) { item in
                             itemButton(item) {
-                                VStack(spacing: 10) {
-                                    Image(systemName: item.icon).font(.system(size: 34, weight: .light)).symbolRenderingMode(.hierarchical)
-                                        .foregroundStyle(item.isFolder ? Theme.accent : Color.secondary).frame(width: 60, height: 60)
-                                        .background(item.isFolder ? Theme.accent.opacity(0.075) : Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 15))
-                                    Text(item.name).font(.caption.weight(.medium)).lineLimit(2).truncationMode(.middle).multilineTextAlignment(.center).frame(height: 34, alignment: .top)
+                                VStack(spacing: 6) {
+                                    Image(systemName: item.icon).font(.system(size: 40, weight: .light)).symbolRenderingMode(.hierarchical)
+                                        .foregroundStyle(item.isFolder ? Theme.accent : Color.secondary).frame(width: 60, height: 56)
+                                    Text(item.name).font(.caption.weight(.medium)).lineLimit(2).truncationMode(.middle).multilineTextAlignment(.center).frame(minHeight: 34, alignment: .top)
                                     Text(item.isFolder ? "文件夹" : item.size.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "文件")
                                         .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-                                }.frame(maxWidth: .infinity).padding(.horizontal, 10).padding(.vertical, 16)
-                                    .background(selected?.id == item.id ? Theme.accent.opacity(0.1) : NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
-                                    .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(selected?.id == item.id ? Theme.accent.opacity(0.45) : hoveredItem == item.id ? Theme.accent.opacity(0.22) : NASStyle.outline, lineWidth: 1) }
+                                }.frame(maxWidth: .infinity).padding(.horizontal, 8).padding(.vertical, 10)
+                                    .background(selected?.id == item.id ? Theme.accent.opacity(0.1) : hoveredItem == item.id ? NASStyle.inset : Color.clear, in: RoundedRectangle(cornerRadius: 8))
                             }
                         }
-                    }.padding(wide ? 22 : 16)
+                    }.padding(16)
                 } else {
                     LazyVStack(spacing: 0) {
                         ForEach(items) { item in
-                            itemButton(item) { OneDriveItemRow(item: item).padding(.horizontal, wide ? 22 : 16).padding(.vertical, 11)
+                            itemButton(item) { OneDriveItemRow(item: item).padding(.horizontal, wide ? 22 : 16).padding(.vertical, 8)
                                     .background(selected?.id == item.id ? Theme.accent.opacity(0.1) : hoveredItem == item.id ? Color.primary.opacity(0.035) : .clear) }
-                            Divider().padding(.leading, 64)
+                            Divider().opacity(0.65).padding(.leading, wide ? 64 : 58)
                         }
                     }
                 }
@@ -377,7 +392,7 @@ struct OneDriveBrowserView: View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 12) {
                 Image(systemName: item.icon).font(.system(size: 42, weight: .light)).symbolRenderingMode(.hierarchical).foregroundStyle(Theme.accent)
-                    .frame(maxWidth: .infinity).frame(height: 110).background(Theme.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+                    .frame(maxWidth: .infinity).frame(height: 90)
                 Text(item.name).font(.headline).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                 Text(item.isFolder ? "OneDrive 文件夹" : "OneDrive 文件").font(.caption).foregroundStyle(.secondary)
             }
@@ -415,9 +430,8 @@ struct OneDriveItemRow: View {
     let item: OneDriveItem
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: item.icon).font(.system(size: 22)).symbolRenderingMode(.hierarchical)
-                .foregroundStyle(item.isFolder ? Theme.accent : Color.secondary).frame(width: 42, height: 42)
-                .background(item.isFolder ? Theme.accent.opacity(0.085) : Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 11))
+            Image(systemName: item.icon).font(.title3).symbolRenderingMode(.hierarchical)
+                .foregroundStyle(item.isFolder ? Theme.accent : Color.secondary).frame(width: 30, height: 34)
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.name).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
                 HStack(spacing: 8) {
@@ -427,7 +441,7 @@ struct OneDriveItemRow: View {
             }
             Spacer(minLength: 0)
             if item.isFolder { Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary) }
-        }.frame(maxWidth: .infinity, alignment: .leading)
+        }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
     }
 }
 

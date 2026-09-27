@@ -12,6 +12,7 @@ struct LocalLibraryView: View {
     @State private var showDelete = false
     @State private var showLimited = false
     @State private var busy = false
+    private var wide: Bool { AppPlatform.isMac || horizontalSizeClass == .regular }
     private var source: [PHAsset] { library.assets }
     private var visible: [PHAsset] {
         source.filter { filter == "收藏" ? $0.isFavorite : filter == "截图" ? $0.mediaSubtypes.contains(.photoScreenshot) : true }
@@ -25,10 +26,9 @@ struct LocalLibraryView: View {
     }
     var body: some View {
         VStack(spacing: 0) {
-            if library.canRead {
-                libraryToolbar
-                Divider().overlay(NASStyle.outline)
-            }
+            if !wide { phoneHeader }
+            if library.canRead { libraryToolbar }
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     if !library.canRead {
@@ -70,19 +70,13 @@ struct LocalLibraryView: View {
                             }.padding(.horizontal, AppPlatform.isMac ? 16 : 0)
                         }
                     }
-                }.padding(.vertical, library.canRead ? 8 : 0)
+                }.padding(.top, library.canRead ? (wide ? 12 : 2) : 0)
             }
         }
         .background(Theme.canvas)
         .workspaceNavigationTitle("照片")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if isActive && library.canRead {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(selecting ? "完成" : "选择") { selecting.toggle(); selected.removeAll() }
-                }
-            }
-        }
+        .toolbar(wide ? .automatic : .hidden, for: .navigationBar)
         .safeAreaInset(edge: .bottom) {
             if selecting {
                 HStack(spacing: 32) {
@@ -92,7 +86,7 @@ struct LocalLibraryView: View {
                     .disabled(selected.isEmpty || busy)
             }
         }
-        .sheet(item: $detail) { selection in LocalDetailView(selection: selection).desktopSheet(width: 1000, height: 680) }
+        .modifier(LocalPhotoPresentation(selection: $detail, wide: wide))
         .sheet(isPresented: $showLimited, onDismiss: library.reload) {
             NavigationStack { LimitedPicker().navigationTitle("管理照片访问").toolbar { Button("完成") { showLimited = false } } }
         }
@@ -102,26 +96,52 @@ struct LocalLibraryView: View {
         .alert("操作未完成", isPresented: Binding(get: { library.error != nil }, set: { if !$0 { library.error = nil } })) { Button("好") { library.error = nil } } message: { Text(library.error ?? "") }
         .onChange(of: library.assets.map(\.localIdentifier)) { _, ids in selected.formIntersection(Set(ids)) }
     }
+    private var phoneHeader: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Text("照片").font(.title2.weight(.bold)).tracking(-0.6)
+                .accessibilityIdentifier("localLibraryTitle")
+            if library.canRead {
+                Text("\(visible.count)").font(.subheadline.monospacedDigit()).foregroundStyle(.tertiary)
+            }
+            Spacer()
+            if library.canRead { selectionButton }
+        }.padding(.horizontal, 20).frame(minHeight: 48)
+    }
+    private var selectionButton: some View {
+        Button { selecting.toggle(); selected.removeAll() } label: {
+            HStack(spacing: 6) {
+                Image(systemName: selecting ? "checkmark" : "checkmark.circle")
+                Text(selecting ? "完成" : "选择")
+            }.font(.subheadline.weight(.medium)).frame(minHeight: 44)
+        }.buttonStyle(.plain).foregroundStyle(selecting ? NASStyle.accent : .primary)
+            .accessibilityIdentifier("localPhotoSelection")
+    }
     private var libraryToolbar: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) {
                 MoriFilterBar(titles: ["全部", "收藏", "截图"], selection: $filter)
                 Spacer(minLength: 8)
-                libraryCount
+                if wide || selecting { libraryCount }
                 if AppPlatform.isMac { thumbnailControl.padding(.leading, 16) }
+                if wide { selectionButton.padding(.leading, 12) }
             }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
                 MoriFilterBar(titles: ["全部", "收藏", "截图"], selection: $filter)
-                libraryCount.padding(.leading, 14)
+                if wide || selecting { libraryCount }
+                if AppPlatform.isMac { thumbnailControl }
+                if wide { selectionButton }
             }
-        }.padding(.horizontal, AppPlatform.isMac ? 16 : 8).padding(.vertical, 8)
-            .background(NASStyle.surface)
+        }.padding(.horizontal, 20).padding(.top, wide ? 8 : 0)
+            .padding(.bottom, 6).background(NASStyle.canvas)
     }
     private var libraryCount: some View {
         HStack(spacing: 10) {
-            Text(selecting ? "已选 \(selected.count) 张" : "\(visible.count) 张")
+            Text(selecting ? "已选 \(selected.count) 张" : "\(visible.count) 张照片")
                 .font(.caption.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
-            if selecting { Button("全选") { selected = Set(visible.map(\.localIdentifier)) }.font(.subheadline) }
+            if selecting {
+                Button("全选") { selected = Set(visible.map(\.localIdentifier)) }
+                    .font(.subheadline).frame(minHeight: 44)
+            }
         }
     }
     private var thumbnailControl: some View {
@@ -140,13 +160,23 @@ struct LocalLibraryView: View {
                 Button("前往系统设置") { AppPlatform.openPhotoSettings() }
                     .buttonStyle(.borderedProminent)
             }
-        }.padding(.bottom, 28).frame(maxWidth: .infinity)
-            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 18))
-            .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
+        }.padding(.vertical, 36).frame(maxWidth: .infinity)
     }
     private func run(_ action: @escaping () async -> Void) {
         busy = true
         Task { await action(); busy = false }
+    }
+}
+
+private struct LocalPhotoPresentation: ViewModifier {
+    @Binding var selection: LocalPhotoSelection?
+    let wide: Bool
+    @ViewBuilder func body(content: Content) -> some View {
+        if wide {
+            content.sheet(item: $selection) { LocalDetailView(selection: $0).desktopSheet(width: 1000, height: 680) }
+        } else {
+            content.fullScreenCover(item: $selection) { LocalDetailView(selection: $0) }
+        }
     }
 }
 

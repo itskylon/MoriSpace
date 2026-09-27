@@ -12,17 +12,7 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                HStack(spacing: 12) {
-                    Image("AppBrand").resizable().scaledToFit().frame(width: 44, height: 44)
-                        .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous)).accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("森空间").font(.headline)
-                        Text("版本 \(version) · 个人使用版").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("appVersion")
-                    }
-                    Spacer()
-                }.padding(.horizontal, 4)
-
+            VStack(alignment: .leading, spacing: 30) {
                 preferencesSection("存储服务") {
                     NavigationLink { ConnectionView() } label: {
                         SettingsRow(title: "群晖照片", subtitle: "Synology Photos", symbol: "photo.on.rectangle", value: app.client == nil ? "未连接" : "已连接")
@@ -60,12 +50,22 @@ struct SettingsView: View {
                     }
                 }
 
-                DisclosureGroup("版本与使用说明", isExpanded: $showDetails) {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 10) {
+                        Image("AppBrand").resizable().scaledToFit().frame(width: 28, height: 28)
+                            .clipShape(RoundedRectangle(cornerRadius: 7)).accessibilityHidden(true)
+                        Text("森空间").font(.subheadline.weight(.medium))
+                        Spacer()
+                        Text("版本 \(version) · 个人使用版").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("appVersion")
+                    }
+                DisclosureGroup(isExpanded: $showDetails) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("支持 iPhone、iPad（iOS 17 及以上）与 Mac（macOS 14 及以上）。群晖使用 DSM 7 / Synology Photos；OneDrive 使用微软授权登录。文件在设备与相应存储服务之间传输。")
                         Text(AppPlatform.isMac ? "支持本机照片管理与备份、群晖文件下载、视频播放和 NAS 状态查看。备份与下载需保持 App 运行；退出或休眠后暂停。暂不支持 QuickConnect 中继、视频转码与人脸识别。" : "支持新照片自动备份、照片管理、群晖文件浏览与下载、视频播放和 NAS 状态查看。备份可由系统安排后台补传；文件下载需保持 App 在前台。暂不支持 QuickConnect 中继、视频转码与人脸识别。")
                     }.font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
-                }.font(.subheadline).tint(.secondary).padding(.horizontal, 4)
+                } label: { Text("版本与使用说明").frame(minHeight: 44) }
+                    .font(.subheadline).tint(.secondary)
+                }.padding(.top, 8)
             }
             .buttonStyle(.plain)
             .padding(AppPlatform.isMac ? 28 : 20)
@@ -76,14 +76,12 @@ struct SettingsView: View {
         .workspaceNavigationTitle("设置").navigationBarTitleDisplayMode(.inline)
     }
 
-    private var rowDivider: some View { Divider().padding(.leading, 60) }
+    private var rowDivider: some View { Divider().padding(.leading, 38) }
 
     private func preferencesSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 9) {
-            Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary).padding(.leading, 4)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             VStack(spacing: 0, content: content)
-                .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-                .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
         }
     }
 }
@@ -98,8 +96,7 @@ private struct SettingsRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(NASStyle.accent)
-                .frame(width: 32, height: 34)
-                .background(NASStyle.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
+                .frame(width: 26, height: 32)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.primary)
@@ -109,8 +106,8 @@ private struct SettingsRow: View {
             if let value { Text(value).font(.caption).foregroundStyle(.secondary) }
             if chevron { Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary).accessibilityHidden(true) }
         }
-        .padding(.horizontal, 16).padding(.vertical, 14)
-        .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        .padding(.vertical, 13)
+        .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading).contentShape(Rectangle())
     }
 }
 
@@ -132,29 +129,25 @@ struct ConnectionView: View {
     var body: some View {
         Form {
             Section {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "externaldrive.badge.wifi").font(.title3).foregroundStyle(NASStyle.accent)
-                        .frame(width: 38, height: 38).background(NASStyle.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("群晖连接").font(.headline)
-                        Text(connectionDescription).font(.caption).foregroundStyle(.secondary)
-                    }
-                }.padding(.vertical, 3)
+                Text(connectionDescription).font(.subheadline).foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
             }
-            Section("服务器") {
+            Section {
                 TextField("https://nas.example.com:5001", text: $app.credentials.address)
                     .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("nasAddress")
                     .focused($focus, equals: .address).submitLabel(.next).onSubmit { focus = .username }
-                Text(service == .photos ? "也可使用 https://nas.example.com/photo。地址需从本机直接访问。" : "使用 DSM 的 HTTPS 地址，例如 https://nas.example.com:5001。").font(.caption).foregroundStyle(.secondary)
+            } header: { Text("服务器") } footer: {
+                Text(service == .photos ? "也可使用 /photo 地址。需从本机直接访问，暂不支持 QuickConnect 中继。" : "使用可从本机直接访问的 DSM HTTPS 地址。")
             }
-            Section("登录信息") {
+            Section {
                 TextField("账号", text: $app.credentials.username).textContentType(.username).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("nasUsername")
                     .focused($focus, equals: .username).submitLabel(.next).onSubmit { focus = .password }
                 SecureField("密码", text: $app.credentials.password).textContentType(.password).accessibilityIdentifier("nasPassword")
                     .focused($focus, equals: .password).submitLabel(.done).onSubmit { focus = nil }
                 TextField("验证码（开启双重验证时填写）", text: $otp).textContentType(.oneTimeCode).keyboardType(.numberPad).focused($focus, equals: .otp)
-                Toggle("在系统钥匙串中保存登录信息", isOn: $app.remember)
-                Text("保存后，照片、文件和状态在打开时自动恢复连接。主动断开后将暂停自动连接，直到再次登录。").font(.caption).foregroundStyle(.secondary)
+                Toggle("在钥匙串中保存登录信息", isOn: $app.remember)
+            } header: { Text("登录信息") } footer: {
+                Text("保存后自动恢复照片、文件和状态连接；主动断开后暂停自动连接。")
             }
             if let error = app.error { Section { ErrorBanner(message: error) } }
             Section {

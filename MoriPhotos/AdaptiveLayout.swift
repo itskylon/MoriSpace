@@ -76,21 +76,27 @@ struct DesktopWorkspaceView: View {
     @ObservedObject var navigation: WorkspaceNavigation
     @State private var visited: Set<WorkspacePage> = [.photos]
     @State private var visibility: NavigationSplitViewVisibility = .all
+    @FocusState private var sidebarFocus: WorkspacePage?
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
-            List(selection: Binding<WorkspacePage?>(get: { navigation.selection }, set: { if let page = $0 { navigation.selection = page } })) {
-                Section("资料库") { row(.local); row(.photos); row(.files); row(.oneDrive) }
-                Section("工具") { row(.calendar); row(.downloads); row(.monitor); row(.backup) }
-            }.listStyle(.sidebar).environment(\.defaultMinListRowHeight, 32).navigationTitle("森空间")
-                .listSectionSpacing(16)
-                .accessibilityIdentifier("workspaceSidebar")
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    VStack(spacing: 12) {
-                        Divider()
-                        row(.settings)
-                    }.padding(.horizontal, 12).padding(.bottom, 14)
-                }
-                .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 260)
+            VStack(spacing: 0) {
+                HStack(spacing: 9) {
+                    Image("AppBrand").resizable().scaledToFit().frame(width: 26, height: 26)
+                        .clipShape(RoundedRectangle(cornerRadius: 7)).accessibilityHidden(true)
+                    Text("森空间").font(.headline)
+                    Spacer()
+                }.padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 24)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        sidebarGroup("资料库", pages: [.local, .photos, .files, .oneDrive])
+                        sidebarGroup("工具", pages: [.calendar, .downloads, .monitor, .backup])
+                    }.padding(.horizontal, 12)
+                }.scrollIndicators(.hidden)
+                    .accessibilityIdentifier("workspaceSidebar")
+                row(.settings).padding(12)
+            }
+            .background(NASStyle.surface)
+            .navigationSplitViewColumnWidth(min: 190, ideal: 214, max: 240)
         } detail: {
             NavigationStack(path: path) {
                 ZStack {
@@ -118,25 +124,41 @@ struct DesktopWorkspaceView: View {
         let page = navigation.selection
         return Binding(get: { navigation.paths[page] ?? NavigationPath() }, set: { navigation.paths[page] = $0 })
     }
+    private func sidebarGroup(_ title: String, pages: [WorkspacePage]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.caption2.weight(.medium)).foregroundStyle(.tertiary)
+                .padding(.leading, 12).padding(.bottom, 4)
+            ForEach(pages) { row($0) }
+        }
+    }
     private func row(_ page: WorkspacePage) -> some View {
-        Button { navigation.selection = page } label: {
-            HStack(spacing: 10) {
-                Image(systemName: page.symbol).font(.system(size: 16, weight: .medium))
+        Button { navigation.selection = page; sidebarFocus = page } label: {
+            HStack(spacing: 12) {
+                Image(systemName: page.symbol).font(.system(size: 17, weight: .regular))
                     .foregroundStyle(navigation.selection == page ? Theme.accent : .secondary)
-                    .frame(width: 24, height: 26)
+                    .frame(width: 22)
                 Text(page.title).font(.subheadline.weight(navigation.selection == page ? .semibold : .regular))
-                    .foregroundStyle(navigation.selection == page ? Theme.accent : Color.primary)
-                    .lineLimit(1)
+                    .foregroundStyle(.primary).lineLimit(1)
                 Spacer(minLength: 0)
-            }.padding(.horizontal, 10).padding(.vertical, 7)
-                .background(navigation.selection == page ? Theme.accent.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 8))
-                .contentShape(RoundedRectangle(cornerRadius: 8))
+                if navigation.selection == page {
+                    Circle().fill(NASStyle.accent).frame(width: 5, height: 5).accessibilityHidden(true)
+                }
+            }.padding(.horizontal, 12).frame(minHeight: 44)
+                .background(navigation.selection == page ? NASStyle.surfaceRaised : .clear, in: RoundedRectangle(cornerRadius: 10))
+                .contentShape(Rectangle())
         }.buttonStyle(.plain)
-            .tag(page)
-            .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
-            .listRowBackground(Color.clear)
+            .focusable()
+            .focused($sidebarFocus, equals: page)
+            .onKeyPress(.downArrow) { moveSidebar(by: 1); return .handled }
+            .onKeyPress(.upArrow) { moveSidebar(by: -1); return .handled }
             .accessibilityAddTraits(navigation.selection == page ? .isSelected : [])
             .accessibilityIdentifier("sidebar_" + page.rawValue)
+    }
+    private func moveSidebar(by offset: Int) {
+        let pages: [WorkspacePage] = [.local, .photos, .files, .oneDrive, .calendar, .downloads, .monitor, .backup, .settings]
+        guard let index = pages.firstIndex(of: navigation.selection), pages.indices.contains(index + offset) else { return }
+        navigation.selection = pages[index + offset]
+        sidebarFocus = pages[index + offset]
     }
     @ViewBuilder private func content(_ page: WorkspacePage) -> some View {
         switch page {
