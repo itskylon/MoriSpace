@@ -91,7 +91,7 @@ struct StorageHomeView: View {
                             if oneDrive { sourceMenu }
                             Spacer()
                             Text("文件").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-                        }.padding(.horizontal, 16).frame(minHeight: 48).background(NASStyle.canvas)
+                        }.padding(.horizontal, 16).frame(minHeight: 56).background(NASStyle.canvas)
                         Rectangle().fill(NASStyle.outline).frame(height: 0.5)
                         OneDriveHomeView(isActive: isActive && oneDrive).frame(maxWidth: .infinity, maxHeight: .infinity)
                     }.toolbar(.hidden, for: .navigationBar)
@@ -108,8 +108,9 @@ struct StorageHomeView: View {
                 .accessibilityIdentifier("storageChooseOneDrive")
         } label: {
             HStack(spacing: 5) {
-                Text(oneDrive ? "OneDrive" : "群晖").font(.headline)
-                Image(systemName: "chevron.down").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                Text(oneDrive ? "OneDrive" : "群晖").font(.system(.title2, design: .rounded, weight: .heavy)).tracking(-0.8)
+                Image(systemName: "chevron.down").font(.system(size: 9, weight: .heavy)).foregroundStyle(NASStyle.ink)
+                    .frame(width: 21, height: 21).background(NASStyle.signal, in: Circle())
             }.foregroundStyle(.primary).frame(minHeight: 44).contentShape(Rectangle())
         }.accessibilityLabel("切换存储位置").accessibilityIdentifier("storageSourceMenu")
     }
@@ -127,8 +128,7 @@ struct OneDriveHomeView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
-                        Text("OneDrive 连接").font(.headline)
-                        Text("登录后浏览文件，按需下载到本机。").font(.subheadline).foregroundStyle(.secondary)
+                        StorageConnectionHeading(title: "连接 OneDrive", detail: "云端文件，随时取用", symbol: "cloud", color: NASStyle.blue)
                         if session.isConnecting { ProgressView("正在连接…") }
                         if let error = session.error {
                             ErrorBanner(message: error)
@@ -157,44 +157,64 @@ struct OneDriveConnectionView: View {
     @State private var clientID = ""
     @State private var disconnect = false
     var body: some View {
-        Form {
-            if let account = session.account {
-                Section("已连接") {
-                    Label(account.displayName, systemImage: "person.crop.circle.badge.checkmark")
-                    Text("读取你的 OneDrive 文件。首次授权后会在本机保存登录状态。").font(.footnote).foregroundStyle(.secondary)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 26) {
+                StorageConnectionHeading(title: "OneDrive", detail: "连接你的微软云盘", symbol: "cloud", color: NASStyle.blue)
+                if let account = session.account {
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(NASStyle.accent)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(account.displayName).font(.headline)
+                            Text("已连接 · 文件只读访问").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }.padding(16).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 16))
                 }
-            }
-            Section {
-                TextField("Application (client) ID", text: $clientID)
-                    .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.asciiCapable)
-                    .accessibilityIdentifier("oneDriveClientID")
-                    .disabled(session.client != nil || session.isConnecting)
-                Text("填写微软应用注册中的客户端 ID，格式为带短横线的标识符。这里不填写邮箱或密码。").font(.footnote).foregroundStyle(.secondary)
-            } header: { Text("应用连接配置") }
-            if let error = session.error { Section { ErrorBanner(message: error) } }
-            if session.client == nil {
-                Section {
-                    Button {
-                        session.clientID = clientID.trimmingCharacters(in: .whitespacesAndNewlines)
-                        Task { await session.connect(); if session.client != nil { dismiss() } }
-                    } label: {
-                        HStack { Spacer(); if session.isConnecting { ProgressView() }; Text(session.isConnecting ? "等待微软授权…" : "登录微软账号"); Spacer() }
-                    }.disabled(UUID(uuidString: clientID.trimmingCharacters(in: .whitespacesAndNewlines)) == nil || session.isConnecting)
-                        .accessibilityIdentifier("oneDriveSignIn")
-                } footer: { Text("将打开微软登录页面，只申请文件读取权限。支持全球版个人与工作/学校账号，具体取决于应用注册的账号类型。暂不读取其他网盘或共享库的快捷方式。") }
-            } else {
-                Section { Button("退出 OneDrive", role: .destructive) { disconnect = true }.accessibilityIdentifier("oneDriveSignOut") }
-            }
-            Section {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("应用客户端 ID").font(.subheadline.weight(.bold))
+                    TextField("Application (client) ID", text: $clientID)
+                        .font(.system(.subheadline, design: .monospaced)).textFieldStyle(.plain)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.asciiCapable)
+                        .padding(16).frame(minHeight: 54)
+                        .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+                        .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 1) }
+                        .accessibilityIdentifier("oneDriveClientID")
+                        .disabled(session.client != nil || session.isConnecting)
+                    Text("复制微软应用注册中的客户端 ID；这里不填写邮箱或密码。")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                if let error = session.error { ErrorBanner(message: error) }
+                if session.client == nil {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Button {
+                            session.clientID = clientID.trimmingCharacters(in: .whitespacesAndNewlines)
+                            Task { await session.connect(); if session.client != nil { dismiss() } }
+                        } label: {
+                            StoragePrimaryAction(title: session.isConnecting ? "等待微软授权…" : "登录微软账号", busy: session.isConnecting)
+                        }.buttonStyle(.plain)
+                            .disabled(UUID(uuidString: clientID.trimmingCharacters(in: .whitespacesAndNewlines)) == nil || session.isConnecting)
+                            .opacity(UUID(uuidString: clientID.trimmingCharacters(in: .whitespacesAndNewlines)) == nil ? 0.45 : 1)
+                            .accessibilityIdentifier("oneDriveSignIn")
+                        Text("将在微软页面完成登录，授权后自动返回。只申请文件读取权限，登录状态保存在本机。")
+                            .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    }
+                } else {
+                    Button("退出 OneDrive", role: .destructive) { disconnect = true }
+                        .font(.subheadline.weight(.semibold)).frame(minHeight: 44).accessibilityIdentifier("oneDriveSignOut")
+                }
+                Rectangle().fill(NASStyle.outline).frame(height: 1)
                 DisclosureGroup("首次配置帮助") {
-                    Text("在 Microsoft Entra → 应用注册 → 你的应用 → 身份验证中添加移动和桌面应用平台，并登记以下回调地址：").font(.footnote)
-                    Text(OneDriveSession.redirectURI).font(.footnote.monospaced()).textSelection(.enabled)
-                    Text("个人 OneDrive 需在受支持账户类型中包含个人 Microsoft 账户。不需要创建客户端密码。").font(.footnote).foregroundStyle(.secondary)
-                    Link("打开微软应用注册", destination: URL(string: "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade")!)
-                }
-            }
-        }.scrollContentBackground(.hidden).background(NASStyle.canvas)
-            .navigationTitle("OneDrive 连接").navigationBarTitleDisplayMode(.inline)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("在 Microsoft Entra → 应用注册 → 你的应用 → 身份验证中添加移动和桌面应用平台，并登记以下回调地址：")
+                        Text(OneDriveSession.redirectURI).font(.footnote.monospaced()).textSelection(.enabled)
+                        Text("个人 OneDrive 需在受支持账户类型中包含个人 Microsoft 账户。不需要创建客户端密码。支持全球版个人与工作/学校账号，具体取决于应用注册的账号类型。暂不读取其他网盘或共享库的快捷方式。")
+                            .foregroundStyle(.secondary)
+                        Link("打开微软应用注册", destination: URL(string: "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade")!)
+                    }.font(.footnote).padding(.top, 12)
+                }.font(.subheadline.weight(.medium))
+            }.padding(24).frame(maxWidth: 580, alignment: .leading).frame(maxWidth: .infinity)
+        }.background(NASStyle.canvas)
+            .navigationTitle("云端连接").navigationBarTitleDisplayMode(.inline)
             .onAppear { clientID = session.clientID }
             .interactiveDismissDisabled(session.isConnecting)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() }.disabled(session.isConnecting) } }
@@ -340,8 +360,8 @@ struct OneDriveBrowserView: View {
     private func layoutButton(isGrid: Bool, symbol: String, label: String) -> some View {
         Button { grid = isGrid } label: {
             Image(systemName: symbol).frame(width: 44, height: 44)
-                .foregroundStyle(grid == isGrid ? Theme.accent : Color.secondary)
-                .background(grid == isGrid ? Theme.accent.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 7))
+                .foregroundStyle(grid == isGrid ? NASStyle.ink : Color.secondary)
+                .background(grid == isGrid ? NASStyle.signal : Color.clear, in: RoundedRectangle(cornerRadius: 12))
         }.buttonStyle(.plain).accessibilityLabel(label).help(label)
     }
     @ViewBuilder private var fileContent: some View {
@@ -351,17 +371,17 @@ struct OneDriveBrowserView: View {
         } else {
             ScrollView {
                 if grid {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: wide ? 112 : 96, maximum: 152), spacing: 12)], spacing: 8) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: wide ? 128 : 112, maximum: 170), spacing: 12)], spacing: 16) {
                         ForEach(items) { item in
                             itemButton(item) {
                                 VStack(spacing: 6) {
-                                    Image(systemName: item.icon).font(.system(size: 40, weight: .light)).symbolRenderingMode(.hierarchical)
-                                        .foregroundStyle(item.isFolder ? Theme.accent : Color.secondary).frame(width: 60, height: 56)
-                                    Text(item.name).font(.caption.weight(.medium)).lineLimit(2).truncationMode(.middle).multilineTextAlignment(.center).frame(minHeight: 34, alignment: .top)
+                                    StorageFileBadge(name: item.name, symbol: item.icon, folder: item.isFolder, expanded: true)
+                                    Text(item.name).font(.caption.weight(.semibold)).lineLimit(2).truncationMode(.middle).multilineTextAlignment(.leading).frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
                                     Text(item.isFolder ? "文件夹" : item.size.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "文件")
-                                        .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-                                }.frame(maxWidth: .infinity).padding(.horizontal, 8).padding(.vertical, 10)
-                                    .background(selected?.id == item.id ? Theme.accent.opacity(0.1) : hoveredItem == item.id ? NASStyle.inset : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                                        .font(.caption2.monospacedDigit()).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                                }.frame(maxWidth: .infinity).padding(6)
+                                    .background(selected?.id == item.id ? Theme.accent.opacity(0.1) : hoveredItem == item.id ? NASStyle.inset : Color.clear, in: RoundedRectangle(cornerRadius: 18))
+                                    .overlay { RoundedRectangle(cornerRadius: 18).stroke(selected?.id == item.id ? NASStyle.accent : .clear, lineWidth: 2) }
                             }
                         }
                     }.padding(16)
@@ -391,8 +411,7 @@ struct OneDriveBrowserView: View {
     @ViewBuilder private func itemDetails(_ item: OneDriveItem) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 12) {
-                Image(systemName: item.icon).font(.system(size: 42, weight: .light)).symbolRenderingMode(.hierarchical).foregroundStyle(Theme.accent)
-                    .frame(maxWidth: .infinity).frame(height: 90)
+                StorageFileBadge(name: item.name, symbol: item.icon, folder: item.isFolder, expanded: true)
                 Text(item.name).font(.headline).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                 Text(item.isFolder ? "OneDrive 文件夹" : "OneDrive 文件").font(.caption).foregroundStyle(.secondary)
             }
@@ -430,10 +449,9 @@ struct OneDriveItemRow: View {
     let item: OneDriveItem
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: item.icon).font(.title3).symbolRenderingMode(.hierarchical)
-                .foregroundStyle(item.isFolder ? Theme.accent : Color.secondary).frame(width: 30, height: 34)
+            StorageFileBadge(name: item.name, symbol: item.icon, folder: item.isFolder)
             VStack(alignment: .leading, spacing: 4) {
-                Text(item.name).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
+                Text(item.name).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
                 HStack(spacing: 8) {
                     if !item.isFolder, let size = item.size { Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
                     if let date = item.modified { Text(date.formatted(date: .abbreviated, time: .omitted)) }

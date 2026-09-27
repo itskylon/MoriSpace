@@ -21,8 +21,7 @@ struct NASFilesHomeView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        Text("文件连接").font(.headline)
-                        Text("登录后浏览共享文件夹，或查看本机下载。").font(.subheadline).foregroundStyle(.secondary)
+                        StorageConnectionHeading(title: "连接文件", detail: "共享文件夹与本机下载，一处浏览", symbol: "folder", color: NASStyle.blue)
                         NASConnectionStatus(service: .files)
                         Button { connect = true } label: {
                             NASActionLabel(title: app.hasSavedConnection ? "文件连接设置" : "连接群晖文件", subtitle: "File Station", symbol: "folder")
@@ -91,10 +90,10 @@ struct NASFileBrowserView: View {
     private var fileControls: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
-                Text(folder == nil ? "共享文件夹" : "文件").font(.subheadline.weight(.semibold))
+                Text(folder == nil ? "共享文件夹" : "文件").font(.system(.title3, design: .rounded, weight: .heavy)).tracking(-0.5)
                 Spacer()
                 Text(query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "\(filteredItems.count) 项匹配")
-                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
+                    .font(.caption.monospacedDigit().weight(.semibold)).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
                 searchToggle
                 optionsMenu
             }
@@ -152,16 +151,15 @@ struct NASFileRow: View {
     let file: NASFile
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: file.isdir ? "folder.fill" : file.icon).font(.title3.weight(.regular)).symbolRenderingMode(.hierarchical)
-                .foregroundStyle(file.isdir ? NASStyle.accent : Color.secondary).frame(width: 30, height: 34)
+            StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir)
             VStack(alignment: .leading, spacing: 5) {
-                Text(file.name).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
+                Text(file.name).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
                 HStack(spacing: 8) {
                     if !file.isdir, let size = file.size { Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
                     if let date = file.modified { Text(date.formatted(date: .abbreviated, time: .shortened)) }
                 }.font(.caption).foregroundStyle(.secondary)
             }
-        }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.vertical, 4)
+        }.frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).padding(.vertical, 6)
     }
 }
 
@@ -174,23 +172,50 @@ struct NASFileDetailView: View {
     @State private var added = false
     @State private var video: VideoSelection?
     var body: some View {
-        List {
-            Section { NASFileRow(file: file).padding(.vertical, 10) }
-            Section("所在位置") { Text(file.path).font(.footnote).textSelection(.enabled) }
-            if file.isVideo {
-                Section {
-                    Button { video = VideoSelection(file: file, owner: owner) } label: { Label("直接播放视频", systemImage: "play.circle.fill") }.accessibilityIdentifier("playVideo")
-                } footer: { Text("支持本机可解码的 MP4、MOV 等视频。在线播放需要 NAS 支持分段读取。") }
-            }
-            Section {
-                Button {
-                    app.downloads.enqueue(file, owner: owner, client: client); added = true
-                } label: {
-                    Label(added ? "已加入下载队列" : AppPlatform.downloadTitle, systemImage: added ? "checkmark.circle" : "arrow.down.circle")
-                }.disabled(added).accessibilityIdentifier("downloadFile")
-                NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner) } label: { Label("查看下载任务", systemImage: "list.bullet") }.accessibilityIdentifier("detailDownloads")
-            } footer: { Text("下载期间请保持 App 在前台。下载完成后，可在“已下载”中选择保存位置。") }
-        }.scrollContentBackground(.hidden).background(NASStyle.canvas)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                StorageFileBadge(name: file.name, symbol: file.icon, folder: false, expanded: true)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(file.name).font(.system(.title2, design: .rounded, weight: .bold))
+                        .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                    if let size = file.size {
+                        Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
+                            .font(.subheadline.monospacedDigit()).foregroundStyle(.secondary)
+                    }
+                    if let modified = file.modified {
+                        Text("修改于 " + modified.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("所在位置").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Text(file.path).font(.footnote.monospaced()).textSelection(.enabled)
+                }
+                Rectangle().fill(NASStyle.outline).frame(height: 1)
+                if file.isVideo {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Button { video = VideoSelection(file: file, owner: owner) } label: {
+                            StoragePrimaryAction(title: "直接播放视频", symbol: "play.fill")
+                        }.buttonStyle(.plain).accessibilityIdentifier("playVideo")
+                        Text("支持本机可解码的 MP4、MOV 等视频。在线播放需要 NAS 支持分段读取。")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 12) {
+                    Button {
+                        app.downloads.enqueue(file, owner: owner, client: client); added = true
+                    } label: {
+                        StoragePrimaryAction(title: added ? "已加入下载队列" : AppPlatform.downloadTitle, symbol: added ? "checkmark" : "arrow.down")
+                    }.buttonStyle(.plain).disabled(added).opacity(added ? 0.65 : 1).accessibilityIdentifier("downloadFile")
+                    NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner) } label: {
+                        HStack { Text("查看下载任务"); Spacer(); Image(systemName: "arrow.right") }
+                            .font(.subheadline.weight(.semibold)).frame(minHeight: 44)
+                    }.accessibilityIdentifier("detailDownloads")
+                    Text("下载期间请保持 App 在前台。下载完成后，可在“已下载”中选择保存位置。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }.padding(24).frame(maxWidth: 560, alignment: .leading).frame(maxWidth: .infinity)
+        }.background(NASStyle.canvas)
             .navigationTitle("文件详情").navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(item: $video) { selection in VideoPlaybackView(selection: selection, client: client) }
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
@@ -292,5 +317,41 @@ struct FileExportSheet: UIViewControllerRepresentable {
         init(completion: @escaping (Bool) -> Void) { self.completion = completion }
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { completion(!urls.isEmpty) }
         func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) { completion(false) }
+    }
+}
+
+
+/// Graphic file markers keep type visible in both compact lists and wide grids.
+struct StorageFileBadge: View {
+    let name: String
+    let symbol: String
+    let folder: Bool
+    var expanded = false
+    private var suffix: String { String(name.split(separator: ".").last ?? "FILE").uppercased() }
+    private var color: Color {
+        if folder { return NASStyle.signal }
+        switch suffix {
+        case "JPG", "JPEG", "PNG", "HEIC", "GIF", "WEBP": return Color(red: 0.79, green: 0.74, blue: 0.98)
+        case "MP4", "MOV", "MKV", "M4V": return Color(red: 0.99, green: 0.73, blue: 0.63)
+        case "PDF", "TXT", "MD", "DOC", "DOCX": return Color(red: 0.65, green: 0.80, blue: 0.96)
+        default: return Color(red: 0.79, green: 0.74, blue: 0.98)
+        }
+    }
+    var body: some View {
+        Group {
+            if expanded {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text(folder ? "FOLDER" : String(suffix.prefix(7))).font(.system(size: 9, weight: .heavy, design: .monospaced)).tracking(1)
+                        Spacer(minLength: 0)
+                        Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .bold))
+                    }
+                    Image(systemName: symbol).font(.system(size: 32, weight: .medium)).frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(13).frame(maxWidth: .infinity).frame(height: 94)
+            } else {
+                Image(systemName: symbol).font(.system(size: 20, weight: .medium)).frame(width: 44, height: 48)
+            }
+        }.foregroundStyle(NASStyle.ink).background(color, in: RoundedRectangle(cornerRadius: expanded ? 14 : 11))
+            .accessibilityHidden(true)
     }
 }

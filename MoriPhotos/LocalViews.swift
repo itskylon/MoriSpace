@@ -5,6 +5,7 @@ struct LocalLibraryView: View {
     var isActive = true
     @EnvironmentObject private var library: PhotoLibraryStore
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var filter = "全部"
     @State private var selecting = false
     @State private var selected = Set<String>()
@@ -97,24 +98,42 @@ struct LocalLibraryView: View {
         .onChange(of: library.assets.map(\.localIdentifier)) { _, ids in selected.formIntersection(Set(ids)) }
     }
     private var phoneHeader: some View {
-        HStack(alignment: .center, spacing: 10) {
-            Text("照片").font(.title2.weight(.bold)).tracking(-0.6)
-                .accessibilityIdentifier("localLibraryTitle")
-            if library.canRead {
-                Text("\(visible.count)").font(.subheadline.monospacedDigit()).foregroundStyle(.tertiary)
+        VStack(alignment: .leading, spacing: 8) {
+            if dynamicTypeSize.isAccessibilitySize {
+                libraryTitle
+                if library.canRead {
+                    HStack(spacing: 8) { photoCountBadge; Spacer(minLength: 4); selectionButton }
+                }
+            } else {
+                HStack(alignment: .center, spacing: 12) {
+                    libraryTitle
+                    if library.canRead { photoCountBadge }
+                    Spacer(minLength: 6)
+                    if library.canRead { selectionButton }
+                }
             }
-            Spacer()
-            if library.canRead { selectionButton }
-        }.padding(.horizontal, 20).frame(minHeight: 48)
+        }.padding(.horizontal, 20).padding(.vertical, 8).frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
+            .background(NASStyle.signal)
+    }
+    private var libraryTitle: some View {
+        Text("照片").font(.largeTitle.weight(.black)).tracking(-1.5)
+            .foregroundStyle(NASStyle.ink).accessibilityIdentifier("localLibraryTitle")
+    }
+    private var photoCountBadge: some View {
+        Text("\(visible.count)").font(.caption.weight(.heavy).monospacedDigit()).lineLimit(1).minimumScaleFactor(0.6)
+            .foregroundStyle(NASStyle.signal).padding(.horizontal, 9).padding(.vertical, 6)
+            .background(NASStyle.ink, in: Capsule())
+            .accessibilityLabel("\(visible.count) 张照片")
     }
     private var selectionButton: some View {
         Button { selecting.toggle(); selected.removeAll() } label: {
             HStack(spacing: 6) {
                 Image(systemName: selecting ? "checkmark" : "checkmark.circle")
                 Text(selecting ? "完成" : "选择")
-            }.font(.subheadline.weight(.medium)).frame(minHeight: 44)
-        }.buttonStyle(.plain).foregroundStyle(selecting ? NASStyle.accent : .primary)
-            .accessibilityIdentifier("localPhotoSelection")
+            }.font(.subheadline.weight(.bold)).padding(.horizontal, 13).frame(minHeight: 44)
+                .foregroundStyle(NASStyle.signal)
+                .background(NASStyle.ink, in: Capsule())
+        }.buttonStyle(.plain).accessibilityIdentifier("localPhotoSelection")
     }
     private var libraryToolbar: some View {
         ViewThatFits(in: .horizontal) {
@@ -131,8 +150,8 @@ struct LocalLibraryView: View {
                 if AppPlatform.isMac { thumbnailControl }
                 if wide { selectionButton }
             }
-        }.padding(.horizontal, 20).padding(.top, wide ? 8 : 0)
-            .padding(.bottom, 6).background(NASStyle.canvas)
+        }.padding(.horizontal, 16).padding(.top, wide ? 12 : 10)
+            .padding(.bottom, 10).background(NASStyle.canvas)
     }
     private var libraryCount: some View {
         HStack(spacing: 10) {
@@ -160,7 +179,8 @@ struct LocalLibraryView: View {
                 Button("前往系统设置") { AppPlatform.openPhotoSettings() }
                     .buttonStyle(.borderedProminent)
             }
-        }.padding(.vertical, 36).frame(maxWidth: .infinity)
+        }.padding(.vertical, 30).frame(maxWidth: .infinity)
+            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 28))
     }
     private func run(_ action: @escaping () async -> Void) {
         busy = true

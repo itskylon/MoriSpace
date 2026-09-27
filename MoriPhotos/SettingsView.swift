@@ -12,8 +12,8 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 30) {
-                preferencesSection("存储服务") {
+            VStack(alignment: .leading, spacing: 26) {
+                preferencesSection("存储服务", index: "01") {
                     NavigationLink { ConnectionView() } label: {
                         SettingsRow(title: "群晖照片", subtitle: "Synology Photos", symbol: "photo.on.rectangle", value: app.client == nil ? "未连接" : "已连接")
                     }
@@ -27,7 +27,7 @@ struct SettingsView: View {
                     }.accessibilityIdentifier("oneDriveSettings")
                 }
 
-                preferencesSection("备份与设备") {
+                preferencesSection("备份与设备", index: "02") {
                     NavigationLink { PhotoBackupView() } label: {
                         SettingsRow(title: "新照片备份", subtitle: "原图保存到群晖", symbol: "arrow.up.doc", value: backup.configuration.enabled ? "已开启" : "未开启")
                     }.accessibilityIdentifier("newPhotoBackupSettings")
@@ -37,7 +37,7 @@ struct SettingsView: View {
                     }
                 }
 
-                preferencesSection("本机设置") {
+                preferencesSection("本机设置", index: "03") {
                     Button { AppPlatform.openPhotoSettings() } label: {
                         SettingsRow(title: "照片权限", subtitle: AppPlatform.libraryName, symbol: "hand.raised", value: library.canRead ? (library.authorization == .limited ? "部分照片" : "全部照片") : "未授权")
                     }.accessibilityLabel("打开系统权限设置")
@@ -76,12 +76,18 @@ struct SettingsView: View {
         .workspaceNavigationTitle("设置").navigationBarTitleDisplayMode(.inline)
     }
 
-    private var rowDivider: some View { Divider().padding(.leading, 38) }
+    private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.leading, 56) }
 
-    private func preferencesSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+    private func preferencesSection<Content: View>(_ title: String, index: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title).font(.title3.weight(.bold))
+                Spacer()
+                Text(index).font(.caption.monospaced().weight(.bold)).foregroundStyle(.secondary)
+            }.padding(.horizontal, 2)
             VStack(spacing: 0, content: content)
+                .padding(.horizontal, 16)
+                .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 22))
         }
     }
 }
@@ -95,15 +101,16 @@ private struct SettingsRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(NASStyle.accent)
-                .frame(width: 26, height: 32)
+            Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(symbol == "cloud" ? NASStyle.blue : NASStyle.ink)
+                .frame(width: 42, height: 42)
+                .background(symbol == "cloud" ? NASStyle.blue.opacity(0.12) : NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.primary)
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
                 Text(subtitle).font(.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
-            if let value { Text(value).font(.caption).foregroundStyle(.secondary) }
+            if let value { Text(value).font(.caption.weight(.medium)).foregroundStyle(value == "已连接" || value == "已开启" ? NASStyle.accent : .secondary) }
             if chevron { Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary).accessibilityHidden(true) }
         }
         .padding(.vertical, 13)
@@ -127,49 +134,72 @@ struct ConnectionView: View {
     private enum Field: Hashable { case address, username, password, otp }
     @FocusState private var focus: Field?
     var body: some View {
-        Form {
-            Section {
-                Text(connectionDescription).font(.subheadline).foregroundStyle(.secondary)
-                    .listRowBackground(Color.clear)
-            }
-            Section {
-                TextField("https://nas.example.com:5001", text: $app.credentials.address)
-                    .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("nasAddress")
-                    .focused($focus, equals: .address).submitLabel(.next).onSubmit { focus = .username }
-            } header: { Text("服务器") } footer: {
-                Text(service == .photos ? "也可使用 /photo 地址。需从本机直接访问，暂不支持 QuickConnect 中继。" : "使用可从本机直接访问的 DSM HTTPS 地址。")
-            }
-            Section {
-                TextField("账号", text: $app.credentials.username).textContentType(.username).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("nasUsername")
-                    .focused($focus, equals: .username).submitLabel(.next).onSubmit { focus = .password }
-                SecureField("密码", text: $app.credentials.password).textContentType(.password).accessibilityIdentifier("nasPassword")
-                    .focused($focus, equals: .password).submitLabel(.done).onSubmit { focus = nil }
-                TextField("验证码（开启双重验证时填写）", text: $otp).textContentType(.oneTimeCode).keyboardType(.numberPad).focused($focus, equals: .otp)
-                Toggle("在钥匙串中保存登录信息", isOn: $app.remember)
-            } header: { Text("登录信息") } footer: {
-                Text("保存后自动恢复照片、文件和状态连接；主动断开后暂停自动连接。")
-            }
-            if let error = app.error { Section { ErrorBanner(message: error) } }
-            Section {
-                Button {
-                    focus = nil
-                    Task { if await app.connect(otp: otp, service: service) { otp = ""; dismiss() } }
-                } label: {
-                    HStack { Spacer(); if app.connecting { ProgressView() }; Text(app.connecting ? "正在验证连接…" : "登录并连接"); Spacer() }
-                }.disabled(app.connecting || app.credentials.address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || app.credentials.username.isEmpty || app.credentials.password.isEmpty).accessibilityIdentifier("loginNAS")
-            } footer: {
-                Text("账号密码通过加密连接提交。此版本不支持 QuickConnect 中继与交互式 Secure SignIn 审批，也不会跳过 HTTPS 证书校验。")
-            }
-            if app.client != nil || app.fileClient != nil || app.monitorClient != nil {
-                Section { Button("断开连接", role: .destructive) { Task { await app.disconnect(); dismiss() } } }
-            }
-            if app.hasSavedConnection {
-                Section { Button("移除保存的账号", role: .destructive) { forget = true } }
-            }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                HStack(alignment: .top, spacing: 16) {
+                    Image(systemName: service == .photos ? "photo.on.rectangle" : (service == .files ? "folder" : "waveform.path.ecg"))
+                        .font(.system(size: 25, weight: .medium)).foregroundStyle(NASStyle.signal)
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text(service == .photos ? "Synology Photos" : (service == .files ? "File Station" : "NAS 运行状态"))
+                            .font(.title3.weight(.bold)).foregroundStyle(.white)
+                        Text(connectionDescription).font(.caption).foregroundStyle(.white.opacity(0.68))
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "lock.shield").foregroundStyle(NASStyle.signal).accessibilityHidden(true)
+                }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(NASStyle.ink, in: RoundedRectangle(cornerRadius: 22))
+
+                connectionSection("服务器", index: "01") {
+                    TextField("https://nas.example.com:5001", text: $app.credentials.address)
+                        .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("nasAddress")
+                        .focused($focus, equals: .address).submitLabel(.next).onSubmit { focus = .username }
+                        .connectionInput()
+                    Text(service == .photos ? "也可使用 /photo 地址。需从本机直接访问，暂不支持 QuickConnect 中继。" : "使用可从本机直接访问的 DSM HTTPS 地址。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                connectionSection("登录信息", index: "02") {
+                    VStack(spacing: 0) {
+                        TextField("账号", text: $app.credentials.username).textContentType(.username).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("nasUsername")
+                            .focused($focus, equals: .username).submitLabel(.next).onSubmit { focus = .password }
+                            .padding(16).frame(minHeight: 54)
+                        inputRule
+                        SecureField("密码", text: $app.credentials.password).textContentType(.password).accessibilityIdentifier("nasPassword")
+                            .focused($focus, equals: .password).submitLabel(.done).onSubmit { focus = nil }
+                            .padding(16).frame(minHeight: 54)
+                        inputRule
+                        TextField("验证码（开启双重验证时填写）", text: $otp).textContentType(.oneTimeCode).keyboardType(.numberPad).focused($focus, equals: .otp)
+                            .padding(16).frame(minHeight: 54)
+                    }.textFieldStyle(.plain).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 16))
+                    Toggle("在钥匙串中保存登录信息", isOn: $app.remember).font(.subheadline).frame(minHeight: 44)
+                    Text("保存后自动恢复照片、文件和状态连接；主动断开后暂停自动连接。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if let error = app.error { ErrorBanner(message: error) }
+                VStack(alignment: .leading, spacing: 12) {
+                    Button {
+                        focus = nil
+                        Task { if await app.connect(otp: otp, service: service) { otp = ""; dismiss() } }
+                    } label: {
+                        HStack {
+                            if app.connecting { ProgressView().tint(NASStyle.ink) }
+                            Text(app.connecting ? "正在验证连接…" : "登录并连接").font(.headline)
+                            Spacer()
+                            Image(systemName: "arrow.up.right").font(.system(size: 17, weight: .semibold))
+                        }.padding(.horizontal, 20).frame(minHeight: 56).foregroundStyle(NASStyle.ink)
+                            .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 16))
+                    }.buttonStyle(.plain)
+                        .disabled(app.connecting || app.credentials.address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || app.credentials.username.isEmpty || app.credentials.password.isEmpty).accessibilityIdentifier("loginNAS")
+                    Text("账号密码通过加密连接提交。此版本不支持 QuickConnect 中继与交互式 Secure SignIn 审批，也不会跳过 HTTPS 证书校验。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if app.client != nil || app.fileClient != nil || app.monitorClient != nil {
+                    Button("断开连接", role: .destructive) { Task { await app.disconnect(); dismiss() } }.frame(minHeight: 44)
+                }
+                if app.hasSavedConnection {
+                    Button("移除保存的账号", role: .destructive) { forget = true }.frame(minHeight: 44)
+                }
+            }.padding(AppPlatform.isMac ? 28 : 20).frame(maxWidth: 660).frame(maxWidth: .infinity)
         }
-        .scrollContentBackground(.hidden)
-        .frame(maxWidth: 720)
-        .frame(maxWidth: .infinity)
         .background(NASStyle.canvas)
         .tint(NASStyle.accent)
         .navigationTitle(service == .photos ? "连接设置" : (service == .files ? "文件连接设置" : "状态连接设置")).navigationBarTitleDisplayMode(.inline)
@@ -184,5 +214,27 @@ struct ConnectionView: View {
             .confirmationDialog("移除本机保存的 NAS 登录信息？", isPresented: $forget, titleVisibility: .visible) {
                 Button("移除并断开连接", role: .destructive) { Task { await app.forget(); otp = "" } }
             }
+    }
+    private var inputRule: some View {
+        Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.horizontal, 16)
+    }
+
+    private func connectionSection<Content: View>(_ title: String, index: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title).font(.subheadline.weight(.bold))
+                Spacer()
+                Text(index).font(.caption.monospaced()).foregroundStyle(.secondary)
+            }
+            content()
+        }
+    }
+
+}
+
+private extension View {
+    func connectionInput() -> some View {
+        textFieldStyle(.plain).padding(16).frame(minHeight: 54)
+            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 16))
     }
 }

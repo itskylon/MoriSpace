@@ -76,7 +76,7 @@ private struct DesktopFileContents: View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 16) { pathBar; controls }
             VStack(spacing: 0) { pathBar; controls }
-        }.padding(.horizontal, 16).padding(.vertical, 4).background(NASStyle.canvas)
+        }.padding(.horizontal, 16).padding(.vertical, 7).background(NASStyle.surface)
     }
 
     private var pathBar: some View {
@@ -138,25 +138,23 @@ private struct DesktopFileContents: View {
     private func viewButton(_ value: String, symbol: String, title: String) -> some View {
         Button { layout = value } label: {
             Image(systemName: symbol).frame(width: 44, height: 44)
-                .foregroundStyle(layout == value ? NASStyle.accent : Color.secondary)
-                .background(layout == value ? NASStyle.accent.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 7))
+                .foregroundStyle(layout == value ? NASStyle.ink : Color.secondary)
+                .background(layout == value ? NASStyle.signal : Color.clear, in: RoundedRectangle(cornerRadius: 12))
         }.buttonStyle(.plain).help(title).accessibilityLabel(title).accessibilityIdentifier("filesView_" + value)
     }
 
     private var iconGrid: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 112, maximum: 152), spacing: 12)], spacing: 8) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 128, maximum: 170), spacing: 12)], spacing: 16) {
                 ForEach(matchingFiles) { file in
                     VStack(spacing: 6) {
-                        Image(systemName: file.isdir ? "folder.fill" : file.icon)
-                            .font(.system(size: 40, weight: .light)).symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(file.isdir ? NASStyle.accent : Color.secondary)
-                            .frame(width: 60, height: 56)
-                        Text(file.name).font(.caption.weight(.medium)).lineLimit(2)
-                            .multilineTextAlignment(.center).truncationMode(.middle).frame(minHeight: 32, alignment: .top)
-                        Text(file.isdir ? "文件夹" : size(file)).font(.caption2).monospacedDigit().foregroundStyle(.secondary)
-                    }.frame(maxWidth: .infinity).padding(.vertical, 10).padding(.horizontal, 8)
-                        .background(directory.selection == file.id ? NASStyle.accent.opacity(0.10) : hoveredFile == file.id ? NASStyle.inset : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                        StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir, expanded: true)
+                        Text(file.name).font(.caption.weight(.semibold)).lineLimit(2)
+                            .multilineTextAlignment(.leading).truncationMode(.middle).frame(maxWidth: .infinity, minHeight: 32, alignment: .topLeading)
+                        Text(file.isdir ? "文件夹" : size(file)).font(.caption2).monospacedDigit().foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                    }.frame(maxWidth: .infinity).padding(6)
+                        .background(directory.selection == file.id ? NASStyle.accent.opacity(0.10) : hoveredFile == file.id ? NASStyle.inset : Color.clear, in: RoundedRectangle(cornerRadius: 18))
+                        .overlay { RoundedRectangle(cornerRadius: 18).stroke(directory.selection == file.id ? NASStyle.accent : .clear, lineWidth: 2) }
                         .onHover { hoveredFile = $0 ? file.id : nil }
                         .contentShape(Rectangle())
                         .onTapGesture(count: 2) { directory.selection = file.id; open(file) }
@@ -201,8 +199,7 @@ private struct DesktopFileContents: View {
         ScrollView {
             if let file = selected {
                 VStack(alignment: .leading, spacing: 16) {
-                    Image(systemName: file.isdir ? "folder.fill" : file.icon).font(.system(size: 54, weight: .light))
-                        .symbolRenderingMode(.hierarchical).foregroundStyle(NASStyle.accent).frame(maxWidth: .infinity).frame(height: 90)
+                    StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir, expanded: true)
                     Text(file.name).font(.headline).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                     Text(file.kindLabel).font(.caption).foregroundStyle(.secondary)
                     Divider()
@@ -217,7 +214,7 @@ private struct DesktopFileContents: View {
             } else {
                 ContentUnavailableView("文件信息", systemImage: "info.circle", description: Text("选择文件查看大小、修改时间和位置。"))
             }
-        }.background(NASStyle.inset.opacity(0.65)).accessibilityIdentifier("fileInspectorPanel")
+        }.background(NASStyle.surface).accessibilityIdentifier("fileInspectorPanel")
     }
     private func infoRow(_ title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {

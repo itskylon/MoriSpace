@@ -1,6 +1,25 @@
 import XCTest
 
 final class MoriPhotosUITests: XCTestCase {
+    func testLargeTextPhotoControlsRemainReachable() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture",
+                               "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        let title = app.staticTexts["localLibraryTitle"]
+        XCTAssertTrue(title.waitForExistence(timeout: 10))
+        let selection = app.buttons["localPhotoSelection"]
+        XCTAssertTrue(selection.isHittable)
+        XCTAssertGreaterThan(selection.frame.minY, title.frame.minY, "Large text must use the stacked photo header")
+        selection.tap()
+        XCTAssertTrue(app.buttons["全选"].waitForExistence(timeout: 5))
+        XCTAssertTrue(selection.isHittable)
+        selection.tap()
+        let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        capture.name = "bold-phone-large-text"; capture.lifetime = .keepAlways; add(capture)
+    }
+
     func testModernOverviewKeepsPhotosAndStorageAboveFold() {
         continueAfterFailure = false
         let app = XCUIApplication()

@@ -67,6 +67,9 @@ struct AdaptiveRootView: View {
                 NavigationStack { CalendarHomeView(isActive: navigation.phoneSelection == .calendar) }.tabItem { Label("日历", systemImage: "calendar") }.tag(WorkspacePage.calendar)
                 NavigationStack { SettingsView() }.tabItem { Label("设置", systemImage: "slider.horizontal.3") }.tag(WorkspacePage.settings)
             }
+            .toolbarBackground(NASStyle.ink, for: .tabBar)
+            .toolbarBackground(.visible, for: .tabBar)
+            .toolbarColorScheme(.dark, for: .tabBar)
         }
     }
 }
@@ -77,15 +80,22 @@ struct DesktopWorkspaceView: View {
     @State private var visited: Set<WorkspacePage> = [.photos]
     @State private var visibility: NavigationSplitViewVisibility = .all
     @FocusState private var sidebarFocus: WorkspacePage?
+    @State private var hoveredPage: WorkspacePage?
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             VStack(spacing: 0) {
-                HStack(spacing: 9) {
-                    Image("AppBrand").resizable().scaledToFit().frame(width: 26, height: 26)
-                        .clipShape(RoundedRectangle(cornerRadius: 7)).accessibilityHidden(true)
-                    Text("森空间").font(.headline)
+                HStack(spacing: 12) {
+                    Image(systemName: "square.stack.3d.up.fill")
+                        .font(.system(size: 25, weight: .bold)).foregroundStyle(NASStyle.ink)
+                        .frame(width: 48, height: 48).background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 16))
+                        .rotationEffect(.degrees(-7)).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("MORI").font(.system(size: 26, weight: .black, design: .rounded)).tracking(-1)
+                            .foregroundStyle(.white)
+                        Text("森空间").font(.caption.weight(.medium)).foregroundStyle(.white.opacity(0.55))
+                    }
                     Spacer()
-                }.padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 24)
+                }.padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 30)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
                         sidebarGroup("资料库", pages: [.local, .photos, .files, .oneDrive])
@@ -95,8 +105,8 @@ struct DesktopWorkspaceView: View {
                     .accessibilityIdentifier("workspaceSidebar")
                 row(.settings).padding(12)
             }
-            .background(NASStyle.surface)
-            .navigationSplitViewColumnWidth(min: 190, ideal: 214, max: 240)
+            .background(NASStyle.ink)
+            .navigationSplitViewColumnWidth(min: 210, ideal: 236, max: 270)
         } detail: {
             NavigationStack(path: path) {
                 ZStack {
@@ -126,7 +136,7 @@ struct DesktopWorkspaceView: View {
     }
     private func sidebarGroup(_ title: String, pages: [WorkspacePage]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.caption2.weight(.medium)).foregroundStyle(.tertiary)
+            Text(title).font(.caption2.weight(.bold)).foregroundStyle(.white.opacity(0.42))
                 .padding(.leading, 12).padding(.bottom, 4)
             ForEach(pages) { row($0) }
         }
@@ -134,19 +144,21 @@ struct DesktopWorkspaceView: View {
     private func row(_ page: WorkspacePage) -> some View {
         Button { navigation.selection = page; sidebarFocus = page } label: {
             HStack(spacing: 12) {
-                Image(systemName: page.symbol).font(.system(size: 17, weight: .regular))
-                    .foregroundStyle(navigation.selection == page ? Theme.accent : .secondary)
-                    .frame(width: 22)
-                Text(page.title).font(.subheadline.weight(navigation.selection == page ? .semibold : .regular))
-                    .foregroundStyle(.primary).lineLimit(1)
+                Image(systemName: page.symbol).font(.system(size: 18, weight: .semibold))
+                    .frame(width: 24)
+                Text(page.title).font(.subheadline.weight(navigation.selection == page ? .bold : .medium))
+                    .lineLimit(1)
                 Spacer(minLength: 0)
                 if navigation.selection == page {
-                    Circle().fill(NASStyle.accent).frame(width: 5, height: 5).accessibilityHidden(true)
+                    Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .heavy)).accessibilityHidden(true)
                 }
-            }.padding(.horizontal, 12).frame(minHeight: 44)
-                .background(navigation.selection == page ? NASStyle.surfaceRaised : .clear, in: RoundedRectangle(cornerRadius: 10))
-                .contentShape(Rectangle())
+            }.foregroundStyle(navigation.selection == page ? NASStyle.ink : .white.opacity(0.72))
+                .padding(.horizontal, 14).frame(minHeight: 48)
+                .background(navigation.selection == page ? NASStyle.signal : hoveredPage == page ? .white.opacity(0.08) : .clear,
+                            in: RoundedRectangle(cornerRadius: 16))
+                .contentShape(RoundedRectangle(cornerRadius: 16))
         }.buttonStyle(.plain)
+            .onHover { hoveredPage = $0 ? page : nil }
             .focusable()
             .focused($sidebarFocus, equals: page)
             .onKeyPress(.downArrow) { moveSidebar(by: 1); return .handled }
