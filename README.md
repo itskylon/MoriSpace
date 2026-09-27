@@ -30,7 +30,7 @@ bash Scripts/uninstall-codex-usage-helper.sh
 
 此操作保留 Codex 登录和森空间的其他数据；旧额度记录会按原采集时间过期。
 
-验证：36 项助手测试、32 项 Swift 单元测试，以及 2 项 iPhone / 1 项 iPad 界面测试通过；iPhone 与 Mac Release 构建及签名校验通过。Mac 已安装并验证真实 Codex 额度读取；iPhone 模拟器验证小组件库、桌面显示和点击进入详情，iPad 验证横屏布局。模拟器数值为隔离测试数据。Mac 桌面小组件实际添加仍待人工验收；iPhone 真机覆盖安装本次因设备连接重置未完成。
+验证：36 项助手测试、32 项 Swift 单元测试，以及 2 项 iPhone / 1 项 iPad 界面测试通过；iPhone 与 Mac Release 构建及签名校验通过。Mac 已安装并验证真实 Codex 额度读取；iPhone 模拟器验证小组件库、桌面显示和点击进入详情，iPad 验证横屏布局。模拟器数值为隔离测试数据。Mac 桌面小组件实际添加仍待人工验收；iPhone 真机已重试覆盖安装并启动，设备回读版本为 0.18.0（30），系统小组件列表仍待用户核对。
 
 ## 0.17.1 连接等待修复
 
