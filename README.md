@@ -2,7 +2,35 @@
 
 自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、OneDrive 文件、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口与 Microsoft Graph，没有第三方运行时 SDK，也不通过中转服务器传输照片和文件。
 
-当前版本：**0.17.1（29）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+当前版本：**0.18.0（30）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+
+## Codex 额度小组件
+
+在「设置 → Codex 额度」查看各使用周期的剩余百分比、重置时间和采集时间。系统小组件库中的「森空间 → Codex 额度」提供小号、中号两种尺寸，点击进入额度详情。它显示 ChatGPT 登录的 **Codex 使用额度**，不是 ChatGPT 普通聊天的剩余次数、API 余额或精确剩余 token 数；不同账号返回的额度周期可能不同。
+
+Mac 使用本机读取助手调用官方 Codex CLI 的 [`account/rateLimits/read`](https://learn.chatgpt.com/docs/app-server)，通过固定的 `http://localhost:48763/v1/usage` 向 App 与原生 Mac 小组件提供额度摘要；它们自行更新已有 App Group 内的缓存。读取服务只监听 `127.0.0.1`，不对局域网或公网开放，也不接受执行命令、登录或修改配置的请求。助手不读取登录文件，不生成对话，不保存原始接口响应，也不会购买或消耗额度重置机会。需要预先安装 Codex CLI、Python 3，并在该 CLI 中登录 ChatGPT 账号。本轮验证的 CLI 版本为 0.157.1。
+
+从仓库根目录安装读取助手：
+
+```sh
+bash Scripts/install-codex-usage-helper.sh \
+  --app "$HOME/Applications/森空间.app" \
+  --codex "$(command -v codex)"
+```
+
+助手作为当前用户的 LaunchAgent 运行，约每 5 分钟采集一次；Mac 休眠、退出登录或无法联网时无法保证采集。应用前台额度页每 15 秒读取助手的已有记录，刷新按钮只重新读取记录。Mac 小组件可独立读取助手，不要求森空间主程序常驻。小组件刷新由 WidgetKit 调度，不能保证固定间隔。读取失败保留上次记录；超过 15 分钟或到达重置时间会显示「待更新」，不会自行把剩余量重置成 100%。未提供的窗口、百分比和重置时间会明确显示缺失，不按零处理。
+
+**iPhone / iPad 当前支持导入记录，尚未接入自动跨设备同步。** 在 Mac 额度页导出 JSON 文件，通过自己的文件传输方式送到手机，再在手机额度页点「导入额度记录」。采集时间保持原样，过期记录仍标为待更新。Mac 的 App Group 不会自动同步到 iPhone，也不会复制 Codex 登录凭据到手机。
+
+停止并移除本机读取助手：
+
+```sh
+bash Scripts/uninstall-codex-usage-helper.sh
+```
+
+此操作保留 Codex 登录和森空间的其他数据；旧额度记录会按原采集时间过期。
+
+验证：36 项助手测试、32 项 Swift 单元测试，以及 2 项 iPhone / 1 项 iPad 界面测试通过；iPhone 与 Mac Release 构建及签名校验通过。Mac 已安装并验证真实 Codex 额度读取；iPhone 模拟器验证小组件库、桌面显示和点击进入详情，iPad 验证横屏布局。模拟器数值为隔离测试数据。Mac 桌面小组件实际添加仍待人工验收；iPhone 真机覆盖安装本次因设备连接重置未完成。
 
 ## 0.17.1 连接等待修复
 

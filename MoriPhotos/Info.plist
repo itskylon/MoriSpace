@@ -45,6 +45,11 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>MoriCalendarAppGroup</key>
 	<string>$(MORI_CALENDAR_APP_GROUP)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>用于在森空间查看、新建和编辑你的系统日历日程，包括重复事件与提醒。日程保存在你选择的日历账户中。</string>
 	<key>NSLocalNetworkUsageDescription</key>

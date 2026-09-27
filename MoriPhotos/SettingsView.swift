@@ -35,6 +35,10 @@ struct SettingsView: View {
                     NavigationLink { NASMonitorHomeView() } label: {
                         SettingsRow(title: "NAS 运行状态", subtitle: "负载、容量与硬盘健康", symbol: "waveform.path.ecg")
                     }
+                    rowDivider
+                    NavigationLink { UsageView() } label: {
+                        SettingsRow(title: "Codex 额度", subtitle: "剩余比例与桌面小组件", symbol: "chart.bar.xaxis")
+                    }.accessibilityIdentifier("usageSettings")
                 }
 
                 preferencesSection("本机设置", index: "03") {
