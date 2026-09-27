@@ -2,7 +2,7 @@
 
 自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、OneDrive 文件、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口与 Microsoft Graph，没有第三方运行时 SDK，也不通过中转服务器传输照片和文件。
 
-当前版本：**0.19.0（31）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+当前版本：**0.19.1（32）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
 
 ## Codex 额度小组件
 
@@ -31,7 +31,7 @@ bash Scripts/configure-codex-usage-relay.sh \
 
 Mac 配置为 `version`、`baseURL`、`writeToken` 三个字段；`version` 为 `1`，`baseURL` 是受信任的 HTTPS 地址，`writeToken` 是服务端生成的 64 位小写十六进制写入凭证。文件必须归当前用户所有且权限为 `0600`。脚本校验后保存到助手自己的目录并重启助手，不修改 Codex 登录。
 
-在手机「设置 → Codex 额度 → 连接自动同步」选择只含 `version`、`baseURL`、`readToken` 的连接 JSON，首次验证成功后保存在应用与小组件共享的设备钥匙串中。更换或断开连接会清除旧来源的额度缓存；迟到的旧请求不能覆盖新来源。开发安装也可将同一私有文件复制到应用 Documents 的 `MoriSpace-Usage-Connection.json`，再打开 `morispace://usage/connect`，导入成功后删除临时文件；链接本身不携带凭证。
+在手机「设置 → Codex 额度 → 连接自动同步」选择只含 `version`、`baseURL`、`readToken` 的连接 JSON，首次验证成功后保存在应用与小组件共享的设备钥匙串中。更换或断开连接会清除旧来源的额度缓存；迟到的旧请求不能覆盖新来源。开发安装也可将同一私有文件复制到应用 Documents 的 `MoriSpace-Usage-Connection.json`，再打开 `morispace://usage/connect`，导入成功后删除临时文件；链接本身不携带凭证。若设备上已有该连接文件，额度页会提供「连接已配置的同步服务」，无需再进入文件选择器。
 
 手机额度页在前台时每 15 秒读取中转，小组件也可独立访问中转，不要求主应用常驻。**采集约每 5 分钟一次，小组件刷新由 WidgetKit 安排，并非秒级实时。** Mac 休眠或断网时仍显示上次记录及真实采集时间，过期后标为「待更新」。HTTPS 或鉴权失败不会跳过证书校验，也不会把旧记录当成新数据。手机离线导入 JSON 作为未开启自动同步时的备用入口，原采集时间保持不变。
 
@@ -43,7 +43,11 @@ bash Scripts/uninstall-codex-usage-helper.sh
 
 此操作保留 Codex 登录和森空间的其他数据；旧额度记录会按原采集时间过期。
 
-验证：50 项助手测试、25 项中转测试、47 项 Swift 单元测试，以及 2 项 iPhone / 1 项 iPad 界面测试通过；iPhone 与 Mac Release 构建及签名校验通过。Mac 已覆盖安装 0.19.0（31）并验证真实额度读取；HTTPS 中转已验证公信证书、真实摘要上传／读取、未授权读取拒绝和只读凭证不能写入。iPhone 模拟器验证小组件库、桌面显示和点击详情，iPad 验证横屏；这些界面测试使用隔离数据。iPhone 真机已覆盖安装 0.19.0，首次自动同步仍待解锁后验证；真机小组件的后台刷新时机不在测试保证范围内。
+验证：50 项助手测试、25 项中转测试、47 项 Swift 单元测试，以及 2 项 iPhone / 1 项 iPad 界面测试通过；iPhone 与 Mac Release 构建及签名校验通过。Mac 已覆盖安装 0.19.0（31）并验证真实额度读取；HTTPS 中转已验证公信证书、真实摘要上传／读取、未授权读取拒绝和只读凭证不能写入。iPhone 模拟器验证小组件库、桌面显示和点击详情，iPad 验证横屏；这些界面测试使用隔离数据。iPhone 真机已成功通过外网导入同步配置，应用完成钥匙串保存与额度缓存写入后自动清理一次性文件；真机小组件的后台刷新时机不在测试保证范围内。
+
+## 0.19.1 首次额度连接修复
+
+修复首次从链接打开额度页时，页面 inactive/disappear 取消轮询也误取消连接的问题；连接验证与页面轮询分别维护状态，明确断开仍会阻止迟到结果写回。连接失败会持续显示安全的错误分类，普通刷新不再把提示清掉；已放入手机的连接文件可以直接点击重试。额外验证 43 项额度单元测试与 1 项 iPhone 页面／冷启动链接测试通过。
 
 ## 0.17.1 连接等待修复
 

@@ -13,6 +13,9 @@ final class UsageStore: ObservableObject {
     @Published private(set) var remoteConfiguration: UsageRemoteConfiguration?
     var syncEnabled: Bool { remoteConfiguration != nil }
     var syncHost: String? { remoteConfiguration.flatMap { URL(string: $0.baseURL)?.host } }
+    var hasPendingRemoteConfiguration: Bool {
+        resolvedPendingConfigurationURL.map { FileManager.default.fileExists(atPath: $0.path) } ?? false
+    }
     let allowsImport: Bool
     let isFixture: Bool
 
@@ -27,6 +30,8 @@ final class UsageStore: ObservableObject {
     private let pendingConfigurationURL: URL?
     private var localTask: Task<Void, Never>?
     private var localGeneration = UUID()
+    private var operationGeneration = UUID()
+    private var operationError: String?
     private var hasDisplayedRecord = false
 
     init(cache: UsageWidgetCache = .shared, allowsImport: Bool = !AppPlatform.isMac,
@@ -110,12 +115,12 @@ final class UsageStore: ObservableObject {
                     } else { retained = try self.cache.write(next, now: self.now()) }
                     self.replaceDisplayedSnapshot(retained)
                 }
-                self.error = nil
+                self.error = self.operationError
             } catch {
                 guard let self, self.localGeneration == generation, !Task.isCancelled else { return }
-                self.error = isRemote
+                self.error = self.operationError ?? (isRemote
                     ? "自动同步暂未成功，请检查网络或同步服务。仍保留上次记录，采集时间没有变化。"
-                    : "未能读取本机额度助手，请确认助手已启用且 Codex 已登录。仍保留上次记录，采集时间没有变化。"
+                    : "未能读取本机额度助手，请确认助手已启用且 Codex 已登录。仍保留上次记录，采集时间没有变化。")
             }
             guard let self, self.localGeneration == generation else { return }
             self.refreshing = false
@@ -132,8 +137,9 @@ final class UsageStore: ObservableObject {
     private func connectRemoteRecord(from url: URL) async -> Data? {
         guard allowsImport, !importing, !isFixture else { return nil }
         cancelRefresh()
-        let generation = localGeneration
-        importing = true; error = nil; importNotice = nil
+        let generation = UUID()
+        operationGeneration = generation
+        importing = true; setOperationError(nil); importNotice = nil
         defer { importing = false }
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
@@ -144,7 +150,7 @@ final class UsageStore: ObservableObject {
             let configuration = try UsageRemoteConfiguration.decode(data)
             let fresh = try await remoteFetch(configuration)
             try Task.checkCancellation()
-            guard generation == localGeneration else { return nil }
+            guard generation == operationGeneration else { return nil }
             _ = try fresh.validated(now: now())
             guard fresh.status == .ready else { throw UsageLocalClientError.unavailableRecord }
             let retained = try UsageRemoteTransaction.withLock(cache: cache) {
@@ -166,29 +172,37 @@ final class UsageStore: ObservableObject {
             importNotice = "自动同步已连接，之后无需手动导入额度。"
             return data
         } catch {
-            guard generation == localGeneration else { return nil }
-            self.error = "未能连接同步服务。请检查连接文件、网络与服务状态后重试。"
+            guard generation == operationGeneration else { return nil }
+            setOperationError(Self.connectionFailureMessage(error))
             return nil
         }
     }
 
-    /// Import only on the explicit provisioning deep link. Never remove a newer
+    /// Import only after a provisioning link or explicit connect action. Never remove a newer
     /// replacement file, a skipped import, or an unsuccessfully consumed credential.
     func connectPendingRemote() async {
-        let file = pendingConfigurationURL ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("MoriSpace-Usage-Connection.json")
-        guard let file, FileManager.default.fileExists(atPath: file.path),
-              let consumed = await connectRemoteRecord(from: file) else { return }
+        guard let file = resolvedPendingConfigurationURL, FileManager.default.fileExists(atPath: file.path) else {
+            if syncEnabled {
+                setOperationError(nil)
+                importNotice = "自动同步已连接，正在读取最新记录。"
+                reload()
+            } else {
+                setOperationError("没有找到连接文件。请点“连接自动同步”重新选择同步配置文件。")
+            }
+            return
+        }
+        guard let consumed = await connectRemoteRecord(from: file) else { return }
         do {
             guard try Self.readRecord(at: file, limit: UsageRemoteConfiguration.maximumFileSize) == consumed else { return }
             try FileManager.default.removeItem(at: file)
         } catch {
-            self.error = "同步已连接，但一次性连接文件未能清理，请从本机文件中移除该连接文件。"
+            setOperationError("同步已连接，但一次性连接文件未能清理，请从本机文件中移除该连接文件。")
         }
     }
 
     func disconnectRemote() {
         cancelRefresh()
+        operationGeneration = UUID()
         do {
             try UsageRemoteTransaction.withLock(cache: cache) {
                 let previousConfiguration = try configurationLoad()
@@ -204,9 +218,9 @@ final class UsageStore: ObservableObject {
             }
             remoteConfiguration = nil
             snapshot = .empty(.notConnected, now: now()); hasDisplayedRecord = false
-            importNotice = "已停止此设备的自动同步。"; error = nil
+            importNotice = "已停止此设备的自动同步。"; setOperationError(nil)
             reloadWidgets()
-        } catch { self.error = "未能完整清除同步连接，请重试。" }
+        } catch { setOperationError("未能完整清除同步连接，请重试。") }
     }
 
     private func cachedRecordForRollback() -> UsageWidgetSnapshot? {
@@ -236,37 +250,37 @@ final class UsageStore: ObservableObject {
 
     private func readCachedRecord() {
         guard let url = cache.fileURL else {
-            error = "无法访问共享记录，请检查此版本的小组件签名与 App Groups 配置。"
+            error = operationError ?? "无法访问共享记录，请检查此版本的小组件签名与 App Groups 配置。"
             return
         }
         guard FileManager.default.fileExists(atPath: url.path) else {
             // Keep an already displayed good record if the helper's file is temporarily missing.
-            if snapshot.windows.isEmpty { error = nil }
-            else { error = "最新记录暂不可用，仍显示上次读取的数据。" }
+            error = operationError ?? (snapshot.windows.isEmpty ? nil : "最新记录暂不可用，仍显示上次读取的数据。")
             return
         }
         do {
             let next = try UsageWidgetSnapshot.decode(Self.readRecord(at: url), now: now())
             replaceDisplayedSnapshot(next)
-            error = nil
+            error = operationError
         } catch {
-            self.error = "读取额度记录失败，已保留上次数据。请等待读取助手更新，或重新导入有效的 JSON 记录。"
+            self.error = operationError ?? "读取额度记录失败，已保留上次数据。请等待读取助手更新，或重新导入有效的 JSON 记录。"
         }
     }
 
     func importSnapshot(from url: URL) async {
         guard allowsImport else {
-            error = "Mac 的额度记录由本机读取助手维护，不能用导入文件覆盖。"
+            setOperationError("Mac 的额度记录由本机读取助手维护，不能用导入文件覆盖。")
             return
         }
         guard !importing, !isFixture else { return }
         guard remoteConfiguration == nil else {
-            error = "请先停止自动同步，再导入离线额度记录。"
+            setOperationError("请先停止自动同步，再导入离线额度记录。")
             return
         }
         cancelRefresh()
-        let generation = localGeneration
-        importing = true; error = nil; importNotice = nil
+        let generation = UUID()
+        operationGeneration = generation
+        importing = true; setOperationError(nil); importNotice = nil
         defer { importing = false }
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
@@ -275,13 +289,13 @@ final class UsageStore: ObservableObject {
             let data = try await Task.detached(priority: .userInitiated) { try Self.readRecord(at: url) }.value
             try Task.checkCancellation()
             let next = try UsageWidgetSnapshot.decode(data, now: now())
-            guard generation == localGeneration else { return }
+            guard generation == operationGeneration else { return }
             let retained = try cache.write(next, now: now())
             replaceDisplayedSnapshot(retained)
             importNotice = retained.fetchedAt > next.fetchedAt ? "这份记录较旧，已保留更新的记录。" : "已导入记录，非实时同步。"
         } catch {
-            guard generation == localGeneration else { return }
-            self.error = "导入失败：请选择有效的森空间额度 JSON 记录（版本 1，最大 1 MB）。已保留原有数据。"
+            guard generation == operationGeneration else { return }
+            setOperationError("导入失败：请选择有效的森空间额度 JSON 记录（版本 1，最大 1 MB）。已保留原有数据。")
         }
     }
 
@@ -290,8 +304,36 @@ final class UsageStore: ObservableObject {
         try snapshot.encoded(now: now())
     }
 
-    func reportFileError(_ message: String) { error = message }
+    func reportFileError(_ message: String) { setOperationError(message) }
 
+    private func setOperationError(_ message: String?) {
+        operationError = message
+        error = message
+    }
+
+    private var resolvedPendingConfigurationURL: URL? {
+        pendingConfigurationURL ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("MoriSpace-Usage-Connection.json")
+    }
+
+    private static func connectionFailureMessage(_ error: Error) -> String {
+        if let known = error as? UsageRemoteError { return "连接失败：" + known.localizedDescription }
+        if let network = error as? URLError {
+            let reason: String
+            switch network.code {
+            case .timedOut: reason = "同步服务响应超时"
+            case .notConnectedToInternet, .networkConnectionLost: reason = "网络暂不可用"
+            case .secureConnectionFailed, .serverCertificateHasBadDate, .serverCertificateUntrusted,
+                 .serverCertificateHasUnknownRoot, .serverCertificateNotYetValid: reason = "HTTPS 安全连接或证书验证失败"
+            case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed: reason = "无法连接同步服务器"
+            default: reason = "网络请求未完成"
+            }
+            return "连接失败：\(reason)（代码 \(network.code.rawValue)）。请检查网络与服务状态后重试。"
+        }
+        return "未能连接同步服务。请检查连接文件、网络与服务状态后重试。"
+    }
+
+    /// View lifecycle changes stop polling, not an explicit connection/import transaction.
     func cancelRefresh() {
         localGeneration = UUID()
         localTask?.cancel(); localTask = nil

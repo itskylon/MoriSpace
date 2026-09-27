@@ -174,10 +174,16 @@ struct UsageView: View {
                      ? "Mac 约每 5 分钟采集并上传；此页打开时每 15 秒获取一次最新记录。Mac 休眠或离线时保留上次数据。"
                      : "导入一次连接文件，即可通过 HTTPS 在 Wi-Fi 和移动网络下自动同步。连接文件只包含额度服务的只读凭据。")
                     .font(.caption).foregroundStyle(.secondary)
-                Button { importingConnection = true; showImporter = true } label: {
+                Button {
+                    if usage.hasPendingRemoteConfiguration {
+                        Task { await usage.connectPendingRemote() }
+                    } else {
+                        importingConnection = true; showImporter = true
+                    }
+                } label: {
                     HStack(spacing: 8) {
                         if usage.importing { ProgressView() }
-                        Label(usage.importing ? "正在验证连接…" : (usage.syncEnabled ? "更换同步连接" : "连接自动同步"), systemImage: "arrow.triangle.2.circlepath")
+                        Label(usage.importing ? "正在验证连接…" : (usage.hasPendingRemoteConfiguration ? "连接已配置的同步服务" : (usage.syncEnabled ? "更换同步连接" : "连接自动同步")), systemImage: "arrow.triangle.2.circlepath")
                     }.font(.subheadline.weight(.semibold)).padding(.horizontal, 16).frame(minHeight: 44)
                         .foregroundStyle(NASStyle.ink).background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
                 }.buttonStyle(.plain).disabled(usage.importing || usage.isFixture).accessibilityIdentifier("usageConnectSync")

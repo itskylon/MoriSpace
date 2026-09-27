@@ -273,7 +273,7 @@ import XCTest
         XCTAssertEqual(concurrent.snapshot, latest)
     }
 
-    func testRemoteSwitchAcceptsDifferentSourcesOlderTimestampAndPollingCannotCancelConnection() async throws {
+    func testRemoteSwitchSurvivesLifecyclePollingCancellationAndAcceptsDifferentSourcesOlderTimestamp() async throws {
         let previous = try remoteConfiguration("old")
         let next = try remoteConfiguration("next")
         let probe = UsageConfigurationProbe(previous)
@@ -290,6 +290,7 @@ import XCTest
         let connection = Task { await store.connectRemote(from: input) }
         await reader.waitForRequests(1)
         XCTAssertTrue(store.importing)
+        store.cancelRefresh() // Sheet presentation / inactive scene stops polling only.
         store.reload() // Scene activation and the foreground timer must not cancel provisioning.
         reader.resolve(0, with: nextRecord)
         let connected = await connection.value
@@ -354,7 +355,7 @@ import XCTest
         XCTAssertNil(store.error)
     }
 
-    func testPendingConnectionPreservesCancelledAndReplacedFilesAndDeletesOnlyConsumedFile() async throws {
+    func testPendingConnectionPreservesDisconnectedAndReplacedFilesAndDeletesOnlyConsumedFile() async throws {
         let previous = try remoteConfiguration("old")
         let next = try remoteConfiguration("next")
         let later = try remoteConfiguration("later")
@@ -364,11 +365,12 @@ import XCTest
         let store = remoteStore(probe: probe, pending: input) { _ in try await reader.read() }
         let cancelled = Task { await store.connectPendingRemote() }
         await reader.waitForRequests(1)
-        store.cancelRefresh()
+        store.disconnectRemote()
         reader.resolve(0, with: record())
         await cancelled.value
         XCTAssertEqual(try Data(contentsOf: input), try next.encoded())
-        XCTAssertEqual(probe.value, previous)
+        XCTAssertNil(probe.value)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: try XCTUnwrap(cache.fileURL).path))
 
         let replaced = Task { await store.connectPendingRemote() }
         await reader.waitForRequests(2)
@@ -385,6 +387,71 @@ import XCTest
         XCTAssertEqual(probe.value, later)
         XCTAssertFalse(FileManager.default.fileExists(atPath: input.path))
         XCTAssertNil(store.error)
+    }
+
+    func testConnectionErrorPersistsAcrossCacheReloadsAndClearsOnlyOnSuccessfulRetry() async throws {
+        let configuration = try remoteConfiguration("next")
+        let probe = UsageConfigurationProbe(nil)
+        let original = record()
+        var shouldFail = true
+        let store = remoteStore(probe: probe) { _ in
+            if shouldFail { throw URLError(.secureConnectionFailed, userInfo: [NSURLErrorFailingURLStringErrorKey: "https://must-not-be-shown.invalid/secret"]) }
+            return original
+        }
+        let input = try importedFile(configuration.encoded())
+        let connected = await store.connectRemote(from: input)
+        XCTAssertFalse(connected)
+        let message = try XCTUnwrap(store.error)
+        XCTAssertTrue(message.contains("HTTPS"))
+        XCTAssertTrue(message.contains("-1200"))
+        XCTAssertFalse(message.contains("must-not-be-shown"))
+        store.cancelRefresh(); store.reload()
+        XCTAssertEqual(store.error, message)
+        try cache.write(original, now: now)
+        store.reload()
+        XCTAssertEqual(store.error, message)
+        shouldFail = false
+        let retry = await store.connectRemote(from: input)
+        XCTAssertTrue(retry)
+        XCTAssertNil(store.error)
+    }
+
+    func testFailedSourceSwitchErrorSurvivesSuccessfulRefreshOfOriginalSource() async throws {
+        let previous = try remoteConfiguration("old")
+        let next = try remoteConfiguration("next")
+        let probe = UsageConfigurationProbe(previous)
+        probe.rejectedSave = next
+        let original = record()
+        let store = remoteStore(probe: probe) { _ in original }
+        let connected = await store.connectRemote(from: try importedFile(next.encoded()))
+        XCTAssertFalse(connected)
+        let message = try XCTUnwrap(store.error)
+        store.reload(); await waitUntilIdle(store)
+        XCTAssertEqual(store.snapshot, original)
+        XCTAssertEqual(store.error, message)
+        XCTAssertEqual(probe.value, previous)
+    }
+
+    func testMissingPendingFileReportsActionableErrorOrExistingConnection() async throws {
+        let missing = folder.appendingPathComponent("missing-connection.json")
+        let probe = UsageConfigurationProbe(nil)
+        let source = record()
+        let store = remoteStore(probe: probe, pending: missing) { _ in source }
+        XCTAssertFalse(store.hasPendingRemoteConfiguration)
+        await store.connectPendingRemote()
+        let message = try XCTUnwrap(store.error)
+        XCTAssertTrue(message.contains("没有找到连接文件"))
+        store.reload()
+        XCTAssertEqual(store.error, message)
+
+        probe.value = try remoteConfiguration("existing")
+        let connected = remoteStore(probe: probe, pending: missing) { _ in source }
+        await connected.connectPendingRemote()
+        await waitUntilIdle(connected)
+        XCTAssertTrue(connected.syncEnabled)
+        XCTAssertTrue(connected.importNotice?.contains("已连接") == true)
+        XCTAssertNil(connected.error)
+        XCTAssertEqual(connected.snapshot, source)
     }
 
     func testOfflineImportCannotReplaceAnEnabledRemoteSource() async throws {
