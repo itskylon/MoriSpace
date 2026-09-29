@@ -2,7 +2,7 @@
 
 自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、OneDrive 文件、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口与 Microsoft Graph，没有第三方运行时 SDK，也不通过中转服务器传输照片和文件。
 
-当前版本：**0.19.1（32）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+当前版本：**0.19.2（33）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
 
 ## Codex 额度小组件
 
@@ -44,6 +44,14 @@ bash Scripts/uninstall-codex-usage-helper.sh
 此操作保留 Codex 登录和森空间的其他数据；旧额度记录会按原采集时间过期。
 
 验证：50 项助手测试、25 项中转测试、47 项 Swift 单元测试，以及 2 项 iPhone / 1 项 iPad 界面测试通过；iPhone 与 Mac Release 构建及签名校验通过。Mac 已覆盖安装 0.19.0（31）并验证真实额度读取；HTTPS 中转已验证公信证书、真实摘要上传／读取、未授权读取拒绝和只读凭证不能写入。iPhone 模拟器验证小组件库、桌面显示和点击详情，iPad 验证横屏；这些界面测试使用隔离数据。iPhone 真机已成功通过外网导入同步配置，应用完成钥匙串保存与额度缓存写入后自动清理一次性文件；真机小组件的后台刷新时机不在测试保证范围内。
+
+## 0.19.2 NAS 网络错误提示
+
+连接失败时区分 DNS 解析、主机连接、超时、网络不可用、TLS 握手与证书校验，并显示系统错误编号。网络不可用时提示核对 App 自己的蜂窝数据／本地网络权限；不会仅凭错误编号就认定权限被拒绝。错误文案不包含系统原始 userInfo、账号、密码、会话或请求 URL。
+
+Safari 能打开同一域名不能单独证明 App 已获得局域网权限。[Apple TN3179](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy) 说明 Safari 与 URLSession 的权限要求不同。需要在发生问题的同一设备核对实际地址、权限及错误编号；本版提示改进不代表真实 NAS 连接已恢复。
+
+验证：33 项网络错误与连接回归测试通过，iPhone / Mac Release 构建及签名校验通过。iPhone 当前未连接到开发 Mac，新版尚未覆盖安装到手机。
 
 ## 0.19.1 首次额度连接修复
 

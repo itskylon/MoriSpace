@@ -93,14 +93,33 @@ func friendlyError(_ error: Error) -> String {
         return "本机存储空间不足，请释放空间后重试。"
     }
     if let error = error as? URLError {
+        let code = "（\(error.code.rawValue)）"
         switch error.code {
+        case .cancelled:
+            return "连接已取消\(code)。"
+        case .timedOut:
+            return "连接 NAS 超时\(code)。请确认同一网络下该地址与端口能响应，然后重试。"
+        case .cannotFindHost, .dnsLookupFailed:
+            return "无法解析 NAS 域名\(code)。请检查地址拼写、DNS 或当前 VPN 的域名解析。"
+        case .cannotConnectToHost:
+            return "无法连接 NAS 的地址或端口\(code)。请检查 NAS 的 HTTPS 服务、端口以及当前 VPN 或代理设置。"
+        case .notConnectedToInternet:
+            return "当前 App 无法使用网络\(code)。请检查网络连接；使用蜂窝网络时检查森空间的蜂窝数据权限，访问局域网 NAS 时检查“本地网络”权限。"
+        case .networkConnectionLost:
+            return "与 NAS 的网络连接已中断\(code)。请等待网络稳定后重试；切换 Wi-Fi、蜂窝网络或 VPN 也可能中断请求。"
+        case .dataNotAllowed:
+            return "系统不允许此请求使用当前数据网络\(code)。请检查森空间的蜂窝数据权限，或切换到可用的 Wi-Fi 后重试。"
         case .secureConnectionFailed:
-            return "无法与 NAS 建立 HTTPS 安全连接（TLS 握手失败）。请检查 NAS 的 HTTPS 服务、端口以及当前 VPN 或代理设置，再重试。"
+            return "无法与 NAS 建立 HTTPS 安全连接\(code)，TLS 握手失败。请检查 NAS 的 HTTPS 服务、端口以及当前 VPN 或代理设置，再重试。"
         case .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateHasUnknownRoot, .serverCertificateNotYetValid:
-            return "NAS 的 HTTPS 证书不受系统信任。请为域名配置有效证书，或在本机安装并信任你的私有 CA。"
-        case .cannotConnectToHost, .cannotFindHost, .notConnectedToInternet, .timedOut:
-            return "无法连接 NAS。请检查地址、网络或 VPN，确认本机能够访问该 HTTPS 地址。"
-        default: break
+            return "NAS 的 HTTPS 证书验证失败\(code)。请检查证书有效期、域名与信任链，以及本机日期和时间。"
+        case .clientCertificateRequired, .clientCertificateRejected:
+            return "NAS 要求有效的客户端证书\(code)。请检查服务器的 HTTPS 客户端证书设置。"
+        case .badServerResponse:
+            return "NAS 返回了无效的网络响应\(code)。请检查 HTTPS 服务或反向代理设置。"
+        default:
+            // Do not expose Foundation's description/userInfo: these may contain request URLs or credentials.
+            return "NAS 网络请求失败\(code)。请检查连接地址与当前网络后重试。"
         }
     }
     return error.localizedDescription
