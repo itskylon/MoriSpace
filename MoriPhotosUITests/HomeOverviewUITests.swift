@@ -3,7 +3,7 @@ import XCTest
 final class HomeOverviewUITests: XCTestCase {
     private let fixtureArguments = [
         "--nas-connection-fixture", "--reset-nas-connection-fixture", "--calendar-fixture",
-        "--usage-widget-fixture", "--onedrive-fixture"
+        "--onedrive-fixture"
     ]
 
     func testPhoneHomeShowsDeviceAndKeepsFileLocationAcrossQuickLinks() {
@@ -112,7 +112,7 @@ final class HomeOverviewUITests: XCTestCase {
         XCTAssertTrue(title.waitForExistence(timeout: 5))
     }
 
-    func testEmptyHomeShowsNoInventedUsageAndOpensNASConnection() {
+    func testEmptyHomeShowsUnknownDeviceMetricsAndOpensNASConnection() {
         continueAfterFailure = false
         let app = launch(arguments: ["--empty-connection-fixture"])
         XCTAssertTrue(app.tabBars.buttons["首页"].isSelected)
@@ -141,11 +141,34 @@ final class HomeOverviewUITests: XCTestCase {
         XCTAssertTrue(status.label.contains("未连接"))
     }
 
+    func testRemovedQuotaEntryAndLinkLeaveCalendarAvailable() {
+        continueAfterFailure = false
+        let app = launch(arguments: ["--empty-connection-fixture", "--calendar-fixture"])
+        XCTAssertFalse(app.buttons["homeUsage"].exists)
+        XCTAssertFalse(app.staticTexts["Codex 额度"].exists)
+        capture("home-without-quota")
+        app.tabBars.buttons["设置"].tap()
+        XCTAssertTrue(app.buttons["newPhotoBackupSettings"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["usageSettings"].exists)
+        app.swipeUp()
+        XCTAssertFalse(app.buttons["usageSettings"].exists)
+        capture("settings-without-quota")
+        XCUIDevice.shared.system.open(URL(string: "morispace://usage")!)
+        XCTAssertTrue(app.tabBars.buttons["设置"].isSelected)
+        XCTAssertFalse(app.buttons["dismissUsage"].exists)
+        XCUIDevice.shared.system.open(URL(string: "morispace://calendar?date=2026-09-25")!)
+        let lunar = app.staticTexts["calendarSelectedLunarDay"]
+        XCTAssertTrue(lunar.waitForExistence(timeout: 10))
+        XCTAssertEqual(lunar.label, "农历八月十五 · 中秋")
+        XCTAssertTrue(app.tabBars.buttons["日历"].isSelected)
+    }
+
     private func launch(arguments: [String]) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = arguments
         app.launch()
         XCTAssertTrue(app.staticTexts["homeTitle"].waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["homeUsage"].exists)
         return app
     }
 

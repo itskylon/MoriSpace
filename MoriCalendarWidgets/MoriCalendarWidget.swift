@@ -81,73 +81,9 @@ struct MoriMonthWidget: Widget {
     }
 }
 
-struct MoriUsageEntry: TimelineEntry {
-    let date: Date
-    let snapshot: UsageWidgetSnapshot
-    var isPreview = false
-}
-
-struct MoriUsageTimeline: TimelineProvider {
-    func placeholder(in context: Context) -> MoriUsageEntry {
-        MoriUsageEntry(date: Date(), snapshot: .sample(), isPreview: true)
-    }
-    func getSnapshot(in context: Context, completion: @escaping (MoriUsageEntry) -> Void) {
-        let now = Date()
-        completion(MoriUsageEntry(date: now, snapshot: context.isPreview ? .sample(now: now) : UsageWidgetCache.shared.read(now: now), isPreview: context.isPreview))
-    }
-    func getTimeline(in context: Context, completion: @escaping (Timeline<MoriUsageEntry>) -> Void) {
-        #if os(macOS)
-        Task {
-            if let fresh = try? await UsageLocalClient.fetch(), fresh.status == .ready {
-                try? UsageWidgetCache.shared.write(fresh)
-            }
-            completion(timeline())
-        }
-        #else
-        Task {
-            if let configuration = try? UsageRemoteKeychain.load(),
-               let fresh = try? await UsageRemoteClient.fetch(configuration: configuration),
-               fresh.status == .ready {
-                try? UsageRemoteTransaction.withLock {
-                    guard try UsageRemoteKeychain.load() == configuration else { return }
-                    try UsageWidgetCache.shared.write(fresh)
-                }
-            }
-            completion(timeline())
-        }
-        #endif
-    }
-    private func timeline() -> Timeline<MoriUsageEntry> {
-        let now = Date(), snapshot = UsageWidgetCache.shared.read(now: now)
-        let entries = snapshot.timelineDates(now: now).map { MoriUsageEntry(date: $0, snapshot: snapshot) }
-        return Timeline(entries: entries, policy: .after(snapshot.nextReloadDate(now: now)))
-    }
-}
-
-struct MoriUsageWidgetView: View {
-    @Environment(\.widgetFamily) private var family
-    let entry: MoriUsageEntry
-    var body: some View {
-        UsageWidgetContent(date: entry.date, snapshot: entry.snapshot, size: family == .systemSmall ? .small : .medium, isPreview: entry.isPreview)
-            .containerBackground(.background, for: .widget)
-            .widgetURL(UsageWidgetRoute.url)
-    }
-}
-
-struct MoriUsageWidget: Widget {
-    let kind = UsageWidgetConstants.kind
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: MoriUsageTimeline()) { MoriUsageWidgetView(entry: $0) }
-            .configurationDisplayName("Codex 额度")
-            .description("查看剩余使用额度、重置时间与最后更新时间。示例数值仅用于预览。")
-            .supportedFamilies([.systemSmall, .systemMedium])
-    }
-}
-
 @main struct MoriWidgets: WidgetBundle {
     var body: some Widget {
         MoriCalendarWidget()
         MoriMonthWidget()
-        MoriUsageWidget()
     }
 }

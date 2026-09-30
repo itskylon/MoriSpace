@@ -8,12 +8,10 @@ struct HomeOverviewView: View {
     @EnvironmentObject private var library: PhotoLibraryStore
     @EnvironmentObject private var backup: PhotoBackupManager
     @EnvironmentObject private var calendar: CalendarStore
-    @EnvironmentObject private var usage: UsageStore
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.dynamicTypeSize) private var typeSize
-    @Environment(\.scenePhase) private var scenePhase
     @State private var detail: Detail?
-    private enum Detail: String, Identifiable { case backup, downloads, usage; var id: String { rawValue } }
+    private enum Detail: String, Identifiable { case backup, downloads; var id: String { rawValue } }
     private var usesSidebar: Bool { AppPlatform.isMac || sizeClass == .regular }
 
     var body: some View {
@@ -26,15 +24,15 @@ struct HomeOverviewView: View {
                     if wide {
                         HStack(alignment: .top, spacing: 20) {
                             device.frame(maxWidth: .infinity)
-                            VStack(spacing: 14) { calendarCard; backupCard }
+                            VStack(spacing: 14) { calendarCard; backupCard; downloadsCard }
                                 .frame(width: min(geometry.size.width * 0.32, 340))
                         }
-                        HStack(spacing: 16) { downloadsCard; usageCard }
                     } else {
                         device
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: typeSize.isAccessibilitySize ? 1 : 2), spacing: 12) {
-                            calendarCard; backupCard; downloadsCard; usageCard
+                            calendarCard; backupCard
                         }
+                        downloadsCard
                     }
                 }
                 .padding(wide ? 28 : 20)
@@ -43,22 +41,11 @@ struct HomeOverviewView: View {
         }
         .workspaceNavigationTitle("首页").navigationBarTitleDisplayMode(.inline)
         .toolbar(usesSidebar ? .automatic : .hidden, for: .navigationBar)
-        .task(id: "\(isActive)-\(scenePhase)-\(detail?.rawValue ?? "home")-\(usage.syncEnabled)") {
-            guard isActive, detail == nil, scenePhase == .active else { return }
-            usage.reload()
-            guard AppPlatform.isMac || usage.syncEnabled else { return }
-            while !Task.isCancelled {
-                do { try await Task.sleep(for: .seconds(15)) } catch { return }
-                guard !Task.isCancelled else { return }
-                usage.reload()
-            }
-        }
         .navigationDestination(item: $detail) { destination in
             Group {
                 switch destination {
                 case .backup: PhotoBackupView()
                 case .downloads: NASDownloadsView(manager: app.downloads, owner: app.fileAccountID)
-                case .usage: UsageView()
                 }
             }.toolbar(.visible, for: .navigationBar)
         }
@@ -120,18 +107,8 @@ struct HomeOverviewView: View {
     private var downloadsCard: some View {
         HomeDownloadsCard(manager: app.downloads, owner: app.fileAccountID) { openDetail(.downloads) }
     }
-    private var usageCard: some View {
-        TimelineView(.periodic(from: .now, by: 60)) { timeline in
-            let window = usage.snapshot.windows.first
-            let stale = usage.snapshot.isStale(at: timeline.date) || window.map { usage.snapshot.requiresRefresh(for: $0, at: timeline.date) } == true
-            let ready = usage.snapshot.status == .ready && !stale
-            HomeSummaryCard(title: "Codex 额度", value: ready ? (window?.remainingPercent.map { String(format: "%.0f%%", $0) } ?? "—") : (window == nil ? "未连接" : "待更新"),
-                            subtitle: usage.isFixture ? "示例额度" : (ready ? "当前周期剩余" : "查看同步状态"),
-                            icon: "chart.bar", color: .indigo, id: "homeUsage") { detail = .usage }
-        }
-    }
     private func openDetail(_ destination: Detail) {
-        if usesSidebar && destination != .usage { open(destination == .backup ? .backup : .downloads) }
+        if usesSidebar { open(destination == .backup ? .backup : .downloads) }
         else { detail = destination }
     }
     private func open(_ page: WorkspacePage) {

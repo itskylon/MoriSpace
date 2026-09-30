@@ -21,6 +21,7 @@ import plistlib
 import shutil
 import subprocess
 import sys
+import time
 
 LABEL = 'dev.kylon.MoriSpace.usage-helper'
 MARKER = 'mori-usage-helper-v1'
@@ -50,7 +51,11 @@ try:
         require(previous.get('Label') == LABEL and str(helper) in previous.get('ProgramArguments', []), 'unowned-agent')
     service = 'gui/' + str(os.getuid()) + '/' + LABEL
     command(['/bin/launchctl', 'bootout', service])
-    require(command(['/bin/launchctl', 'print', service]).returncode != 0, 'job-still-running')
+    # launchctl may briefly keep the job visible while its process exits.
+    for _ in range(20):
+        if command(['/bin/launchctl', 'print', service]).returncode != 0: break
+        time.sleep(0.1)
+    else: raise UninstallError('job-still-running')
     if agent.exists(): agent.unlink()
     if support.exists(): shutil.rmtree(support)
     # Remove this helper's local quota cache and optional private relay config

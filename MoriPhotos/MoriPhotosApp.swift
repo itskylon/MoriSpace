@@ -8,8 +8,6 @@ struct MoriPhotosApp: App {
     @StateObject private var navigation = WorkspaceNavigation()
     @StateObject private var library = PhotoLibraryStore()
     @StateObject private var calendar = CalendarStore(widgetCache: .shared)
-    @StateObject private var usage = UsageStore()
-    @State private var showUsage = false
     @StateObject private var oneDrive: OneDriveSession
     @StateObject private var app: AppState
     @StateObject private var backup: PhotoBackupManager
@@ -36,36 +34,12 @@ struct MoriPhotosApp: App {
             .environmentObject(backup)
             .environmentObject(calendar)
             .environmentObject(oneDrive)
-            .environmentObject(usage)
             .onChange(of: oneDrive.account?.driveID) { previous, current in
                 if let previous, previous != current { OneDriveMediaStore.shared.cancel(accountID: previous) }
             }
             .task { backup.foregroundChanged(scenePhase == .active) }
             .task { await calendar.refreshWidgetSnapshot() }
-            .task { usage.reload() }
-            .sheet(isPresented: $showUsage) {
-                NavigationStack {
-                    UsageView()
-                        .toolbar {
-                            ToolbarItem(placement: .topBarTrailing) {
-                                Button("完成") { showUsage = false }
-                                    .accessibilityIdentifier("dismissUsage")
-                            }
-                        }
-                }
-                .environmentObject(usage)
-                .desktopSheet(width: 660, height: 680)
-            }
             .onOpenURL { url in
-                if UsageWidgetRoute.matchesConnection(url) {
-                    showUsage = true
-                    Task { await usage.connectPendingRemote() }
-                    return
-                }
-                if UsageWidgetRoute.matches(url) {
-                    usage.reload(); showUsage = true
-                    return
-                }
                 guard let date = CalendarWidgetRoute.date(from: url) else { return }
                 calendar.select(date); calendar.month = calendar.layout.month(containing: date)
                 calendar.displayMode = .month
@@ -82,7 +56,6 @@ struct MoriPhotosApp: App {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     library.reload(); app.downloads.reloadIfNeeded()
-                    usage.reload()
                     Task { await calendar.refreshWidgetSnapshot() }
                 }
                 backup.foregroundChanged(phase == .active)
