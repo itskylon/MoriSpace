@@ -40,6 +40,7 @@ struct NASFilesHomeView: View {
 
 struct NASFileBrowserView: View {
     @Environment(\.wideWorkspace) private var wideWorkspace
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @EnvironmentObject private var app: AppState
     let client: SynologyClient
     let owner: String
@@ -55,6 +56,11 @@ struct NASFileBrowserView: View {
     @FocusState private var searchFocused: Bool
     private var filteredItems: [NASFile] { store.items.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) } }
     private var sorting: String { sort.rawValue + String(ascending) }
+    private var directoryContext: String {
+        guard let folder else { return "群晖 NAS" }
+        let parents = folder.path.split(separator: "/").dropLast().map(String.init)
+        return (["群晖"] + parents).joined(separator: " / ")
+    }
     var body: some View {
         mobileBrowser
         .workspaceNavigationTitle(folder?.name ?? "群晖文件", detail: folder != nil).navigationBarTitleDisplayMode(.inline)
@@ -70,46 +76,74 @@ struct NASFileBrowserView: View {
             NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner).toolbar(.visible, for: .navigationBar) } label: {
                 Label("下载任务与已下载", systemImage: "arrow.down.circle")
             }.accessibilityIdentifier("openDownloads")
-            Picker("排序", selection: $sort) { ForEach(FileSort.allCases.filter { folder != nil || $0 != .size }) { Text($0.title).tag($0) } }
-            Toggle("升序排列", isOn: $ascending)
             Button("文件连接设置") { connection = true }
         } label: {
             Image(systemName: "ellipsis").foregroundStyle(Color.primary).frame(width: 44, height: 44)
         }.accessibilityLabel("文件选项").accessibilityIdentifier("fileOptions")
+    }
+    private var sortMenu: some View {
+        Menu {
+            Picker("排序", selection: $sort) { ForEach(FileSort.allCases.filter { folder != nil || $0 != .size }) { Text($0.title).tag($0) } }
+            Toggle("升序排列", isOn: $ascending)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: ascending ? "arrow.up" : "arrow.down").font(.caption.weight(.semibold))
+                Text(sort.title).font(.subheadline.weight(.medium))
+            }.foregroundStyle(.primary).padding(.horizontal, 12).frame(minHeight: 44)
+                .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 14))
+        }.accessibilityLabel("排序方式").accessibilityValue("\(sort.title)，\(ascending ? "升序" : "降序")")
+            .accessibilityIdentifier("nasFileSort")
     }
     private var searchToggle: some View {
         Button {
             withAnimation(.easeOut(duration: 0.18)) { showingSearch.toggle(); if !showingSearch { query = "" } }
             searchFocused = showingSearch
         } label: {
-            Image(systemName: showingSearch ? "xmark" : "magnifyingglass").frame(width: 44, height: 44)
-        }.buttonStyle(.plain).foregroundStyle(NASStyle.accent)
+            HStack(spacing: 8) {
+                Image(systemName: showingSearch ? "xmark" : "magnifyingglass")
+                if !showingSearch { Text("搜索已载入的文件").font(.subheadline).lineLimit(1) }
+            }.frame(maxWidth: showingSearch ? nil : .infinity, alignment: .leading)
+                .frame(minWidth: 44, minHeight: 44)
+                .padding(.horizontal, showingSearch ? 0 : 12)
+                .background(showingSearch ? Color.clear : NASStyle.inset, in: RoundedRectangle(cornerRadius: 14))
+        }.buttonStyle(.plain).foregroundStyle(.secondary)
             .accessibilityLabel(showingSearch ? "关闭搜索" : "搜索文件")
             .accessibilityIdentifier("toggleNASFileSearch")
     }
-    private var fileControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(folder == nil ? "共享文件夹" : "文件").font(.headline).accessibilityAddTraits(.isHeader)
-                    Text(query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "\(filteredItems.count) 项匹配")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
-                }
-                Spacer()
-                searchToggle
-                optionsMenu
-            }
-            if let folder { Text(folder.path).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle).textSelection(.enabled) }
+    private var searchControl: some View {
+        Group {
             if showingSearch {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                     TextField("搜索已载入的文件", text: $query).textInputAutocapitalization(.never).autocorrectionDisabled()
                         .focused($searchFocused).submitLabel(.search).onSubmit { searchFocused = false }
                         .accessibilityIdentifier("nasFileSearch")
-                }.font(.subheadline).padding(.horizontal, 10).frame(minHeight: 44)
-                    .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 12)).padding(.trailing, 8)
+                    searchToggle
+                }.font(.subheadline).padding(.leading, 12).frame(minHeight: 44)
+                    .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 14))
+            } else { searchToggle }
+        }.frame(maxWidth: .infinity)
+    }
+    private var fileControls: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(directoryContext).font(.caption).foregroundStyle(.secondary)
+                        .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                        .accessibilityLabel("当前位置：\(folder?.path ?? "群晖共享文件夹")")
+                    if folder == nil {
+                        Text("共享文件夹").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                    }
+                }
+                Spacer()
+                optionsMenu
             }
-        }.buttonStyle(.plain).padding(.leading, 16).padding(.trailing, 8).padding(.vertical, 8)
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) { searchControl; sortMenu }
+            } else {
+                HStack(spacing: 8) { searchControl; sortMenu.fixedSize(horizontal: true, vertical: false) }
+            }
+        }.buttonStyle(.plain).padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 12)
     }
     private var mobileBrowser: some View {
         VStack(spacing: 0) {
@@ -122,7 +156,7 @@ struct NASFileBrowserView: View {
                         Button("重试读取") { Task { await refresh() } }
                     }.listRowBackground(NASStyle.canvas)
                 }
-                Section {
+                Group {
                     ForEach(filteredItems) { file in
                         if file.isdir {
                             if wideWorkspace {
@@ -143,7 +177,18 @@ struct NASFileBrowserView: View {
                         ContentUnavailableView(query.isEmpty ? (folder == nil ? "没有可访问的共享文件夹" : "这是一个空文件夹") : "没有匹配的文件", systemImage: query.isEmpty ? "folder" : "magnifyingglass", description: Text(query.isEmpty ? (folder == nil ? "请检查账号的共享文件夹权限。" : "可以返回上级继续浏览。") : "搜索范围为当前已载入的文件。"))
                     }
                 }.listRowBackground(NASStyle.canvas)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                    .listRowSeparatorTint(NASStyle.outline)
             }.listStyle(.plain).scrollContentBackground(.hidden).contentMargins(.top, 0, for: .scrollContent)
+            Rectangle().fill(NASStyle.outline).frame(height: 0.5)
+            HStack(spacing: 12) {
+                NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner).toolbar(.visible, for: .navigationBar) } label: {
+                    Label("下载", systemImage: "arrow.down.circle").font(.subheadline.weight(.medium)).frame(minHeight: 44)
+                }.accessibilityLabel("下载任务与已下载").accessibilityIdentifier("openDownloadsFooter")
+                Spacer(minLength: 8)
+                Text(query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "\(filteredItems.count) 项匹配")
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
+            }.padding(.horizontal, 16).background(NASStyle.surface)
         }.background(NASStyle.canvas)
     }
     private func refresh() async { await store.reset(client: client, path: folder?.path, sort: sort, ascending: ascending) }
@@ -152,16 +197,17 @@ struct NASFileBrowserView: View {
 struct NASFileRow: View {
     let file: NASFile
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir)
             VStack(alignment: .leading, spacing: 4) {
-                Text(file.name).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
+                Text(file.name).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
                 HStack(spacing: 8) {
                     if !file.isdir, let size = file.size { Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
-                    if let date = file.modified { Text(date.formatted(date: .abbreviated, time: .shortened)) }
+                    if let date = file.modified { Text(date.formatted(date: .abbreviated, time: .omitted)) }
+                    if file.isdir && file.modified == nil { Text("文件夹") }
                 }.font(.caption).foregroundStyle(.secondary)
             }
-        }.frame(maxWidth: .infinity, minHeight: 48, alignment: .leading).padding(.vertical, 5)
+        }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.vertical, 2)
     }
 }
 
@@ -344,12 +390,12 @@ struct StorageFileBadge: View {
             if expanded {
                 Image(systemName: symbol).font(.system(size: 34, weight: .regular))
                     .symbolRenderingMode(.hierarchical)
-                    .frame(maxWidth: .infinity).frame(height: 82)
+                    .frame(width: 64, height: 64)
             } else {
                 Image(systemName: symbol).font(.system(size: 20, weight: .regular))
-                    .symbolRenderingMode(.hierarchical).frame(width: 42, height: 42)
+                    .symbolRenderingMode(.hierarchical).frame(width: 32, height: 36)
             }
-        }.foregroundStyle(color).background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+        }.foregroundStyle(color)
             .accessibilityHidden(true)
     }
 }

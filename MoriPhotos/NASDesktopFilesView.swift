@@ -147,13 +147,13 @@ private struct DesktopFileContents: View {
 
     private var iconGrid: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 128, maximum: 170), spacing: 12)], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120, maximum: 154), spacing: 12)], spacing: 12) {
                 ForEach(matchingFiles) { file in
                     VStack(spacing: 6) {
                         StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir, expanded: true)
-                        Text(file.name).font(.caption.weight(.medium)).lineLimit(2)
+                        Text(file.name).font(.subheadline.weight(.medium)).lineLimit(2)
                             .multilineTextAlignment(.center).truncationMode(.middle).frame(maxWidth: .infinity, minHeight: 32, alignment: .top)
-                        Text(file.isdir ? "文件夹" : size(file)).font(.caption2).monospacedDigit().foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                        Text(file.isdir ? (directory.folder == nil ? "共享文件夹" : "文件夹") : size(file)).font(.caption2).monospacedDigit().foregroundStyle(.secondary).frame(maxWidth: .infinity)
                     }.frame(maxWidth: .infinity).padding(8)
                         .background(directory.selection == file.id ? NASStyle.accent.opacity(0.08) : hoveredFile == file.id ? NASStyle.inset : Color.clear, in: RoundedRectangle(cornerRadius: 14))
                         .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(directory.selection == file.id ? NASStyle.accent.opacity(0.55) : .clear, lineWidth: 1) }
@@ -229,10 +229,10 @@ private struct DesktopFileContents: View {
             Text(directory.query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "匹配 \(matchingFiles.count) 项 · 已载入 \(store.items.count) / \(store.total) 项")
                 .monospacedDigit().accessibilityIdentifier("fileCount")
             if selected != nil { Text("已选 1 项") }
-            if let downloadNotice {
-                Button { workspace.selection = .downloads } label: { Label(downloadNotice, systemImage: "checkmark.circle") }
-                    .lineLimit(1).truncationMode(.middle)
-            }
+            Button { workspace.selection = .downloads } label: {
+                Label(downloadNotice ?? "下载", systemImage: downloadNotice == nil ? "arrow.down.circle" : "checkmark.circle")
+            }.lineLimit(1).truncationMode(.middle).accessibilityLabel("下载任务")
+                .accessibilityIdentifier("filesDownloads")
             Spacer(minLength: 0)
             if store.loading { ProgressView().controlSize(.small) }
             else if store.hasMore {

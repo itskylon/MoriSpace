@@ -7,6 +7,8 @@ final class MoriPhotosUITests: XCTestCase {
         app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture",
                                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
+        XCTAssertTrue(app.tabBars.buttons["照片"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["照片"].tap()
         let title = app.staticTexts["localLibraryTitle"]
         XCTAssertTrue(title.waitForExistence(timeout: 10))
         let selection = app.buttons["localPhotoSelection"]
@@ -28,6 +30,8 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
         app.launch()
+        XCTAssertTrue(app.tabBars.buttons["照片"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["照片"].tap()
         func capture(_ name: String) {
             let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             image.name = name; image.lifetime = .keepAlways; add(image)
@@ -138,6 +142,8 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
         app.launch()
+        let photosSidebar = app.descendants(matching: .any)["sidebar_photos"].firstMatch
+        XCTAssertTrue(photosSidebar.waitForExistence(timeout: 15)); photosSidebar.tap()
         XCTAssertTrue(app.buttons.matching(identifier: "nasPhotoCell").firstMatch.waitForExistence(timeout: 15))
         let sidebar = app.descendants(matching: .any)["sidebar_files"].firstMatch
         XCTAssertTrue(sidebar.waitForExistence(timeout: 5))
@@ -157,7 +163,7 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--empty-connection-fixture"]
         app.launch()
-        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "存储", "日历", "设置"])
+        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["首页", "照片", "存储", "日历", "设置"])
         app.tabBars.buttons["设置"].tap()
         app.buttons["newPhotoBackupSettings"].tap()
         XCTAssertTrue(app.navigationBars["新照片备份"].waitForExistence(timeout: 5))
@@ -458,6 +464,8 @@ final class MoriPhotosUITests: XCTestCase {
     func testPhotoPreviewSupportsZoomAndPaging() {
         let app = XCUIApplication()
         app.launch()
+        XCTAssertTrue(app.tabBars.buttons["照片"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["照片"].tap()
         let cells = app.buttons.matching(identifier: "localPhotoCell")
         XCTAssertTrue(cells.firstMatch.waitForExistence(timeout: 10), "Use the authorized MoriPhotos QA photo library")
         XCTAssertGreaterThanOrEqual(cells.count, 3)
@@ -621,6 +629,8 @@ final class MoriPhotosUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--empty-connection-fixture"]
         app.launch()
+        XCTAssertTrue(app.tabBars.buttons["照片"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["照片"].tap()
         XCTAssertTrue(app.staticTexts["localLibraryTitle"].waitForExistence(timeout: 10))
         let home = XCTAttachment(screenshot: app.screenshot())
         home.name = "01-照片首页"; home.lifetime = .keepAlways; add(home)
@@ -647,7 +657,7 @@ final class MoriPhotosUITests: XCTestCase {
         app.buttons["loginNAS"].tap()
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "请使用 HTTPS")).firstMatch.waitForExistence(timeout: 5))
         app.navigationBars.buttons["完成"].tap()
-        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["照片", "存储", "日历", "设置"])
+        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["首页", "照片", "存储", "日历", "设置"])
         app.tabBars.buttons["设置"].tap()
         let version = app.descendants(matching: .any)["appVersion"]
         if !version.waitForExistence(timeout: 2) { app.swipeUp() }

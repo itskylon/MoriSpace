@@ -18,10 +18,11 @@ enum AppPlatform {
 }
 
 enum WorkspacePage: String, CaseIterable, Identifiable {
-    case local, photos, files, downloads, monitor, backup, settings, calendar, oneDrive
+    case local, photos, files, downloads, monitor, backup, settings, calendar, oneDrive, home
     var id: String { rawValue }
     var title: String {
         switch self {
+        case .home: "首页"
         case .local: AppPlatform.libraryName
         case .photos: "群晖照片"
         case .files: "群晖文件"
@@ -35,6 +36,7 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
     }
     var symbol: String {
         switch self {
+        case .home: "square.grid.2x2"
         case .local: "photo.on.rectangle"
         case .photos: "photo.stack"
         case .files: "folder"
@@ -49,8 +51,10 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
 }
 
 @MainActor final class WorkspaceNavigation: ObservableObject {
-    @Published var selection: WorkspacePage = .photos
-    @Published var phoneSelection: WorkspacePage = .local
+    @Published var selection: WorkspacePage = .home
+    @Published var phoneSelection: WorkspacePage = .home
+    @Published var storageSection = "照片"
+    @Published var storageUsesOneDrive = false
     @Published var paths: [WorkspacePage: NavigationPath] = [:]
 }
 
@@ -62,7 +66,8 @@ struct AdaptiveRootView: View {
             DesktopWorkspaceView(navigation: navigation)
         } else {
             TabView(selection: $navigation.phoneSelection) {
-                NavigationStack { LocalLibraryView() }.tabItem { Label("照片", systemImage: "square.grid.2x2") }.tag(WorkspacePage.local)
+                NavigationStack { HomeOverviewView(isActive: navigation.phoneSelection == .home) }.tabItem { Label("首页", systemImage: "square.grid.2x2") }.tag(WorkspacePage.home)
+                NavigationStack { LocalLibraryView(isActive: navigation.phoneSelection == .local) }.tabItem { Label("照片", systemImage: "photo") }.tag(WorkspacePage.local)
                 StorageHomeView(isActive: navigation.phoneSelection == .photos).tabItem { Label("存储", systemImage: "externaldrive") }.tag(WorkspacePage.photos)
                 NavigationStack { CalendarHomeView(isActive: navigation.phoneSelection == .calendar) }.tabItem { Label("日历", systemImage: "calendar") }.tag(WorkspacePage.calendar)
                 NavigationStack { SettingsView() }.tabItem { Label("设置", systemImage: "slider.horizontal.3") }.tag(WorkspacePage.settings)
@@ -75,7 +80,7 @@ struct AdaptiveRootView: View {
 struct DesktopWorkspaceView: View {
     @EnvironmentObject private var app: AppState
     @ObservedObject var navigation: WorkspaceNavigation
-    @State private var visited: Set<WorkspacePage> = [.photos]
+    @State private var visited: Set<WorkspacePage> = [.home]
     @State private var visibility: NavigationSplitViewVisibility = .all
     @FocusState private var sidebarFocus: WorkspacePage?
     @State private var hoveredPage: WorkspacePage?
@@ -95,6 +100,7 @@ struct DesktopWorkspaceView: View {
                 }.padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 24)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
+                        row(.home)
                         sidebarGroup("资料库", pages: [.local, .photos, .files, .oneDrive])
                         sidebarGroup("工具", pages: [.calendar, .downloads, .monitor, .backup])
                     }.padding(.horizontal, 12)
@@ -161,7 +167,7 @@ struct DesktopWorkspaceView: View {
             .accessibilityIdentifier("sidebar_" + page.rawValue)
     }
     private func moveSidebar(by offset: Int) {
-        let pages: [WorkspacePage] = [.local, .photos, .files, .oneDrive, .calendar, .downloads, .monitor, .backup, .settings]
+        let pages: [WorkspacePage] = [.home, .local, .photos, .files, .oneDrive, .calendar, .downloads, .monitor, .backup, .settings]
         guard let index = pages.firstIndex(of: navigation.selection), pages.indices.contains(index + offset) else { return }
         navigation.selection = pages[index + offset]
         sidebarFocus = pages[index + offset]
@@ -174,9 +180,10 @@ struct DesktopWorkspaceView: View {
         case .downloads: NASDownloadsView(manager: app.downloads, owner: app.fileAccountID)
         case .monitor: NASMonitorHomeView(isActive: navigation.selection == page)
         case .backup: PhotoBackupView()
-        case .settings: SettingsView().readableFormWidth()
+        case .settings: SettingsView()
         case .calendar: CalendarHomeView(isActive: navigation.selection == page)
         case .oneDrive: OneDriveHomeView(isActive: navigation.selection == page)
+        case .home: HomeOverviewView(isActive: navigation.selection == page)
         }
     }
 }

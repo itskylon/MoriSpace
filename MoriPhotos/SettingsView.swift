@@ -5,92 +5,153 @@ struct SettingsView: View {
     @EnvironmentObject private var library: PhotoLibraryStore
     @EnvironmentObject private var backup: PhotoBackupManager
     @EnvironmentObject private var oneDrive: OneDriveSession
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var cleared = false
     @State private var showDetails = false
 
     private var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "" }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                preferencesSection("存储服务") {
-                    NavigationLink { ConnectionView() } label: {
-                        SettingsRow(title: "群晖照片", subtitle: "Synology Photos", symbol: "photo.on.rectangle", value: app.client == nil ? "未连接" : "已连接")
-                    }
-                    rowDivider
-                    NavigationLink { ConnectionView(service: .files) } label: {
-                        SettingsRow(title: "群晖文件", subtitle: "File Station", symbol: "folder", value: app.fileClient == nil ? "未连接" : "已连接")
-                    }
-                    rowDivider
-                    NavigationLink { OneDriveConnectionView() } label: {
-                        SettingsRow(title: "OneDrive", subtitle: "微软云存储", symbol: "cloud", value: oneDrive.account == nil ? "未连接" : "已连接")
-                    }.accessibilityIdentifier("oneDriveSettings")
-                }
-
-                preferencesSection("备份与设备") {
-                    NavigationLink { PhotoBackupView() } label: {
-                        SettingsRow(title: "新照片备份", subtitle: "原图保存到群晖", symbol: "arrow.up.doc", value: backup.configuration.enabled ? "已开启" : "未开启")
-                    }.accessibilityIdentifier("newPhotoBackupSettings")
-                    rowDivider
-                    NavigationLink { NASMonitorHomeView() } label: {
-                        SettingsRow(title: "NAS 运行状态", subtitle: "负载、容量与硬盘健康", symbol: "waveform.path.ecg")
-                    }
-                    rowDivider
-                    NavigationLink { UsageView() } label: {
-                        SettingsRow(title: "Codex 额度", subtitle: "剩余比例与桌面小组件", symbol: "chart.bar.xaxis")
-                    }.accessibilityIdentifier("usageSettings")
-                }
-
-                preferencesSection("本机设置") {
-                    Button { AppPlatform.openPhotoSettings() } label: {
-                        SettingsRow(title: "照片权限", subtitle: AppPlatform.libraryName, symbol: "hand.raised", value: library.canRead ? (library.authorization == .limited ? "部分照片" : "全部照片") : "未授权")
-                    }.accessibilityLabel("打开系统权限设置")
-                    rowDivider
-                    Button {
-                        library.manager.stopCachingImagesForAllAssets()
-                        Task { await app.client?.clearCache(); cleared = true }
-                    } label: {
-                        SettingsRow(title: cleared ? "缩略图缓存已清理" : "清理缩略图缓存", subtitle: "保留原始照片与下载文件", symbol: cleared ? "checkmark.circle" : "arrow.triangle.2.circlepath", chevron: false)
+        GeometryReader { geometry in
+            ScrollView {
+                Group {
+                    if geometry.size.width >= 850 && !dynamicTypeSize.isAccessibilitySize {
+                        HStack(alignment: .top, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 24) {
+                                connections
+                                backupAndDevices
+                            }.frame(maxWidth: .infinity, alignment: .topLeading)
+                            VStack(alignment: .leading, spacing: 24) {
+                                localPreferences
+                                about
+                            }.frame(maxWidth: .infinity, alignment: .topLeading)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 22) {
+                            connections
+                            backupAndDevices
+                            localPreferences
+                            about
+                        }
                     }
                 }
+                .buttonStyle(.plain)
+                .padding(AppPlatform.isMac ? 28 : 20)
+                .frame(maxWidth: 1120)
+                .frame(maxWidth: .infinity, alignment: .top)
+            }
+            .background(NASStyle.canvas)
+        }
+        .workspaceNavigationTitle("设置").navigationBarTitleDisplayMode(.inline)
+    }
 
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 10) {
-                        Image("AppBrand").resizable().scaledToFit().frame(width: 28, height: 28)
-                            .clipShape(RoundedRectangle(cornerRadius: 7)).accessibilityHidden(true)
-                        Text("森空间").font(.subheadline.weight(.medium))
-                        Spacer()
+    private var connections: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("存储连接")
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: dynamicTypeSize.isAccessibilitySize ? 1 : 3), spacing: 10) {
+                NavigationLink { ConnectionView() } label: {
+                    SettingsServiceCard(title: "群晖照片", symbol: "photo.on.rectangle", connected: app.client != nil)
+                }
+                NavigationLink { ConnectionView(service: .files) } label: {
+                    SettingsServiceCard(title: "群晖文件", symbol: "folder", connected: app.fileClient != nil)
+                }
+                NavigationLink { OneDriveConnectionView() } label: {
+                    SettingsServiceCard(title: "OneDrive", symbol: "cloud", connected: oneDrive.account != nil)
+                }.accessibilityIdentifier("oneDriveSettings")
+            }
+        }
+    }
+
+    private var backupAndDevices: some View {
+        preferencesSection("备份与工具") {
+            NavigationLink { PhotoBackupView() } label: {
+                SettingsRow(title: "新照片备份", subtitle: "原图保存到群晖", symbol: "arrow.up.doc", value: backup.configuration.enabled ? "已开启" : "未开启")
+            }.accessibilityIdentifier("newPhotoBackupSettings")
+            rowDivider
+            NavigationLink { NASMonitorHomeView() } label: {
+                SettingsRow(title: "NAS 运行状态", subtitle: "负载、容量与硬盘健康", symbol: "waveform.path.ecg")
+            }
+            rowDivider
+            NavigationLink { UsageView() } label: {
+                SettingsRow(title: "Codex 额度", subtitle: "剩余比例与桌面小组件", symbol: "chart.bar.xaxis")
+            }.accessibilityIdentifier("usageSettings")
+        }
+    }
+
+    private var localPreferences: some View {
+        preferencesSection("本机偏好") {
+            Button { AppPlatform.openPhotoSettings() } label: {
+                SettingsRow(title: "照片权限", subtitle: AppPlatform.libraryName, symbol: "hand.raised", value: library.canRead ? (library.authorization == .limited ? "部分照片" : "全部照片") : "未授权")
+            }.accessibilityLabel("打开系统权限设置")
+            rowDivider
+            Button {
+                library.manager.stopCachingImagesForAllAssets()
+                Task { await app.client?.clearCache(); cleared = true }
+            } label: {
+                SettingsRow(title: cleared ? "缩略图缓存已清理" : "清理缩略图缓存", subtitle: "保留原始照片与下载文件", symbol: cleared ? "checkmark.circle" : "arrow.triangle.2.circlepath", chevron: false)
+            }
+        }
+    }
+
+    private var about: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle("关于")
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    Image("AppBrand").resizable().scaledToFit().frame(width: 36, height: 36)
+                        .clipShape(RoundedRectangle(cornerRadius: 10)).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("森空间").font(.subheadline.weight(.semibold))
                         Text("版本 \(version) · 个人使用版").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("appVersion")
                     }
+                    Spacer(minLength: 0)
+                }.padding(.top, 4)
                 DisclosureGroup(isExpanded: $showDetails) {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("支持 iPhone、iPad（iOS 17 及以上）与 Mac（macOS 14 及以上）。群晖使用 DSM 7 / Synology Photos；OneDrive 使用微软授权登录。文件在设备与相应存储服务之间传输。")
                         Text(AppPlatform.isMac ? "支持本机照片管理与备份、群晖文件下载、视频播放和 NAS 状态查看。备份与下载需保持 App 运行；退出或休眠后暂停。暂不支持 QuickConnect 中继、视频转码与人脸识别。" : "支持新照片自动备份、照片管理、群晖文件浏览与下载、视频播放和 NAS 状态查看。备份可由系统安排后台补传；文件下载需保持 App 在前台。暂不支持 QuickConnect 中继、视频转码与人脸识别。")
-                    }.font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
+                    }.font(.footnote).foregroundStyle(.secondary).padding(.top, 8)
                 } label: { Text("版本与使用说明").frame(minHeight: 44) }
                     .font(.subheadline).tint(.secondary)
-                }.padding(.top, 8)
-            }
-            .buttonStyle(.plain)
-            .padding(AppPlatform.isMac ? 28 : 20)
-            .frame(maxWidth: 760)
-            .frame(maxWidth: .infinity, alignment: .top)
+            }.padding(16).settingsPanel()
         }
-        .background(NASStyle.canvas)
-        .workspaceNavigationTitle("设置").navigationBarTitleDisplayMode(.inline)
     }
 
-    private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.leading, 48) }
+    private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.leading, 44) }
+
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.horizontal, 4)
+    }
 
     private func preferencesSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-            VStack(spacing: 0, content: content)
-                .padding(.horizontal, 16)
-                .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
-                .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
+            sectionTitle(title)
+            VStack(spacing: 0, content: content).padding(.horizontal, 16).settingsPanel()
         }
+    }
+}
+
+private struct SettingsServiceCard: View {
+    let title: String
+    let symbol: String
+    let connected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: symbol).font(.system(size: 20, weight: .medium)).foregroundStyle(NASStyle.accent)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
+            }.accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                HStack(spacing: 5) {
+                    Circle().fill(connected ? NASStyle.accent : Color.secondary.opacity(0.5)).frame(width: 5, height: 5).accessibilityHidden(true)
+                    Text(connected ? "已连接" : "未连接").font(.caption).foregroundStyle(connected ? NASStyle.accent : .secondary)
+                }
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).settingsPanel().contentShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -103,9 +164,9 @@ private struct SettingsRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(symbol == "cloud" ? NASStyle.blue : NASStyle.accent)
-                .frame(width: 36, height: 36)
-                .background(symbol == "cloud" ? NASStyle.blue.opacity(0.08) : NASStyle.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+            Image(systemName: symbol).font(.system(size: 16, weight: .medium)).foregroundStyle(NASStyle.accent)
+                .frame(width: 32, height: 32)
+                .background(NASStyle.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
@@ -117,6 +178,13 @@ private struct SettingsRow: View {
         }
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading).contentShape(Rectangle())
+    }
+}
+
+private extension View {
+    func settingsPanel() -> some View {
+        background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 }
 

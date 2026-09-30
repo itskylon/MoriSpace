@@ -78,14 +78,15 @@ import CryptoKit
 
 struct StorageHomeView: View {
     var isActive = true
-    @State private var oneDrive = false
+    @EnvironmentObject private var navigation: WorkspaceNavigation
+    private var oneDrive: Bool { navigation.storageUsesOneDrive }
     @State private var visitedOneDrive = false
     @ScaledMetric(relativeTo: .title2) private var sourceTitleSize = 24
     var body: some View {
         ZStack {
-            NavigationStack { NASHomeView(isActive: isActive && !oneDrive, sourceControl: oneDrive ? nil : AnyView(sourceMenu)) }
+            NASHomeView(isActive: isActive && !oneDrive, sourceControl: oneDrive ? nil : AnyView(sourceMenu))
                 .opacity(oneDrive ? 0 : 1).allowsHitTesting(!oneDrive).accessibilityHidden(oneDrive)
-            if visitedOneDrive {
+            if visitedOneDrive || oneDrive {
                 NavigationStack {
                     VStack(spacing: 0) {
                         HStack {
@@ -100,12 +101,14 @@ struct StorageHomeView: View {
                     .opacity(oneDrive ? 1 : 0).allowsHitTesting(oneDrive).accessibilityHidden(!oneDrive)
             }
         }
+        .onAppear { if oneDrive { visitedOneDrive = true } }
+        .onChange(of: oneDrive) { _, value in if value { visitedOneDrive = true } }
     }
     private var sourceMenu: some View {
         Menu {
-            Button { oneDrive = false } label: { Label("群晖", systemImage: "externaldrive") }
+            Button { navigation.storageUsesOneDrive = false } label: { Label("群晖", systemImage: "externaldrive") }
                 .accessibilityIdentifier("storageChooseNAS")
-            Button { visitedOneDrive = true; oneDrive = true } label: { Label("OneDrive", systemImage: "cloud") }
+            Button { visitedOneDrive = true; navigation.storageUsesOneDrive = true } label: { Label("OneDrive", systemImage: "cloud") }
                 .accessibilityIdentifier("storageChooseOneDrive")
         } label: {
             HStack(spacing: 8) {

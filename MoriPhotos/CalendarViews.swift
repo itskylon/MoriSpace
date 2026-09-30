@@ -7,7 +7,7 @@ struct CalendarHomeView: View {
     @Environment(\.wideWorkspace) private var wide
     @Environment(\.scenePhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ScaledMetric(relativeTo: .body) private var compactDayHeight: CGFloat = 66
+    @ScaledMetric(relativeTo: .body) private var compactDayHeight: CGFloat = 58
     @ScaledMetric(relativeTo: .caption) private var eventTimeWidth: CGFloat = 50
     @ScaledMetric(relativeTo: .title2) private var monthTitleSize: CGFloat = 26
     @State private var presentation: CalendarPresentation?
@@ -16,7 +16,7 @@ struct CalendarHomeView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let desktop = wide && geometry.size.width >= 800 && !dynamicTypeSize.isAccessibilitySize
+            let desktop = wide && geometry.size.width >= 860 && !dynamicTypeSize.isAccessibilitySize
             Group {
                 if store.access != .full { permissionView }
                 else {
@@ -31,33 +31,31 @@ struct CalendarHomeView: View {
                                 ContentUnavailableView("没有可用日历", systemImage: "calendar.badge.plus", description: Text("在苹果日历中添加账户或创建日历后，点击刷新。"))
                             }
                         } else if desktop {
-                            HStack(alignment: .top, spacing: 0) {
-                                ScrollView {
-                                    primaryContent(desktop: true, availableHeight: geometry.size.height)
-                                    calendarFooter.padding(.horizontal, 24).padding(.vertical, 16)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .refreshable { await store.refresh() }
-                                Rectangle().fill(NASStyle.outline).frame(width: 0.5)
-                                ScrollView {
-                                    agenda(for: store.selectedDate).padding(24)
-                                }
-                                .frame(width: min(380, max(290, geometry.size.width * 0.30)))
-                                .background(NASStyle.surface)
-                            }
-
+                            ScrollView {
+                                HStack(alignment: .top, spacing: 16) {
+                                    VStack(spacing: 0) {
+                                        primaryContent(desktop: true, availableHeight: geometry.size.height)
+                                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+                                        calendarFooter.padding(.horizontal, 8).padding(.vertical, 12)
+                                    }.frame(maxWidth: .infinity)
+                                    agenda(for: store.selectedDate)
+                                        .padding(18)
+                                        .frame(width: min(340, max(280, geometry.size.width * 0.28)))
+                                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+                                }.padding(.horizontal, 20).padding(.bottom, 20)
+                            }.refreshable { await store.refresh() }
                         } else {
                             ScrollView {
-                                VStack(spacing: 0) {
+                                VStack(spacing: 12) {
                                     primaryContent(desktop: false, availableHeight: geometry.size.height)
+                                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
                                     if store.displayMode == .month {
                                         agenda(for: store.selectedDate)
                                             .padding(16)
                                             .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-                                            .padding(.horizontal, 16).padding(.vertical, 8)
                                     }
-                                    calendarFooter.padding(.horizontal, 20).padding(.vertical, 16)
-                                }
+                                    calendarFooter.padding(.horizontal, 4).padding(.bottom, 8)
+                                }.padding(.horizontal, 12).padding(.bottom, 12)
                             }.refreshable { await store.refresh() }
                         }
                     }
@@ -67,15 +65,12 @@ struct CalendarHomeView: View {
         }
         .workspaceNavigationTitle("日历")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(wide ? .automatic : .hidden, for: .navigationBar)
         .toolbar {
-            if isActive {
+            if isActive && wide {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button { showingCalendars = true } label: { Image(systemName: "calendar.badge.checkmark") }
-                        .accessibilityLabel("选择显示的日历").accessibilityIdentifier("calendarSources")
-                        .disabled(store.access != .full)
-                    Button { openNew() } label: { Image(systemName: "plus") }
-                        .accessibilityLabel("新建日程").accessibilityIdentifier("calendarNewEvent")
-                        .keyboardShortcut("n", modifiers: .command).disabled(!store.canCreate)
+                    calendarSourcesButton
+                    newEventButton
                 }
             }
         }
@@ -134,25 +129,76 @@ struct CalendarHomeView: View {
     }
 
     private func controls(desktop: Bool) -> some View {
-        VStack(alignment: .leading, spacing: desktop ? 0 : 8) {
+        VStack(alignment: .leading, spacing: 6) {
             if desktop {
-                HStack(spacing: 20) {
+                HStack(spacing: 16) {
                     monthTitle
-                    displayModes
-                    Spacer(minLength: 12)
                     monthNavigation
+                    Spacer(minLength: 12)
+                    displayModes
                     refreshButton
                 }
             } else {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 8) { monthTitle; Spacer(minLength: 0); monthNavigation }
-                    VStack(alignment: .leading, spacing: 8) { monthTitle; monthNavigation }
+                    HStack(spacing: 8) {
+                        monthTitle
+                        Spacer(minLength: 8)
+                        headerActions
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        monthTitle
+                        HStack { Spacer(minLength: 0); headerActions }
+                    }
                 }
-                HStack { displayModes; Spacer(); refreshButton }
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        monthNavigation
+                        Spacer(minLength: 8)
+                        displayModes
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        monthNavigation
+                        displayModes
+                    }
+                }
             }
         }
-        .padding(.horizontal, desktop ? 24 : 20)
-        .padding(.top, desktop ? 20 : 8).padding(.bottom, desktop ? 20 : 8)
+        .padding(.horizontal, desktop ? 20 : 16)
+        .padding(.top, desktop ? 12 : 4).padding(.bottom, 12)
+    }
+
+    private var headerActions: some View {
+        HStack(spacing: 2) {
+            refreshButton
+            if !wide {
+                calendarSourcesButton
+                newEventButton
+            }
+        }
+    }
+
+    private var calendarSourcesButton: some View {
+        Button { showingCalendars = true } label: {
+            Image(systemName: "calendar.badge.checkmark")
+                .font(.body)
+                .frame(minWidth: wide ? nil : 44, minHeight: wide ? nil : 44)
+                .contentShape(Rectangle())
+        }.buttonStyle(.plain).foregroundStyle(NASStyle.accent)
+            .accessibilityLabel("选择显示的日历").accessibilityIdentifier("calendarSources")
+            .disabled(store.access != .full)
+    }
+
+    private var newEventButton: some View {
+        Button { openNew() } label: {
+            Image(systemName: "plus")
+                .font(.body.weight(.semibold))
+                .frame(minWidth: wide ? nil : 44, minHeight: wide ? nil : 44)
+                .background(wide ? .clear : NASStyle.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                .contentShape(Rectangle())
+        }.buttonStyle(.plain).foregroundStyle(NASStyle.accent)
+            .accessibilityLabel("新建日程").accessibilityIdentifier("calendarNewEvent")
+            .keyboardShortcut("n", modifiers: .command).disabled(!store.canCreate)
+            .opacity(store.canCreate ? 1 : 0.45)
     }
 
     private var monthTitle: some View {
@@ -172,9 +218,8 @@ struct CalendarHomeView: View {
             }.accessibilityLabel("上个月").accessibilityIdentifier("calendarPreviousMonth")
             Button { store.today() } label: {
                 Text("今天").font(.subheadline.weight(.medium))
-                    .padding(.horizontal, 10).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                    .padding(.horizontal, 8).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
             }.foregroundStyle(NASStyle.accent)
-                .background(NASStyle.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityIdentifier("calendarToday")
             Button { store.moveMonth(1) } label: {
                 Image(systemName: "chevron.right").font(.callout.weight(.medium))
@@ -189,7 +234,7 @@ struct CalendarHomeView: View {
                 Button { store.displayMode = mode } label: {
                     Text(mode.rawValue).font(.subheadline.weight(store.displayMode == mode ? .semibold : .regular))
                         .foregroundStyle(store.displayMode == mode ? NASStyle.accent : .secondary)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, 10)
                         .frame(minWidth: 44, minHeight: 44)
                         .background(store.displayMode == mode ? NASStyle.accent.opacity(0.1) : .clear,
                                     in: RoundedRectangle(cornerRadius: 10))
@@ -249,18 +294,18 @@ struct CalendarHomeView: View {
 
     @ViewBuilder private func primaryContent(desktop: Bool, availableHeight: CGFloat) -> some View {
         if store.displayMode == .month { monthGrid(desktop: desktop, availableHeight: availableHeight) }
-        else { monthAgenda.padding(.horizontal, desktop ? 24 : 20).padding(.bottom, 8) }
+        else { monthAgenda.padding(.horizontal, 16).padding(.bottom, 8) }
     }
 
     private func monthGrid(desktop: Bool, availableHeight: CGFloat) -> some View {
         let rows = store.layout.days(in: store.month).count / 7
-        let cellHeight = desktop ? min(134, max(108, (availableHeight - 222) / CGFloat(rows))) : compactDayHeight
+        let cellHeight = desktop ? min(112, max(84, (availableHeight - 210) / CGFloat(rows))) : compactDayHeight
         return VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(Array(["一", "二", "三", "四", "五", "六", "日"].enumerated()), id: \.offset) { index, day in
                     Text(day).font(.caption.weight(.medium))
                         .foregroundStyle(index >= 5 ? Color.secondary.opacity(0.7) : Color.secondary)
-                        .frame(maxWidth: .infinity).padding(.vertical, 10)
+                        .frame(maxWidth: .infinity).padding(.vertical, 8)
                 }
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0, alignment: .top), count: 7), spacing: 0) {
@@ -268,7 +313,7 @@ struct CalendarHomeView: View {
                     dayCell(date, desktop: desktop, height: cellHeight)
                 }
             }
-        }.padding(.horizontal, desktop ? 20 : 4).padding(.bottom, desktop ? 0 : 12)
+        }.padding(.horizontal, 8).padding(.vertical, 8)
             .accessibilityIdentifier("calendarMonthGrid")
     }
 
@@ -335,7 +380,7 @@ struct CalendarHomeView: View {
                             ForEach(events.prefix(3)) { event in Circle().fill(color(for: event)).frame(width: 4, height: 4) }
                         }.frame(maxWidth: .infinity).frame(height: 5)
                     }
-                    .padding(.vertical, 5).frame(maxWidth: .infinity, minHeight: height, alignment: .top)
+                    .padding(.vertical, 3).frame(maxWidth: .infinity, minHeight: height, alignment: .top)
                     .contentShape(Rectangle())
                 }.buttonStyle(.plain)
                     .accessibilityLabel(dayLabel)
@@ -363,45 +408,44 @@ struct CalendarHomeView: View {
                     if store.visibleCalendars.isEmpty {
                         Button("显示全部日历") { store.showAll() }.font(.subheadline).frame(minHeight: 44)
                     }
-                }.padding(.top, 18).padding(.bottom, 12)
+                }.padding(.top, 14).padding(.bottom, 6)
             } else {
                 VStack(spacing: 0) {
                     ForEach(events) { event in eventRow(event, on: date) }
                 }.padding(.top, 6)
             }
-            Button { store.select(date); openNew() } label: {
-                HStack {
-                    Text("添加日程").font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Image(systemName: "plus").font(.body.weight(.semibold))
-                }.padding(.horizontal, 16).frame(minHeight: 46)
-                    .foregroundStyle(NASStyle.accent)
-                    .background(NASStyle.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-                    .contentShape(Rectangle())
-            }.buttonStyle(.plain).padding(.top, 12).disabled(!store.canCreate)
-                .opacity(store.canCreate ? 1 : 0.45)
-                .accessibilityIdentifier("calendarDayAdd")
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func selectedDayHeader(_ date: Date, count: Int) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    selectedDayTitle(date)
-                    Spacer(minLength: 0)
-                    selectedDayCount(count)
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        selectedDayTitle(date)
+                        selectedDayCount(count)
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        selectedDayTitle(date)
+                        selectedDayCount(count)
+                    }
                 }
-                VStack(alignment: .leading, spacing: 6) {
-                    selectedDayTitle(date)
-                    selectedDayCount(count)
-                }
-            }
-            Text(store.layout.lunarDate(on: date).description)
-                .font(.caption).foregroundStyle(.secondary)
-                .accessibilityIdentifier("calendarSelectedLunarDay")
+                Text(store.layout.lunarDate(on: date).description)
+                    .font(.caption).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("calendarSelectedLunarDay")
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            Button { store.select(date); openNew() } label: {
+                Image(systemName: "plus").font(.subheadline.weight(.semibold))
+                    .frame(width: 44, height: 44)
+                    .foregroundStyle(NASStyle.accent)
+                    .background(NASStyle.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+                    .contentShape(Rectangle())
+            }.buttonStyle(.plain).disabled(!store.canCreate)
+                .opacity(store.canCreate ? 1 : 0.45)
+                .accessibilityLabel("添加日程")
+                .accessibilityIdentifier("calendarDayAdd")
         }
-        .padding(.bottom, 14)
+        .padding(.bottom, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 0.5) }
     }
@@ -534,6 +578,7 @@ private struct CalendarSourcesView: View {
                 }
             }.scrollContentBackground(.hidden).background(Theme.canvas)
                 .navigationTitle("显示的日历").navigationBarTitleDisplayMode(.inline)
+                .toolbar(.visible, for: .navigationBar)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() }.accessibilityIdentifier("calendarSourcesDone") } }
         }
     }

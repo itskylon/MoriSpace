@@ -62,6 +62,8 @@
 		7E01845EB4C5E4D4D6652099 /* CalendarWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5E5E83E9C3F9679C07600A /* CalendarWidgetData.swift */; };
 		7E856CB3774E421C82219C60 /* MoriCalendarWidgetsMac.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E49E09B094419DFCED922A25 /* MoriCalendarWidgetsMac.appex */; platformFilter = maccatalyst; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7EF5571540B5C238775F0793 /* PhotoBackupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B735D018968DA9976A81C207 /* PhotoBackupManager.swift */; };
+		821664DCCB36195474E464BB /* HomeOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688DD787FD430F05659B5C2B /* HomeOverviewView.swift */; };
+		8347DEC1AED4CCDA2FAE354D /* HomeOverviewUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B3A5C328D48818A288954BE /* HomeOverviewUITests.swift */; };
 		85AF170EE1D097AFB0963F61 /* CalendarWidgetContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCD5FB5673ABAFCBECB565F /* CalendarWidgetContent.swift */; };
 		878E62DE610508A9A9D5D4C8 /* MoriPhotosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 483DD6F941B710B8476B7848 /* MoriPhotosApp.swift */; };
 		89025951598261022B366F71 /* CalendarWidgetUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4384ED8AC25418D63D492A78 /* CalendarWidgetUITests.swift */; };
@@ -178,6 +180,7 @@
 		1420924898078F2EDA927690 /* CalendarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarTests.swift; sourceTree = "<group>"; };
 		14CA5F0723117C4B8B3EC65D /* OneDriveClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneDriveClient.swift; sourceTree = "<group>"; };
 		1ABD06E000A87BA5297A30FA /* PhotoLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryStore.swift; sourceTree = "<group>"; };
+		1B3A5C328D48818A288954BE /* HomeOverviewUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeOverviewUITests.swift; sourceTree = "<group>"; };
 		2702B3F3BC8C9E21167E48E3 /* VideoPlaybackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlaybackTests.swift; sourceTree = "<group>"; };
 		27B6095DB92ABE7E4C63C227 /* ConnectionRestoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionRestoreTests.swift; sourceTree = "<group>"; };
 		2AC1B599AD5C9B6A04746FA8 /* VideoProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProgressTests.swift; sourceTree = "<group>"; };
@@ -204,6 +207,7 @@
 		6092975C9DDCC6D508D65D85 /* UsageWidgetContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageWidgetContent.swift; sourceTree = "<group>"; };
 		63E83339E4DD5D67A754343A /* NASFilePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASFilePreview.swift; sourceTree = "<group>"; };
 		6649B9616DC335622F581BB7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		688DD787FD430F05659B5C2B /* HomeOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeOverviewView.swift; sourceTree = "<group>"; };
 		6ECF696102734C070E0782A9 /* OneDriveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneDriveTests.swift; sourceTree = "<group>"; };
 		7274409BBE484F52990098A9 /* VideoPlaybackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlaybackView.swift; sourceTree = "<group>"; };
 		72B6A0235084087BEA687EF4 /* UsageStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageStoreTests.swift; sourceTree = "<group>"; };
@@ -328,6 +332,7 @@
 			children = (
 				A44C6D38A27C07296EB382C2 /* CalendarUITests.swift */,
 				4384ED8AC25418D63D492A78 /* CalendarWidgetUITests.swift */,
+				1B3A5C328D48818A288954BE /* HomeOverviewUITests.swift */,
 				E79A359C3DFA8F3F793D6083 /* MoriPhotosUITests.swift */,
 				D012A634CA6296977F388716 /* OneDriveUITests.swift */,
 			);
@@ -362,6 +367,7 @@
 				4A9C3809C2E657705DD021AF /* FileDownloads.swift */,
 				BA2845221AB5B98D95E6E981 /* FileStation.swift */,
 				98911A0516F65F508D6BABDA /* FileStationFixture.swift */,
+				688DD787FD430F05659B5C2B /* HomeOverviewView.swift */,
 				2B2818C3918344163122E78B /* Info.plist */,
 				0097D1CB1BDAFCBB5174506D /* iOS.entitlements */,
 				4CD612473CD1F61239A468C5 /* KeychainStore.swift */,
@@ -633,6 +639,7 @@
 			files = (
 				47226652C5A60491E81C8E5D /* CalendarUITests.swift in Sources */,
 				89025951598261022B366F71 /* CalendarWidgetUITests.swift in Sources */,
+				8347DEC1AED4CCDA2FAE354D /* HomeOverviewUITests.swift in Sources */,
 				B4F3F4E1241A70C2A77570C3 /* MoriPhotosUITests.swift in Sources */,
 				07D6861B323F7E94AB15687A /* OneDriveUITests.swift in Sources */,
 			);
@@ -693,6 +700,7 @@
 				CC4152AD62FA102AD4A78619 /* FileStation.swift in Sources */,
 				70490F1EA001F189CD4B3C0E /* FileStationFixture.swift in Sources */,
 				DB38273008D0FDBC37E0AB9F /* HolidayBadge.swift in Sources */,
+				821664DCCB36195474E464BB /* HomeOverviewView.swift in Sources */,
 				9E6F5C84AD911F19FEE75279 /* KeychainStore.swift in Sources */,
 				B127734EFB40556FB34997E2 /* LocalViews.swift in Sources */,
 				25C7FF466302B7547A3FC875 /* LunarMonthWidgetContent.swift in Sources */,
@@ -869,7 +877,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -889,7 +897,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.20.0;
+				MARKETING_VERSION = 0.21.0;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MORI_USAGE_KEYCHAIN_GROUP = "$(AppIdentifierPrefix)dev.kylon.MoriPhotos.usage";
@@ -1135,7 +1143,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 34;
+				CURRENT_PROJECT_VERSION = 35;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1149,7 +1157,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.20.0;
+				MARKETING_VERSION = 0.21.0;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MORI_USAGE_KEYCHAIN_GROUP = "$(AppIdentifierPrefix)dev.kylon.MoriPhotos.usage";

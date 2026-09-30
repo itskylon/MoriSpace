@@ -94,9 +94,10 @@ struct MoriPhotosApp: App {
                 Button("设置…") { navigation.selection = .settings }.keyboardShortcut(",")
             }
             CommandMenu("前往") {
-                ForEach(Array(WorkspacePage.allCases.enumerated()), id: \.element) { index, page in
+                ForEach(Array(WorkspacePage.allCases.filter { $0 != .home }.enumerated()), id: \.element) { index, page in
                     Button(page.title) { navigation.selection = page }.keyboardShortcut(KeyEquivalent(Character(String(index + 1))))
                 }
+                Button("首页") { navigation.selection = .home }.keyboardShortcut("0")
             }
         }
         #endif

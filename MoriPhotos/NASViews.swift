@@ -4,15 +4,50 @@ struct NASHomeView: View {
     var isActive = true
     var sourceControl: AnyView? = nil
     @State private var connection = false
-    @State private var section = "照片"
+    @EnvironmentObject private var navigation: WorkspaceNavigation
+    private var section: String { navigation.storageSection }
     @State private var visited: Set<String> = ["照片"]
     private var selection: Binding<String> {
         Binding(get: { section }, set: { next in
             visited.insert(next)
-            section = next
+            navigation.storageSection = next
         })
     }
     var body: some View {
+        ZStack {
+            NavigationStack {
+                VStack(spacing: 0) {
+                    if section == "照片" { sectionHeader }
+                    NASPhotosHomeView(isActive: isActive && section == "照片")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }.toolbar(.hidden, for: .navigationBar)
+            }.nasPageVisibility(section == "照片")
+            if visited.contains("文件") || section == "文件" {
+                NavigationStack {
+                    VStack(spacing: 0) {
+                        if section == "文件" { sectionHeader }
+                        NASFilesHomeView(isActive: isActive && section == "文件")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }.toolbar(.hidden, for: .navigationBar)
+                }.nasPageVisibility(section == "文件")
+            }
+            if visited.contains("状态") || section == "状态" {
+                NavigationStack {
+                    VStack(spacing: 0) {
+                        if section == "状态" { sectionHeader }
+                        NASMonitorHomeView(isActive: isActive && section == "状态")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }.toolbar(.hidden, for: .navigationBar)
+                }.nasPageVisibility(section == "状态")
+            }
+        }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear { visited.insert(section) }
+            .onChange(of: section) { _, next in visited.insert(next) }
+            .sheet(isPresented: $connection) {
+                NavigationStack { ConnectionView(service: section == "照片" ? .photos : section == "文件" ? .files : .monitor) }.desktopSheet()
+            }
+    }
+    private var sectionHeader: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -23,23 +58,7 @@ struct NASHomeView: View {
                 NASSectionTabs(selection: selection)
             }.padding(.horizontal, 16).padding(.bottom, 8).background(NASStyle.canvas)
             Rectangle().fill(NASStyle.outline).frame(height: 0.5)
-            ZStack {
-                NASPhotosHomeView(isActive: isActive && section == "照片")
-                    .nasPageVisibility(section == "照片")
-                if visited.contains("文件") {
-                    NASFilesHomeView(isActive: isActive && section == "文件")
-                        .nasPageVisibility(section == "文件")
-                }
-                if visited.contains("状态") {
-                    NASMonitorHomeView(isActive: isActive && section == "状态")
-                        .nasPageVisibility(section == "状态")
-                }
-            }.frame(maxWidth: .infinity, maxHeight: .infinity)
-        }.navigationTitle("群晖").navigationBarTitleDisplayMode(.inline)
-            .toolbar(.hidden, for: .navigationBar)
-            .sheet(isPresented: $connection) {
-                NavigationStack { ConnectionView(service: section == "照片" ? .photos : section == "文件" ? .files : .monitor) }.desktopSheet()
-            }
+        }
     }
     private var connectionButton: some View {
         Button { connection = true } label: {

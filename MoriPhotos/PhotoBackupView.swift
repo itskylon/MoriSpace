@@ -5,6 +5,7 @@ struct PhotoBackupView: View {
     @EnvironmentObject private var backup: PhotoBackupManager
     @EnvironmentObject private var app: AppState
     @EnvironmentObject private var library: PhotoLibraryStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var wifiOnly = true
     @State private var choosingFolder = false
     @State private var showDetails = false
@@ -12,18 +13,31 @@ struct PhotoBackupView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    overview
-                    if let error = backup.error { ErrorBanner(message: error) }
-                    let layout = geometry.size.width >= 800 ? AnyLayout(HStackLayout(alignment: .top, spacing: 20)) : AnyLayout(VStackLayout(spacing: 20))
-                    layout {
-                        destination.frame(maxWidth: .infinity, alignment: .topLeading)
-                        preferences.frame(maxWidth: .infinity, alignment: .topLeading)
+                Group {
+                    if geometry.size.width >= 850 && !dynamicTypeSize.isAccessibilitySize {
+                        HStack(alignment: .top, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 20) {
+                                overview
+                                if let error = backup.error { ErrorBanner(message: error) }
+                                backupDetails
+                            }.frame(maxWidth: .infinity, alignment: .topLeading)
+                            VStack(alignment: .leading, spacing: 20) {
+                                destination
+                                preferences
+                            }.frame(maxWidth: .infinity, alignment: .topLeading)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 18) {
+                            overview
+                            if let error = backup.error { ErrorBanner(message: error) }
+                            destination
+                            preferences
+                            backupDetails
+                        }
                     }
-                    backupDetails
                 }
                 .padding(AppPlatform.isMac ? 28 : 20)
-                .frame(maxWidth: 960)
+                .frame(maxWidth: 1120)
                 .frame(maxWidth: .infinity, alignment: .top)
             }.background(NASStyle.canvas)
         }
@@ -44,38 +58,45 @@ struct PhotoBackupView: View {
     }
 
     private var overview: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 16) {
             Toggle(isOn: Binding(get: { backup.configuration.enabled }, set: { enabled in
                 if enabled { Task { await backup.enable(folder: backup.configuration.folder, wifiOnly: wifiOnly) } }
                 else { backup.disable() }
             })) {
-                Text("自动备份新照片").font(.headline).foregroundStyle(.primary)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("自动备份新照片").font(.headline).foregroundStyle(.primary)
+                    Text(backup.configuration.enabled ? "已开启，保留本机原图" : "将新拍照片保存到 NAS").font(.caption).foregroundStyle(.secondary)
+                }
             }.tint(NASStyle.accent).frame(minHeight: 44).accessibilityIdentifier("enableNewPhotoBackup").disabled(backup.preparing)
 
+            panelRule
             HStack(alignment: .center, spacing: 10) {
-                if backup.preparing || backup.running { ProgressView().controlSize(.small).tint(NASStyle.accent) }
-                else { Image(systemName: backup.error != nil ? "exclamationmark.circle" : backup.configuration.enabled ? "checkmark.circle" : "pause.circle")
-                    .foregroundStyle(backup.error != nil ? NASStyle.coral : NASStyle.accent) }
+                Group {
+                    if backup.preparing || backup.running { ProgressView().controlSize(.small).tint(NASStyle.accent) }
+                    else { Image(systemName: backup.error != nil ? "exclamationmark.circle" : backup.configuration.enabled ? "checkmark.circle" : "pause.circle")
+                        .foregroundStyle(backup.error != nil ? NASStyle.coral : NASStyle.accent) }
+                }.frame(width: 28, height: 28)
                 Text(backup.preparing ? "正在检查备份位置…" : backup.status)
                     .font(.subheadline.weight(.medium)).foregroundStyle(.primary).accessibilityIdentifier("photoBackupStatus")
             }
 
             if backup.configuration.enabled {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 28) {
+                    HStack(alignment: .top, spacing: 20) {
                         backupMetric("已备份", value: backup.ledger.completed.count)
-                        Rectangle().fill(NASStyle.outline).frame(width: 1, height: 44)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Rectangle().fill(NASStyle.outline).frame(width: 1, height: 52)
                         backupMetric("待备份", value: backup.pendingCount)
-                        Spacer(minLength: 0)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     VStack(alignment: .leading, spacing: 14) {
                         backupMetric("已备份", value: backup.ledger.completed.count)
                         backupMetric("待备份", value: backup.pendingCount)
                     }
-                }.padding(.vertical, 4)
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 18) { checkButton; lastBackupTime }
-                    VStack(alignment: .leading, spacing: 8) { checkButton; lastBackupTime }
+                }.padding(.vertical, 2)
+                VStack(alignment: .leading, spacing: 10) {
+                    checkButton
+                    lastBackupTime
                 }
             }
             Text(backup.configuration.startedAt.map { "从 \($0.formatted(date: .abbreviated, time: .shortened)) 起备份新照片。" } ?? "开启后从新照片开始，本机已有照片不会上传。")
@@ -83,10 +104,12 @@ struct PhotoBackupView: View {
         }.frame(maxWidth: .infinity, alignment: .leading).backupPanel()
     }
 
+    private var panelRule: some View { Rectangle().fill(NASStyle.outline).frame(height: 1) }
+
     private var checkButton: some View {
         Button { backup.checkNow() } label: {
             Label("立即检查新照片", systemImage: "arrow.clockwise").font(.subheadline.weight(.medium))
-                .padding(.horizontal, 14).frame(minHeight: 44)
+                .padding(.horizontal, 14).frame(maxWidth: .infinity, minHeight: 44)
                 .foregroundStyle(.white)
                 .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
         }.buttonStyle(.plain).disabled(backup.running).accessibilityIdentifier("checkNewPhotoBackup")
@@ -108,7 +131,11 @@ struct PhotoBackupView: View {
 
     private var destination: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("备份位置").font(.headline)
+            HStack {
+                Text("备份位置").font(.headline)
+                Spacer(minLength: 8)
+                Text("NAS").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+            }
             Button { backup.clearFolderError(); choosingFolder = true } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "folder").font(.system(size: 20)).foregroundStyle(NASStyle.accent)
@@ -124,6 +151,7 @@ struct PhotoBackupView: View {
             }.buttonStyle(.plain).accessibilityIdentifier("chooseBackupFolder").disabled(backup.preparing)
             Text("照片按年 / 月归档，点目录可更换位置。")
                 .font(.caption).foregroundStyle(.secondary)
+            panelRule
             NavigationLink { ConnectionView(service: .files) } label: {
                 HStack {
                     Text("File Station 连接设置").font(.caption.weight(.medium))
@@ -135,13 +163,13 @@ struct PhotoBackupView: View {
     }
 
     private var preferences: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("备份偏好").font(.headline)
             Toggle("仅 Wi-Fi 备份", isOn: $wifiOnly).font(.subheadline).frame(minHeight: 44).disabled(backup.configuration.enabled || backup.preparing)
             if backup.configuration.enabled {
                 Text("关闭自动备份后可修改网络偏好。").font(.caption).foregroundStyle(.secondary)
             }
-            Divider()
+            panelRule
             HStack {
                 Label("照片权限", systemImage: "photo").font(.subheadline)
                 Spacer()
@@ -167,15 +195,15 @@ struct PhotoBackupView: View {
                 Text("断网会保留备份记录并稍后重试。每个原始文件通过 NAS 大小与内容校验后，才记为已备份；同名但内容不同的文件不会被覆盖。")
             }.font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
         } label: { Text("备份范围与运行方式").frame(minHeight: 44) }
-        .font(.subheadline).tint(.secondary).padding(.top, 8)
-        .overlay(alignment: .top) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
+        .font(.subheadline).tint(.secondary)
+        .backupPanel()
     }
 }
 
 private extension View {
     func backupPanel() -> some View {
-        padding(18).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
-            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
+        padding(18).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 }
 
