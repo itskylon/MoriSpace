@@ -18,6 +18,7 @@
 		133E9E0F02E9B90DF22E1F06 /* CalendarStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11792FF853066FE298B264EE /* CalendarStore.swift */; };
 		143DC639E577F3547704ECA7 /* ChinaHolidaySchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */; };
 		14B92DE9FB74875327CD76F1 /* CalendarWidgetContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCD5FB5673ABAFCBECB565F /* CalendarWidgetContent.swift */; };
+		2062DD9D3667FF4A95913E0E /* FloatingPhoneMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CF8BC95E8208452FBA20CC9 /* FloatingPhoneMenu.swift */; };
 		25C7FF466302B7547A3FC875 /* LunarMonthWidgetContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE47DC8FEB7E8200EB69BFD /* LunarMonthWidgetContent.swift */; };
 		25FA002A4AD4181C13C4CD39 /* NASStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E332AB46CF90F1AB08AF5A19 /* NASStyle.swift */; };
 		281DCED3C89065C0E3DCF431 /* CalendarDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B270F3F68AB9065ABEB5BCD0 /* CalendarDomain.swift */; };
@@ -85,6 +86,7 @@
 		E06AF9BEF6ACDC4AF7707883 /* PhotoLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ABD06E000A87BA5297A30FA /* PhotoLibraryStore.swift */; };
 		E1397E10C82CBCEEBDFE114A /* PhotoViewing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DA055DC4D355E9547364B35 /* PhotoViewing.swift */; };
 		E24A9CB247F1465363A93409 /* OneDriveViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85031DD0C25CB458C342568F /* OneDriveViews.swift */; };
+		E5EED75CC0426BE8D5EA6305 /* PhoneMenuQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = E572CAD53D98DB21490FE92C /* PhoneMenuQuery.swift */; };
 		E71507BE01339D6D4DC3D9C4 /* OneDriveAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D9E1ECD26DBB635A0C417E /* OneDriveAuth.swift */; };
 		ECC2708605260C2C3FE9B5E9 /* HolidayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80134465C65DC9628290845 /* HolidayBadge.swift */; };
 		EF60DABD68EADF76690948E2 /* ConnectionRestoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27B6095DB92ABE7E4C63C227 /* ConnectionRestoreTests.swift */; };
@@ -188,6 +190,7 @@
 		6ECF696102734C070E0782A9 /* OneDriveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneDriveTests.swift; sourceTree = "<group>"; };
 		7274409BBE484F52990098A9 /* VideoPlaybackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlaybackView.swift; sourceTree = "<group>"; };
 		735EE07A0DF6F4701B719F31 /* NASMonitoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASMonitoring.swift; sourceTree = "<group>"; };
+		7CF8BC95E8208452FBA20CC9 /* FloatingPhoneMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPhoneMenu.swift; sourceTree = "<group>"; };
 		810A4544553B5ABF82A5248A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		819A8B3810DD6AC3F92E4331 /* MoriPhotosMacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoriPhotosMacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		85031DD0C25CB458C342568F /* OneDriveViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneDriveViews.swift; sourceTree = "<group>"; };
@@ -225,6 +228,7 @@
 		E332AB46CF90F1AB08AF5A19 /* NASStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASStyle.swift; sourceTree = "<group>"; };
 		E49E09B094419DFCED922A25 /* MoriCalendarWidgetsMac.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MoriCalendarWidgetsMac.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E52139ADBB33998DFAF9AF83 /* OneDriveMediaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneDriveMediaTests.swift; sourceTree = "<group>"; };
+		E572CAD53D98DB21490FE92C /* PhoneMenuQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneMenuQuery.swift; sourceTree = "<group>"; };
 		E6EF3CF14EB026ECB9C87C9A /* NASMonitorDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASMonitorDashboard.swift; sourceTree = "<group>"; };
 		E79A359C3DFA8F3F793D6083 /* MoriPhotosUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoriPhotosUITests.swift; sourceTree = "<group>"; };
 		F07DC7F244C5AD308943D572 /* MacWorkspaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacWorkspaceTests.swift; sourceTree = "<group>"; };
@@ -302,6 +306,7 @@
 				1B3A5C328D48818A288954BE /* HomeOverviewUITests.swift */,
 				E79A359C3DFA8F3F793D6083 /* MoriPhotosUITests.swift */,
 				D012A634CA6296977F388716 /* OneDriveUITests.swift */,
+				E572CAD53D98DB21490FE92C /* PhoneMenuQuery.swift */,
 			);
 			path = MoriPhotosUITests;
 			sourceTree = "<group>";
@@ -334,6 +339,7 @@
 				4A9C3809C2E657705DD021AF /* FileDownloads.swift */,
 				BA2845221AB5B98D95E6E981 /* FileStation.swift */,
 				98911A0516F65F508D6BABDA /* FileStationFixture.swift */,
+				7CF8BC95E8208452FBA20CC9 /* FloatingPhoneMenu.swift */,
 				688DD787FD430F05659B5C2B /* HomeOverviewView.swift */,
 				2B2818C3918344163122E78B /* Info.plist */,
 				0097D1CB1BDAFCBB5174506D /* iOS.entitlements */,
@@ -607,6 +613,7 @@
 				8347DEC1AED4CCDA2FAE354D /* HomeOverviewUITests.swift in Sources */,
 				B4F3F4E1241A70C2A77570C3 /* MoriPhotosUITests.swift in Sources */,
 				07D6861B323F7E94AB15687A /* OneDriveUITests.swift in Sources */,
+				E5EED75CC0426BE8D5EA6305 /* PhoneMenuQuery.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -656,6 +663,7 @@
 				A2863E0E341027B0CA44ABCD /* FileDownloads.swift in Sources */,
 				CC4152AD62FA102AD4A78619 /* FileStation.swift in Sources */,
 				70490F1EA001F189CD4B3C0E /* FileStationFixture.swift in Sources */,
+				2062DD9D3667FF4A95913E0E /* FloatingPhoneMenu.swift in Sources */,
 				DB38273008D0FDBC37E0AB9F /* HolidayBadge.swift in Sources */,
 				821664DCCB36195474E464BB /* HomeOverviewView.swift in Sources */,
 				9E6F5C84AD911F19FEE75279 /* KeychainStore.swift in Sources */,
@@ -825,7 +833,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -845,7 +853,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.22.0;
+				MARKETING_VERSION = 0.23.0;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -1090,7 +1098,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 36;
+				CURRENT_PROJECT_VERSION = 37;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1104,7 +1112,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.22.0;
+				MARKETING_VERSION = 0.23.0;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MTL_ENABLE_DEBUG_INFO = NO;

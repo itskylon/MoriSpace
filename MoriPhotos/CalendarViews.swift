@@ -43,7 +43,7 @@ struct CalendarHomeView: View {
                                         .frame(width: min(340, max(280, geometry.size.width * 0.28)))
                                         .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
                                 }.padding(.horizontal, 20).padding(.bottom, 20)
-                            }.refreshable { await store.refresh() }
+                            }.phoneMenuScrolling(active: isActive).refreshable { await store.refresh() }
                         } else {
                             ScrollView {
                                 VStack(spacing: 12) {
@@ -56,7 +56,7 @@ struct CalendarHomeView: View {
                                     }
                                     calendarFooter.padding(.horizontal, 4).padding(.bottom, 8)
                                 }.padding(.horizontal, 12).padding(.bottom, 12)
-                            }.refreshable { await store.refresh() }
+                            }.phoneMenuScrolling(active: isActive).refreshable { await store.refresh() }
                         }
                     }
                 }
@@ -576,7 +576,7 @@ private struct CalendarSourcesView: View {
                 } footer: {
                     Text("隐藏日历会保留其中的日程。iCloud 等账户由系统同步；本机日历仅保存在当前设备。")
                 }
-            }.scrollContentBackground(.hidden).background(Theme.canvas)
+            }.phoneMenuScrolling().scrollContentBackground(.hidden).background(Theme.canvas)
                 .navigationTitle("显示的日历").navigationBarTitleDisplayMode(.inline)
                 .toolbar(.visible, for: .navigationBar)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() }.accessibilityIdentifier("calendarSourcesDone") } }

@@ -37,7 +37,7 @@ struct HomeOverviewView: View {
                 }
                 .padding(wide ? 28 : 20)
                 .frame(maxWidth: 1240).frame(maxWidth: .infinity, alignment: .top)
-            }.background(NASStyle.canvas)
+            }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
         }
         .workspaceNavigationTitle("首页").navigationBarTitleDisplayMode(.inline)
         .toolbar(usesSidebar ? .automatic : .hidden, for: .navigationBar)

@@ -72,7 +72,7 @@ struct LocalLibraryView: View {
                         }
                     }
                 }.padding(.top, library.canRead ? (wide ? 12 : 2) : 0)
-            }
+            }.phoneMenuScrolling(active: isActive)
         }
         .background(Theme.canvas)
         .workspaceNavigationTitle("照片")

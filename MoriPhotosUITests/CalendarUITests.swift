@@ -48,7 +48,7 @@ final class CalendarUITests: XCTestCase {
         capture(app, "calendar-phone-lunar")
         app.buttons["calendarNextMonth"].tap()
         XCTAssertTrue(lunar.label.hasPrefix("农历"))
-        app.tabBars.buttons["设置"].tap(); openPhoneCalendar(app)
+        app.phoneMenus.buttons["设置"].tap(); openPhoneCalendar(app)
         XCTAssertTrue(lunar.waitForExistence(timeout: 5))
     }
 
@@ -73,7 +73,7 @@ final class CalendarUITests: XCTestCase {
         XCTAssertTrue(row(app, "日历验收·生日").waitForExistence(timeout: 5))
         app.buttons["calendarNextMonth"].tap()
         let month = app.staticTexts["calendarMonthTitle"].label
-        app.tabBars.buttons["设置"].tap(); openPhoneCalendar(app)
+        app.phoneMenus.buttons["设置"].tap(); openPhoneCalendar(app)
         XCTAssertEqual(app.staticTexts["calendarMonthTitle"].label, month)
         app.buttons["calendarToday"].tap()
         app.buttons["calendarMode_日程"].tap()
@@ -123,7 +123,7 @@ final class CalendarUITests: XCTestCase {
         let entry = app.descendants(matching: .any)["sidebar_calendar"].firstMatch
         XCTAssertTrue(entry.waitForExistence(timeout: 10)); entry.tap()
         XCTAssertTrue(row(app, "周末徒步（示例）").waitForExistence(timeout: 10))
-        XCTAssertFalse(app.tabBars.firstMatch.exists)
+        XCTAssertFalse(app.phoneMenus.firstMatch.exists)
         let grid = app.descendants(matching: .any)["calendarMonthGrid"].firstMatch
         let day = app.staticTexts["calendarSelectedDay"]
         XCTAssertTrue(app.staticTexts["calendarSelectedLunarDay"].label.hasPrefix("农历"))
@@ -145,7 +145,7 @@ final class CalendarUITests: XCTestCase {
     private func openPhoneCalendar(_ app: XCUIApplication) {
         // Home is now the initial tab. Route explicitly instead of relying on
         // whichever content has finished appearing immediately after launch.
-        let calendar = app.tabBars.buttons["日历"]
+        let calendar = app.phoneMenus.buttons["日历"]
         XCTAssertTrue(calendar.waitForExistence(timeout: 10))
         XCTAssertTrue(calendar.isHittable)
         calendar.tap()

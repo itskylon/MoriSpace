@@ -39,7 +39,7 @@ struct SettingsView: View {
                 .padding(AppPlatform.isMac ? 28 : 20)
                 .frame(maxWidth: 1120)
                 .frame(maxWidth: .infinity, alignment: .top)
-            }
+            }.phoneMenuScrolling()
             .background(NASStyle.canvas)
         }
         .workspaceNavigationTitle("设置").navigationBarTitleDisplayMode(.inline)
@@ -275,7 +275,7 @@ struct ConnectionView: View {
                     Button("移除保存的账号", role: .destructive) { forget = true }.frame(minHeight: 44).disabled(app.connecting)
                 }
             }.padding(AppPlatform.isMac ? 28 : 20).frame(maxWidth: 660).frame(maxWidth: .infinity)
-        }
+        }.phoneMenuScrolling()
         .background(NASStyle.canvas)
         .tint(NASStyle.accent)
         .navigationTitle(service == .photos ? "连接设置" : (service == .files ? "文件连接设置" : "状态连接设置")).navigationBarTitleDisplayMode(.inline)

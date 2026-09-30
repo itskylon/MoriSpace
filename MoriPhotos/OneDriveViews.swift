@@ -145,7 +145,7 @@ struct OneDriveHomeView: View {
                         }.buttonStyle(.borderless).accessibilityIdentifier("oneDriveOfflineDownloads")
                     }.padding(20).frame(maxWidth: 520, alignment: .leading)
                         .frame(maxWidth: .infinity, alignment: .center)
-                }.background(NASStyle.canvas)
+                }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
             }
         }.workspaceNavigationTitle("OneDrive").navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $settings) { NavigationStack { OneDriveConnectionView() }.desktopSheet(width: 620, height: 540) }
@@ -217,7 +217,7 @@ struct OneDriveConnectionView: View {
                     }.font(.footnote).padding(.top, 12)
                 }.font(.subheadline.weight(.medium))
             }.padding(24).frame(maxWidth: 560, alignment: .leading).frame(maxWidth: .infinity)
-        }.background(NASStyle.canvas)
+        }.phoneMenuScrolling().background(NASStyle.canvas)
             .navigationTitle("云端连接").navigationBarTitleDisplayMode(.inline)
             .onAppear { clientID = session.clientID }
             .interactiveDismissDisabled(session.isConnecting)
@@ -276,7 +276,7 @@ struct OneDriveBrowserView: View {
                 fileContent.frame(maxWidth: .infinity, maxHeight: .infinity)
                 if wide, let selected {
                     Divider()
-                    ScrollView { itemDetails(selected).padding(20) }.frame(width: 272)
+                    ScrollView { itemDetails(selected).padding(20) }.phoneMenuScrolling(active: isActive).frame(width: 272)
                         .background(NASStyle.surface)
                 }
             }
@@ -291,7 +291,7 @@ struct OneDriveBrowserView: View {
         }.background(NASStyle.canvas)
             .onChange(of: isActive) { _, active in if !active { searchFocused = false } }
             .task(id: isActive) { if isActive { await store.start(client: client, accountID: account.driveID) } }
-            .sheet(item: $detail, onDismiss: presentPending) { item in NavigationStack { ScrollView { itemDetails(item).padding(20).frame(maxWidth: 560).frame(maxWidth: .infinity) }.background(NASStyle.canvas).navigationTitle("文件信息").toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { detail = nil } } } }.desktopSheet() }
+            .sheet(item: $detail, onDismiss: presentPending) { item in NavigationStack { ScrollView { itemDetails(item).padding(20).frame(maxWidth: 560).frame(maxWidth: .infinity) }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas).navigationTitle("文件信息").toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { detail = nil } } } }.desktopSheet() }
             .sheet(item: $preview) { item in OneDrivePreviewView(item: item, client: client, accountID: account.driveID).desktopSheet() }
             .fullScreenCover(item: $video) { item in OneDrivePlaybackView(item: item, client: client, accountID: account.driveID) }
             .sheet(isPresented: $settings) { NavigationStack { OneDriveConnectionView() }.desktopSheet(width: 620, height: 540) }
@@ -399,7 +399,7 @@ struct OneDriveBrowserView: View {
                         }
                     }
                 }
-            }.refreshable { await store.refresh(client: client) }
+            }.phoneMenuScrolling(active: isActive).refreshable { await store.refresh(client: client) }
         }
     }
     private func itemButton<Content: View>(_ item: OneDriveItem, @ViewBuilder content: () -> Content) -> some View {
@@ -513,7 +513,7 @@ struct OneDriveDownloadsView: View {
                     }
                 }.padding(.vertical, 6)
             }
-        }.scrollContentBackground(.hidden).background(NASStyle.canvas)
+        }.phoneMenuScrolling().scrollContentBackground(.hidden).background(NASStyle.canvas)
             .navigationTitle("OneDrive 下载").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() }.accessibilityIdentifier("oneDriveDownloadsDone") } }
             .sheet(item: $export) { selection in FileExportSheet(url: selection.url) { _ in export = nil } }

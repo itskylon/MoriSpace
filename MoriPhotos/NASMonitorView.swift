@@ -19,7 +19,7 @@ struct NASMonitorHomeView: View {
                         Text("使用已保存账号读取运行状态。部分 DSM 系统监控项目需要管理员权限。")
                             .font(.footnote).foregroundStyle(.secondary)
                     }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity, alignment: .top)
-                }.background(NASStyle.canvas)
+                }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
             }
         }.workspaceNavigationTitle("NAS 状态").navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $connection) { NavigationStack { ConnectionView(service: .monitor) } }
@@ -67,7 +67,7 @@ struct NASMonitorView: View {
             }
             .padding(geometry.size.width >= 700 ? 24 : 16)
             .frame(maxWidth: .infinity, alignment: .top)
-        }.background(NASStyle.canvas)
+        }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
             .refreshable { await store.refresh(client: client) }
         }
             .toolbar {

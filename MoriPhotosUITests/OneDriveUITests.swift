@@ -9,7 +9,7 @@ final class OneDriveUITests: XCTestCase {
         let wide = app.buttons["sidebar_oneDrive"].waitForExistence(timeout: 2)
         if wide { app.buttons["sidebar_oneDrive"].tap() }
         else {
-            app.tabBars.buttons["存储"].tap()
+            app.phoneMenus.buttons["存储"].tap()
             app.buttons["storageSourceMenu"].tap()
             app.buttons["storageChooseOneDrive"].tap()
         }

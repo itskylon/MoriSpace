@@ -6,14 +6,57 @@ final class HomeOverviewUITests: XCTestCase {
         "--onedrive-fixture"
     ]
 
+    func testPhoneMenuShrinksWhileBrowsingAndExpandsForNavigation() {
+        continueAfterFailure = false
+        let app = launch(arguments: fixtureArguments)
+        let bar = app.phoneMenus.firstMatch
+        XCTAssertTrue(bar.waitForExistence(timeout: 5))
+        app.phoneMenus.buttons["设置"].tap()
+        XCTAssertTrue(app.buttons["newPhotoBackupSettings"].waitForExistence(timeout: 5))
+        let expandedWidth = bar.frame.width
+        capture("phone-menu-expanded")
+        app.swipeUp()
+        XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "收起" }, on: bar))
+        XCTAssertLessThan(bar.frame.width, expandedWidth - 40)
+        XCTAssertEqual(app.phoneMenus.buttons.count, 5)
+        for button in app.phoneMenus.buttons.allElementsBoundByIndex {
+            XCTAssertTrue(button.isHittable)
+            XCTAssertGreaterThanOrEqual(button.frame.height, 44)
+        }
+        capture("phone-menu-scrolling")
+        app.swipeDown()
+        XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "展开" }, on: bar))
+        XCTAssertEqual(bar.frame.width, expandedWidth, accuracy: 1)
+        capture("phone-menu-restored")
+        XCTAssertTrue(app.phoneMenus.buttons["首页"].waitForExistence(timeout: 5))
+        app.phoneMenus.buttons["首页"].tap()
+        XCTAssertTrue(app.buttons["homeNASFiles"].waitForExistence(timeout: 5))
+        app.swipeUp()
+        XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "收起" }, on: bar))
+        app.phoneMenus.buttons["日历"].tap()
+        XCTAssertTrue(app.staticTexts["calendarSelectedDay"].waitForExistence(timeout: 5))
+        XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "展开" }, on: bar))
+
+        app.phoneMenus.buttons["存储"].tap()
+        XCTAssertTrue(app.buttons.matching(identifier: "nasPhotoCell").firstMatch.waitForExistence(timeout: 10))
+        capture("phone-photos-menu-expanded")
+        app.swipeUp()
+        XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "收起" }, on: bar))
+        XCTAssertEqual(app.phoneMenus.buttons.allElementsBoundByIndex.map(\.label), ["首页", "照片", "存储", "日历", "设置"])
+        capture("phone-photos-menu-compact")
+        app.buttons["nasSectionFiles"].tap()
+        XCTAssertTrue(app.buttons["nasFolder_测试共享"].waitForExistence(timeout: 10))
+        XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "展开" }, on: bar))
+    }
+
     func testPhoneHomeShowsDeviceAndKeepsFileLocationAcrossQuickLinks() {
         continueAfterFailure = false
         let app = launch(arguments: fixtureArguments)
-        XCTAssertEqual(app.tabBars.buttons.allElementsBoundByIndex.map(\.label), ["首页", "照片", "存储", "日历", "设置"])
-        XCTAssertTrue(app.tabBars.buttons["首页"].isSelected, "A fresh launch must open the overview")
+        XCTAssertEqual(app.phoneMenus.buttons.allElementsBoundByIndex.map(\.label), ["首页", "照片", "存储", "日历", "设置"])
+        XCTAssertTrue(app.phoneMenus.buttons["首页"].isSelected, "A fresh launch must open the overview")
         assertHomeDevice(app)
         let viewport = CGRect(x: app.frame.minX, y: app.frame.minY, width: app.frame.width,
-                              height: app.tabBars.firstMatch.frame.minY - app.frame.minY)
+                              height: app.phoneMenus.firstMatch.frame.minY - app.frame.minY)
         for id in ["homeLocalPhotos", "homeNASPhotos", "homeNASFiles", "homeOneDrive", "homeDevice"] {
             assertVisible(app.buttons[id], in: viewport)
         }
@@ -21,7 +64,7 @@ final class HomeOverviewUITests: XCTestCase {
         capture("home-phone-overview")
 
         app.buttons["homeNASFiles"].tap()
-        XCTAssertTrue(app.tabBars.buttons["存储"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["存储"].isSelected)
         let share = app.buttons["nasFolder_测试共享"]
         XCTAssertTrue(share.waitForExistence(timeout: 10)); share.tap()
         let file = app.buttons["nasFile_说明 + 中文.txt"]
@@ -31,7 +74,7 @@ final class HomeOverviewUITests: XCTestCase {
 
         returnToPhoneHome(app)
         app.buttons["homeNASPhotos"].tap()
-        XCTAssertTrue(app.tabBars.buttons["存储"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["存储"].isSelected)
         let photo = app.buttons.matching(identifier: "nasPhotoCell").firstMatch
         XCTAssertTrue(photo.waitForExistence(timeout: 10), "The saved files path must not cover the photo shortcut's destination")
         XCTAssertTrue(photo.isHittable)
@@ -51,7 +94,7 @@ final class HomeOverviewUITests: XCTestCase {
 
         returnToPhoneHome(app)
         revealButton("homeCalendar", in: app).tap()
-        XCTAssertTrue(app.tabBars.buttons["日历"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["日历"].isSelected)
         let selectedDay = app.staticTexts["calendarSelectedDay"]
         XCTAssertTrue(selectedDay.waitForExistence(timeout: 5))
         XCTAssertEqual(selectedDay.label, Date().formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
@@ -65,7 +108,7 @@ final class HomeOverviewUITests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         defer { XCUIDevice.shared.orientation = .portrait }
         let app = launch(arguments: fixtureArguments)
-        XCTAssertFalse(app.tabBars.firstMatch.exists)
+        XCTAssertFalse(app.phoneMenus.firstMatch.exists)
         let home = app.buttons["sidebar_home"]
         XCTAssertTrue(home.waitForExistence(timeout: 5))
         XCTAssertTrue(home.isSelected)
@@ -115,7 +158,7 @@ final class HomeOverviewUITests: XCTestCase {
     func testEmptyHomeShowsUnknownDeviceMetricsAndOpensNASConnection() {
         continueAfterFailure = false
         let app = launch(arguments: ["--empty-connection-fixture"])
-        XCTAssertTrue(app.tabBars.buttons["首页"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["首页"].isSelected)
         let status = app.staticTexts["homeNASStatus"]
         XCTAssertTrue(status.waitForExistence(timeout: 5))
         XCTAssertTrue(status.label.contains("未连接"))
@@ -129,7 +172,7 @@ final class HomeOverviewUITests: XCTestCase {
         XCTAssertTrue(app.buttons["homeDevice"].isHittable)
         capture("home-phone-empty")
         app.buttons["homeDevice"].tap()
-        XCTAssertTrue(app.tabBars.buttons["存储"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["存储"].isSelected)
         let connect = app.buttons["connectMonitor"]
         XCTAssertTrue(connect.waitForExistence(timeout: 5)); connect.tap()
         XCTAssertTrue(app.textFields["nasAddress"].waitForExistence(timeout: 5))
@@ -147,20 +190,20 @@ final class HomeOverviewUITests: XCTestCase {
         XCTAssertFalse(app.buttons["homeUsage"].exists)
         XCTAssertFalse(app.staticTexts["Codex 额度"].exists)
         capture("home-without-quota")
-        app.tabBars.buttons["设置"].tap()
+        app.phoneMenus.buttons["设置"].tap()
         XCTAssertTrue(app.buttons["newPhotoBackupSettings"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["usageSettings"].exists)
         app.swipeUp()
         XCTAssertFalse(app.buttons["usageSettings"].exists)
         capture("settings-without-quota")
         XCUIDevice.shared.system.open(URL(string: "morispace://usage")!)
-        XCTAssertTrue(app.tabBars.buttons["设置"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["设置"].isSelected)
         XCTAssertFalse(app.buttons["dismissUsage"].exists)
         XCUIDevice.shared.system.open(URL(string: "morispace://calendar?date=2026-09-25")!)
         let lunar = app.staticTexts["calendarSelectedLunarDay"]
         XCTAssertTrue(lunar.waitForExistence(timeout: 10))
         XCTAssertEqual(lunar.label, "农历八月十五 · 中秋")
-        XCTAssertTrue(app.tabBars.buttons["日历"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["日历"].isSelected)
     }
 
     private func launch(arguments: [String]) -> XCUIApplication {
@@ -182,9 +225,9 @@ final class HomeOverviewUITests: XCTestCase {
     }
 
     private func returnToPhoneHome(_ app: XCUIApplication) {
-        app.tabBars.buttons["首页"].tap()
+        app.phoneMenus.buttons["首页"].tap()
         XCTAssertTrue(app.staticTexts["homeTitle"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.tabBars.buttons["首页"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["首页"].isSelected)
     }
 
     private func revealButton(_ identifier: String, in app: XCUIApplication) -> XCUIElement {

@@ -39,7 +39,7 @@ struct PhotoBackupView: View {
                 .padding(AppPlatform.isMac ? 28 : 20)
                 .frame(maxWidth: 1120)
                 .frame(maxWidth: .infinity, alignment: .top)
-            }.background(NASStyle.canvas)
+            }.phoneMenuScrolling().background(NASStyle.canvas)
         }
         .tint(NASStyle.accent)
         .workspaceNavigationTitle("新照片备份").navigationBarTitleDisplayMode(.inline)
@@ -243,7 +243,7 @@ private struct BackupFolderPicker: View {
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
             }
-        }
+        }.phoneMenuScrolling()
         .scrollContentBackground(.hidden)
         .background(NASStyle.canvas)
         .tint(NASStyle.accent)

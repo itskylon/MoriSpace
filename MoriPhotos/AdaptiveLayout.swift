@@ -61,18 +61,51 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
 struct AdaptiveRootView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @ObservedObject var navigation: WorkspaceNavigation
+    @StateObject private var phoneMenu = PhoneMenuState()
     var body: some View {
         if AppPlatform.isMac || sizeClass == .regular {
             DesktopWorkspaceView(navigation: navigation)
         } else {
-            TabView(selection: $navigation.phoneSelection) {
-                NavigationStack { HomeOverviewView(isActive: navigation.phoneSelection == .home) }.tabItem { Label("首页", systemImage: "square.grid.2x2") }.tag(WorkspacePage.home)
-                NavigationStack { LocalLibraryView(isActive: navigation.phoneSelection == .local) }.tabItem { Label("照片", systemImage: "photo") }.tag(WorkspacePage.local)
-                StorageHomeView(isActive: navigation.phoneSelection == .photos).tabItem { Label("存储", systemImage: "externaldrive") }.tag(WorkspacePage.photos)
-                NavigationStack { CalendarHomeView(isActive: navigation.phoneSelection == .calendar) }.tabItem { Label("日历", systemImage: "calendar") }.tag(WorkspacePage.calendar)
-                NavigationStack { SettingsView() }.tabItem { Label("设置", systemImage: "slider.horizontal.3") }.tag(WorkspacePage.settings)
+            PhoneWorkspaceView(navigation: navigation, menu: phoneMenu)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                FloatingPhoneMenu(selection: $navigation.phoneSelection, state: phoneMenu)
             }
-            .toolbarBackground(.regularMaterial, for: .tabBar)
+            .onChange(of: navigation.phoneSelection) { _, _ in phoneMenu.expand() }
+            .onChange(of: navigation.storageSection) { _, _ in phoneMenu.expand() }
+            .onChange(of: navigation.storageUsesOneDrive) { _, _ in phoneMenu.expand() }
+        }
+    }
+}
+
+private struct PhoneWorkspaceView: View {
+    @ObservedObject var navigation: WorkspaceNavigation
+    @ObservedObject var menu: PhoneMenuState
+    @State private var visited: Set<WorkspacePage> = [.home]
+    private let pages: [WorkspacePage] = [.home, .local, .photos, .calendar, .settings]
+    var body: some View {
+        ZStack {
+            ForEach(pages.filter { visited.contains($0) || navigation.phoneSelection == $0 }) { page in
+                content(page)
+                    .environment(\.phoneMenuScroll, { old, new in
+                        if navigation.phoneSelection == page { menu.scrolled(from: old, to: new) }
+                    })
+                    .opacity(navigation.phoneSelection == page ? 1 : 0)
+                    .allowsHitTesting(navigation.phoneSelection == page)
+                    .disabled(navigation.phoneSelection != page)
+                    .accessibilityHidden(navigation.phoneSelection != page)
+                    .zIndex(navigation.phoneSelection == page ? 1 : 0)
+            }
+        }
+        .onChange(of: navigation.phoneSelection) { old, next in visited.insert(old); visited.insert(next) }
+    }
+    @ViewBuilder private func content(_ page: WorkspacePage) -> some View {
+        switch page {
+        case .home: NavigationStack { HomeOverviewView(isActive: navigation.phoneSelection == page) }
+        case .local: NavigationStack { LocalLibraryView(isActive: navigation.phoneSelection == page) }
+        case .photos: StorageHomeView(isActive: navigation.phoneSelection == page)
+        case .calendar: NavigationStack { CalendarHomeView(isActive: navigation.phoneSelection == page) }
+        case .settings: NavigationStack { SettingsView() }
+        default: EmptyView()
         }
     }
 }

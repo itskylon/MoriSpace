@@ -93,7 +93,7 @@ struct NASPhotosHomeView: View {
                         }.buttonStyle(.plain).accessibilityIdentifier("connectNAS")
                     }.padding(20).frame(maxWidth: 520, alignment: .leading)
                         .frame(maxWidth: .infinity, alignment: .center)
-                }.background(NASStyle.canvas)
+                }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
             }
         }.sheet(isPresented: $connect) { NavigationStack { ConnectionView() }.desktopSheet() }
             .task(id: isActive) { if isActive { await app.restoreConnection(service: .photos) } }
@@ -185,7 +185,7 @@ struct NASBrowserView: View {
                             .padding(.horizontal, 20)
                     }
                 }.padding(.bottom, 20)
-            }.refreshable { await store.reset(client: client, space: effectiveSpace, folder: folder?.id) }
+            }.phoneMenuScrolling(active: isActive).refreshable { await store.reset(client: client, space: effectiveSpace, folder: folder?.id) }
         }.background(NASStyle.canvas)
             .workspaceNavigationTitle(folder?.title ?? "群晖", detail: folder != nil).navigationBarTitleDisplayMode(.inline)
             .toolbar {

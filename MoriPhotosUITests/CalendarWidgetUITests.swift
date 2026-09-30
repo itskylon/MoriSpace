@@ -103,18 +103,18 @@ final class CalendarWidgetUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--empty-connection-fixture", "--calendar-fixture", "--widget-fixture"]
         app.launch()
-        app.tabBars.buttons["设置"].tap()
+        app.phoneMenus.buttons["设置"].tap()
         XCUIDevice.shared.system.open(URL(string: "morispace://calendar?date=2026-09-25")!)
         XCTAssertTrue(app.staticTexts["calendarSelectedLunarDay"].waitForExistence(timeout: 10))
         XCTAssertEqual(app.staticTexts["calendarSelectedLunarDay"].label, "农历八月十五 · 中秋")
-        XCTAssertTrue(app.tabBars.buttons["日历"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["日历"].isSelected)
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "widget-link-calendar"; shot.lifetime = .keepAlways; add(shot)
         app.terminate()
         XCUIDevice.shared.system.open(URL(string: "morispace://calendar?date=2026-02-17")!)
         // A system cold launch has no test arguments. The selected date is still shown when
         // the isolated simulator has previously granted calendar access.
-        XCTAssertTrue(app.tabBars.buttons["日历"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.tabBars.buttons["日历"].isSelected)
+        XCTAssertTrue(app.phoneMenus.buttons["日历"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.phoneMenus.buttons["日历"].isSelected)
         if app.staticTexts["calendarSelectedLunarDay"].waitForExistence(timeout: 3) {
             XCTAssertEqual(app.staticTexts["calendarSelectedLunarDay"].label, "农历正月初一 · 春节")
         } else {

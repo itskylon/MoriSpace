@@ -31,7 +31,7 @@ struct NASFilesHomeView: View {
                         }.buttonStyle(.plain).accessibilityIdentifier("openDownloads")
                     }.padding(20).frame(maxWidth: 520, alignment: .leading)
                         .frame(maxWidth: .infinity, alignment: .center)
-                }.background(NASStyle.canvas)
+                }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
             }
         }.sheet(isPresented: $connect) { NavigationStack { ConnectionView(service: .files) }.desktopSheet() }
             .task(id: isActive) { if isActive { await app.restoreConnection(service: .files) } }
@@ -179,7 +179,7 @@ struct NASFileBrowserView: View {
                 }.listRowBackground(NASStyle.canvas)
                     .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                     .listRowSeparatorTint(NASStyle.outline)
-            }.listStyle(.plain).scrollContentBackground(.hidden).contentMargins(.top, 0, for: .scrollContent)
+            }.phoneMenuScrolling(active: isActive).listStyle(.plain).scrollContentBackground(.hidden).contentMargins(.top, 0, for: .scrollContent)
             Rectangle().fill(NASStyle.outline).frame(height: 0.5)
             HStack(spacing: 12) {
                 NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner).toolbar(.visible, for: .navigationBar) } label: {
@@ -263,7 +263,7 @@ struct NASFileDetailView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }.padding(24).frame(maxWidth: 560, alignment: .leading).frame(maxWidth: .infinity)
-        }.background(NASStyle.canvas)
+        }.phoneMenuScrolling().background(NASStyle.canvas)
             .navigationTitle("文件详情").navigationBarTitleDisplayMode(.inline)
             .fullScreenCover(item: $video) { selection in VideoPlaybackView(selection: selection, client: client) }
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
@@ -331,7 +331,7 @@ struct NASDownloadsView: View {
                     }.padding(.vertical, 6)
                 }
             }
-        }.scrollContentBackground(.hidden).background(NASStyle.canvas)
+        }.phoneMenuScrolling().scrollContentBackground(.hidden).background(NASStyle.canvas)
             .frame(maxWidth: AppPlatform.isMac ? 880 : .infinity)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(NASStyle.canvas)
