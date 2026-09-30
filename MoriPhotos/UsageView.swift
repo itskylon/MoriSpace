@@ -13,7 +13,7 @@ struct UsageView: View {
         TimelineView(.periodic(from: .now, by: 30)) { timeline in
         GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 20) {
                     header(at: timeline.date)
                     if let error = usage.error { ErrorBanner(message: error) }
                     if let notice = usage.importNotice {
@@ -67,11 +67,11 @@ struct UsageView: View {
     private func header(at date: Date) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "chart.bar.xaxis").font(.system(size: 23, weight: .semibold))
-                    .foregroundStyle(NASStyle.ink).frame(width: 48, height: 48)
-                    .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 14))
+                Image(systemName: "chart.bar.xaxis").font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(NASStyle.accent).frame(width: 42, height: 42)
+                    .background(NASStyle.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("用量，一眼掌握").font(.title3.weight(.bold))
+                    Text("使用概览").font(.system(size: 24, weight: .semibold))
                     Text(statusText(at: date)).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("usageStatus")
                 }
                 Spacer(minLength: 0)
@@ -100,7 +100,7 @@ struct UsageView: View {
 
     private func windowPanel(_ window: UsageWidgetWindow, at date: Date) -> some View {
         let old = usage.snapshot.isStale(at: date) || usage.snapshot.requiresRefresh(for: window, at: date) || usage.snapshot.status != .ready
-        return VStack(alignment: .leading, spacing: 18) {
+        return VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text(window.label).font(.headline)
                 Spacer()
@@ -109,7 +109,7 @@ struct UsageView: View {
             }
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(window.remainingPercent.map { (floor($0 * 10) / 10).formatted(.number.precision(.fractionLength(0...1))) + "%" } ?? "—")
-                    .font(.system(size: 56, weight: .bold, design: .rounded)).monospacedDigit()
+                    .font(.system(size: 44, weight: .semibold)).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.65).accessibilityIdentifier("usageRemaining")
                 Text(old ? "上次剩余" : "剩余").font(.caption).foregroundStyle(.secondary)
             }
@@ -120,7 +120,7 @@ struct UsageView: View {
                             RoundedRectangle(cornerRadius: 4).fill(used >= 90 ? NASStyle.coral : NASStyle.accent)
                                 .frame(width: geometry.size.width * used / 100)
                         }
-                }.frame(height: 8).accessibilityHidden(true)
+                }.frame(height: 6).accessibilityHidden(true)
                 HStack {
                     Text("已用 " + used.formatted(.number.precision(.fractionLength(0...1))) + "%")
                     Spacer()
@@ -129,8 +129,9 @@ struct UsageView: View {
             } else { Text("此周期未提供用量数据").font(.caption).foregroundStyle(.secondary) }
             Label(window.resetsAt.map { "重置于 " + $0.formatted(date: .abbreviated, time: .shortened) } ?? "重置时间未提供", systemImage: "arrow.clockwise")
                 .font(.caption).foregroundStyle(.secondary)
-        }.padding(22).frame(maxWidth: .infinity, alignment: .leading)
-            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 22))
+        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 
     private var recordDetails: some View {
@@ -143,13 +144,14 @@ struct UsageView: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("先带入一份额度记录").font(.title2.weight(.bold))
+            Text("尚无额度记录").font(.headline)
             Text(AppPlatform.isMac
                  ? "请在本机 Codex 完成登录，并启用森空间读取助手。助手生成记录后，这里会自动显示。"
                  : "连接同步服务后，手机和小组件会自动获取 Mac 采集的额度。只需配置一次。")
                 .font(.subheadline).foregroundStyle(.secondary)
-        }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
-            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 22))
+        }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 
     private var sourceDetails: some View {
@@ -182,10 +184,10 @@ struct UsageView: View {
                     }
                 } label: {
                     HStack(spacing: 8) {
-                        if usage.importing { ProgressView() }
+                        if usage.importing { ProgressView().tint(.white) }
                         Label(usage.importing ? "正在验证连接…" : (usage.hasPendingRemoteConfiguration ? "连接已配置的同步服务" : (usage.syncEnabled ? "更换同步连接" : "连接自动同步")), systemImage: "arrow.triangle.2.circlepath")
                     }.font(.subheadline.weight(.semibold)).padding(.horizontal, 16).frame(minHeight: 44)
-                        .foregroundStyle(NASStyle.ink).background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(.white).background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
                 }.buttonStyle(.plain).disabled(usage.importing || usage.isFixture).accessibilityIdentifier("usageConnectSync")
                 if usage.syncEnabled {
                     Button("停止此设备同步", role: .destructive) { usage.disconnectRemote() }
@@ -203,16 +205,18 @@ struct UsageView: View {
 
     private func previews(width: CGFloat, at date: Date) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("小组件预览").font(.title3.weight(.bold))
+            Text("小组件预览").font(.headline)
             let layout = width >= 660 ? AnyLayout(HStackLayout(alignment: .top, spacing: 20)) : AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
             layout {
                 UsageWidgetContent(date: date, snapshot: usage.snapshot, size: .small, isPreview: usage.isFixture)
                     .padding(16).frame(width: 170, height: 170)
-                    .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 24))
+                    .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
                     .accessibilityIdentifier("usagePreviewSmall")
                 UsageWidgetContent(date: date, snapshot: usage.snapshot, size: .medium, isPreview: usage.isFixture)
                     .padding(16).frame(width: min(348, max(260, width - 40)), height: 170)
-                    .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 24))
+                    .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 16))
+                    .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
                     .accessibilityIdentifier("usagePreviewMedium")
             }
         }.padding(.top, 4)

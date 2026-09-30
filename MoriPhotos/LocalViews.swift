@@ -112,17 +112,16 @@ struct LocalLibraryView: View {
                     if library.canRead { selectionButton }
                 }
             }
-        }.padding(.horizontal, 20).padding(.vertical, 8).frame(maxWidth: .infinity, minHeight: 68, alignment: .leading)
-            .background(NASStyle.signal)
+        }.padding(.horizontal, 20).padding(.vertical, 6).frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+            .background(NASStyle.canvas)
     }
     private var libraryTitle: some View {
-        Text("照片").font(.largeTitle.weight(.black)).tracking(-1.5)
-            .foregroundStyle(NASStyle.ink).accessibilityIdentifier("localLibraryTitle")
+        Text("照片").font(.title.weight(.semibold))
+            .foregroundStyle(.primary).accessibilityIdentifier("localLibraryTitle")
     }
     private var photoCountBadge: some View {
-        Text("\(visible.count)").font(.caption.weight(.heavy).monospacedDigit()).lineLimit(1).minimumScaleFactor(0.6)
-            .foregroundStyle(NASStyle.signal).padding(.horizontal, 9).padding(.vertical, 6)
-            .background(NASStyle.ink, in: Capsule())
+        Text("\(visible.count)").font(.subheadline.monospacedDigit()).lineLimit(1).minimumScaleFactor(0.6)
+            .foregroundStyle(.secondary)
             .accessibilityLabel("\(visible.count) 张照片")
     }
     private var selectionButton: some View {
@@ -130,9 +129,9 @@ struct LocalLibraryView: View {
             HStack(spacing: 6) {
                 Image(systemName: selecting ? "checkmark" : "checkmark.circle")
                 Text(selecting ? "完成" : "选择")
-            }.font(.subheadline.weight(.bold)).padding(.horizontal, 13).frame(minHeight: 44)
-                .foregroundStyle(NASStyle.signal)
-                .background(NASStyle.ink, in: Capsule())
+            }.font(.subheadline.weight(.medium)).padding(.horizontal, 13).frame(minHeight: 44)
+                .foregroundStyle(NASStyle.accent)
+                .background(NASStyle.selection, in: Capsule())
         }.buttonStyle(.plain).accessibilityIdentifier("localPhotoSelection")
     }
     private var libraryToolbar: some View {
@@ -150,8 +149,8 @@ struct LocalLibraryView: View {
                 if AppPlatform.isMac { thumbnailControl }
                 if wide { selectionButton }
             }
-        }.padding(.horizontal, 16).padding(.top, wide ? 12 : 10)
-            .padding(.bottom, 10).background(NASStyle.canvas)
+        }.padding(.horizontal, 16).padding(.top, wide ? 12 : 0)
+            .padding(.bottom, 8).background(NASStyle.canvas)
     }
     private var libraryCount: some View {
         HStack(spacing: 10) {
@@ -180,7 +179,7 @@ struct LocalLibraryView: View {
                     .buttonStyle(.borderedProminent)
             }
         }.padding(.vertical, 30).frame(maxWidth: .infinity)
-            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 28))
+            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
     }
     private func run(_ action: @escaping () async -> Void) {
         busy = true

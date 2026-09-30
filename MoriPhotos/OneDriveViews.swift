@@ -80,6 +80,7 @@ struct StorageHomeView: View {
     var isActive = true
     @State private var oneDrive = false
     @State private var visitedOneDrive = false
+    @ScaledMetric(relativeTo: .title2) private var sourceTitleSize = 24
     var body: some View {
         ZStack {
             NavigationStack { NASHomeView(isActive: isActive && !oneDrive, sourceControl: oneDrive ? nil : AnyView(sourceMenu)) }
@@ -107,10 +108,9 @@ struct StorageHomeView: View {
             Button { visitedOneDrive = true; oneDrive = true } label: { Label("OneDrive", systemImage: "cloud") }
                 .accessibilityIdentifier("storageChooseOneDrive")
         } label: {
-            HStack(spacing: 5) {
-                Text(oneDrive ? "OneDrive" : "群晖").font(.system(.title2, design: .rounded, weight: .heavy)).tracking(-0.8)
-                Image(systemName: "chevron.down").font(.system(size: 9, weight: .heavy)).foregroundStyle(NASStyle.ink)
-                    .frame(width: 21, height: 21).background(NASStyle.signal, in: Circle())
+            HStack(spacing: 8) {
+                Text(oneDrive ? "OneDrive" : "群晖").font(.system(size: sourceTitleSize, weight: .semibold))
+                Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
             }.foregroundStyle(.primary).frame(minHeight: 44).contentShape(Rectangle())
         }.accessibilityLabel("切换存储位置").accessibilityIdentifier("storageSourceMenu")
     }
@@ -127,8 +127,8 @@ struct OneDriveHomeView: View {
                 OneDriveBrowserView(client: client, account: account, isActive: isActive).id(account.driveID)
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 22) {
-                        StorageConnectionHeading(title: "连接 OneDrive", detail: "云端文件，随时取用", symbol: "cloud", color: NASStyle.blue)
+                    VStack(alignment: .leading, spacing: 20) {
+                        StorageConnectionHeading(title: "OneDrive", detail: "连接微软账号，浏览云端文件", symbol: "cloud", color: NASStyle.blue)
                         if session.isConnecting { ProgressView("正在连接…") }
                         if let error = session.error {
                             ErrorBanner(message: error)
@@ -140,8 +140,8 @@ struct OneDriveHomeView: View {
                         Button { offlineDownloads = true } label: {
                             Label("查看本机下载", systemImage: "arrow.down.circle").font(.subheadline)
                         }.buttonStyle(.borderless).accessibilityIdentifier("oneDriveOfflineDownloads")
-                    }.padding(24).frame(maxWidth: 520, alignment: .leading)
-                        .frame(maxWidth: .infinity, alignment: .center).padding(.top, 8)
+                    }.padding(20).frame(maxWidth: 520, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }.background(NASStyle.canvas)
             }
         }.workspaceNavigationTitle("OneDrive").navigationBarTitleDisplayMode(.inline)
@@ -158,7 +158,7 @@ struct OneDriveConnectionView: View {
     @State private var disconnect = false
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
+            VStack(alignment: .leading, spacing: 22) {
                 StorageConnectionHeading(title: "OneDrive", detail: "连接你的微软云盘", symbol: "cloud", color: NASStyle.blue)
                 if let account = session.account {
                     HStack(spacing: 12) {
@@ -168,16 +168,17 @@ struct OneDriveConnectionView: View {
                             Text("已连接 · 文件只读访问").font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
-                    }.padding(16).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 16))
+                    }.padding(16).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
+                        .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
                 }
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("应用客户端 ID").font(.subheadline.weight(.bold))
+                    Text("应用客户端 ID").font(.subheadline.weight(.semibold))
                     TextField("Application (client) ID", text: $clientID)
                         .font(.system(.subheadline, design: .monospaced)).textFieldStyle(.plain)
                         .textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.asciiCapable)
-                        .padding(16).frame(minHeight: 54)
-                        .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
-                        .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 1) }
+                        .padding(14).frame(minHeight: 48)
+                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(NASStyle.outline, lineWidth: 1) }
                         .accessibilityIdentifier("oneDriveClientID")
                         .disabled(session.client != nil || session.isConnecting)
                     Text("复制微软应用注册中的客户端 ID；这里不填写邮箱或密码。")
@@ -202,7 +203,7 @@ struct OneDriveConnectionView: View {
                     Button("退出 OneDrive", role: .destructive) { disconnect = true }
                         .font(.subheadline.weight(.semibold)).frame(minHeight: 44).accessibilityIdentifier("oneDriveSignOut")
                 }
-                Rectangle().fill(NASStyle.outline).frame(height: 1)
+                Rectangle().fill(NASStyle.outline).frame(height: 0.5)
                 DisclosureGroup("首次配置帮助") {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("在 Microsoft Entra → 应用注册 → 你的应用 → 身份验证中添加移动和桌面应用平台，并登记以下回调地址：")
@@ -212,7 +213,7 @@ struct OneDriveConnectionView: View {
                         Link("打开微软应用注册", destination: URL(string: "https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade")!)
                     }.font(.footnote).padding(.top, 12)
                 }.font(.subheadline.weight(.medium))
-            }.padding(24).frame(maxWidth: 580, alignment: .leading).frame(maxWidth: .infinity)
+            }.padding(24).frame(maxWidth: 560, alignment: .leading).frame(maxWidth: .infinity)
         }.background(NASStyle.canvas)
             .navigationTitle("云端连接").navigationBarTitleDisplayMode(.inline)
             .onAppear { clientID = session.clientID }
@@ -273,7 +274,7 @@ struct OneDriveBrowserView: View {
                 if wide, let selected {
                     Divider()
                     ScrollView { itemDetails(selected).padding(20) }.frame(width: 272)
-                        .background(NASStyle.inset.opacity(0.65))
+                        .background(NASStyle.surface)
                 }
             }
             Divider()
@@ -287,7 +288,7 @@ struct OneDriveBrowserView: View {
         }.background(NASStyle.canvas)
             .onChange(of: isActive) { _, active in if !active { searchFocused = false } }
             .task(id: isActive) { if isActive { await store.start(client: client, accountID: account.driveID) } }
-            .sheet(item: $detail, onDismiss: presentPending) { item in NavigationStack { ScrollView { itemDetails(item).padding(20) }.navigationTitle("文件信息").toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { detail = nil } } } }.desktopSheet() }
+            .sheet(item: $detail, onDismiss: presentPending) { item in NavigationStack { ScrollView { itemDetails(item).padding(20).frame(maxWidth: 560).frame(maxWidth: .infinity) }.background(NASStyle.canvas).navigationTitle("文件信息").toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { detail = nil } } } }.desktopSheet() }
             .sheet(item: $preview) { item in OneDrivePreviewView(item: item, client: client, accountID: account.driveID).desktopSheet() }
             .fullScreenCover(item: $video) { item in OneDrivePlaybackView(item: item, client: client, accountID: account.driveID) }
             .sheet(isPresented: $settings) { NavigationStack { OneDriveConnectionView() }.desktopSheet(width: 620, height: 540) }
@@ -306,7 +307,7 @@ struct OneDriveBrowserView: View {
                     if showingSearch { searchField.padding(.bottom, 8) }
                 }
             }
-        }.buttonStyle(.plain).padding(.horizontal, 16).padding(.vertical, 4)
+        }.buttonStyle(.plain).padding(.horizontal, 16).padding(.vertical, 6).background(NASStyle.surface)
     }
     private var navigationControls: some View {
         HStack(spacing: wide ? 4 : 2) {
@@ -355,14 +356,15 @@ struct OneDriveBrowserView: View {
                 .accessibilityIdentifier("oneDriveSearch")
             if !query.isEmpty { Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary).frame(width: 44, height: 44) }.accessibilityLabel("清除搜索") }
         }.font(.subheadline).padding(.horizontal, 10).frame(minHeight: 44)
-            .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 7))
+            .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 12))
     }
     private func layoutButton(isGrid: Bool, symbol: String, label: String) -> some View {
         Button { grid = isGrid } label: {
             Image(systemName: symbol).frame(width: 44, height: 44)
-                .foregroundStyle(grid == isGrid ? NASStyle.ink : Color.secondary)
-                .background(grid == isGrid ? NASStyle.signal : Color.clear, in: RoundedRectangle(cornerRadius: 12))
+                .foregroundStyle(grid == isGrid ? NASStyle.accent : Color.secondary)
+                .background(grid == isGrid ? NASStyle.accent.opacity(0.10) : Color.clear, in: RoundedRectangle(cornerRadius: 12))
         }.buttonStyle(.plain).accessibilityLabel(label).help(label)
+            .accessibilityAddTraits(grid == isGrid ? .isSelected : [])
     }
     @ViewBuilder private var fileContent: some View {
         if store.loading && store.items.isEmpty { ProgressView("正在读取文件…").frame(maxWidth: .infinity, maxHeight: .infinity) }
@@ -371,17 +373,17 @@ struct OneDriveBrowserView: View {
         } else {
             ScrollView {
                 if grid {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: wide ? 128 : 112, maximum: 170), spacing: 12)], spacing: 16) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: wide ? 128 : 112, maximum: 170), spacing: 12)], spacing: 12) {
                         ForEach(items) { item in
                             itemButton(item) {
                                 VStack(spacing: 6) {
                                     StorageFileBadge(name: item.name, symbol: item.icon, folder: item.isFolder, expanded: true)
-                                    Text(item.name).font(.caption.weight(.semibold)).lineLimit(2).truncationMode(.middle).multilineTextAlignment(.leading).frame(maxWidth: .infinity, minHeight: 34, alignment: .topLeading)
+                                    Text(item.name).font(.caption.weight(.medium)).lineLimit(2).truncationMode(.middle).multilineTextAlignment(.center).frame(maxWidth: .infinity, minHeight: 34, alignment: .top)
                                     Text(item.isFolder ? "文件夹" : item.size.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "文件")
-                                        .font(.caption2.monospacedDigit()).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
-                                }.frame(maxWidth: .infinity).padding(6)
-                                    .background(selected?.id == item.id ? Theme.accent.opacity(0.1) : hoveredItem == item.id ? NASStyle.inset : Color.clear, in: RoundedRectangle(cornerRadius: 18))
-                                    .overlay { RoundedRectangle(cornerRadius: 18).stroke(selected?.id == item.id ? NASStyle.accent : .clear, lineWidth: 2) }
+                                        .font(.caption2.monospacedDigit()).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                                }.frame(maxWidth: .infinity).padding(8)
+                                    .background(selected?.id == item.id ? NASStyle.accent.opacity(0.08) : hoveredItem == item.id ? NASStyle.inset : Color.clear, in: RoundedRectangle(cornerRadius: 14))
+                                    .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(selected?.id == item.id ? NASStyle.accent.opacity(0.55) : .clear, lineWidth: 1) }
                             }
                         }
                     }.padding(16)
@@ -390,7 +392,7 @@ struct OneDriveBrowserView: View {
                         ForEach(items) { item in
                             itemButton(item) { OneDriveItemRow(item: item).padding(.horizontal, wide ? 22 : 16).padding(.vertical, 8)
                                     .background(selected?.id == item.id ? Theme.accent.opacity(0.1) : hoveredItem == item.id ? Color.primary.opacity(0.035) : .clear) }
-                            Divider().opacity(0.65).padding(.leading, wide ? 64 : 58)
+                            Divider().opacity(0.65).padding(.leading, wide ? 78 : 72)
                         }
                     }
                 }
@@ -411,7 +413,7 @@ struct OneDriveBrowserView: View {
     @ViewBuilder private func itemDetails(_ item: OneDriveItem) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 12) {
-                StorageFileBadge(name: item.name, symbol: item.icon, folder: item.isFolder, expanded: true)
+                StorageFileBadge(name: item.name, symbol: item.icon, folder: item.isFolder, expanded: true).frame(width: 82)
                 Text(item.name).font(.headline).fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                 Text(item.isFolder ? "OneDrive 文件夹" : "OneDrive 文件").font(.caption).foregroundStyle(.secondary)
             }

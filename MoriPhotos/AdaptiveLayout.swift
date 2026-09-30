@@ -67,9 +67,7 @@ struct AdaptiveRootView: View {
                 NavigationStack { CalendarHomeView(isActive: navigation.phoneSelection == .calendar) }.tabItem { Label("日历", systemImage: "calendar") }.tag(WorkspacePage.calendar)
                 NavigationStack { SettingsView() }.tabItem { Label("设置", systemImage: "slider.horizontal.3") }.tag(WorkspacePage.settings)
             }
-            .toolbarBackground(NASStyle.ink, for: .tabBar)
-            .toolbarBackground(.visible, for: .tabBar)
-            .toolbarColorScheme(.dark, for: .tabBar)
+            .toolbarBackground(.regularMaterial, for: .tabBar)
         }
     }
 }
@@ -86,18 +84,17 @@ struct DesktopWorkspaceView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Image(systemName: "square.stack.3d.up.fill")
-                        .font(.system(size: 25, weight: .bold)).foregroundStyle(NASStyle.ink)
-                        .frame(width: 48, height: 48).background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 16))
-                        .rotationEffect(.degrees(-7)).accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text("MORI").font(.system(size: 26, weight: .black, design: .rounded)).tracking(-1)
-                            .foregroundStyle(.white)
-                        Text("森空间").font(.caption.weight(.medium)).foregroundStyle(.white.opacity(0.55))
+                        .font(.system(size: 21, weight: .medium)).foregroundStyle(NASStyle.accent)
+                        .frame(width: 40, height: 40).background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 12))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("森空间").font(.headline).foregroundStyle(.primary)
+                        Text("Mori Space").font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer()
-                }.padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 30)
+                }.padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 24)
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 22) {
                         sidebarGroup("资料库", pages: [.local, .photos, .files, .oneDrive])
                         sidebarGroup("工具", pages: [.calendar, .downloads, .monitor, .backup])
                     }.padding(.horizontal, 12)
@@ -105,7 +102,7 @@ struct DesktopWorkspaceView: View {
                     .accessibilityIdentifier("workspaceSidebar")
                 row(.settings).padding(12)
             }
-            .background(NASStyle.ink)
+            .background(NASStyle.sidebar)
             .navigationSplitViewColumnWidth(min: 210, ideal: 236, max: 270)
         } detail: {
             NavigationStack(path: path) {
@@ -136,7 +133,7 @@ struct DesktopWorkspaceView: View {
     }
     private func sidebarGroup(_ title: String, pages: [WorkspacePage]) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.caption2.weight(.bold)).foregroundStyle(.white.opacity(0.42))
+            Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                 .padding(.leading, 12).padding(.bottom, 4)
             ForEach(pages) { row($0) }
         }
@@ -144,19 +141,16 @@ struct DesktopWorkspaceView: View {
     private func row(_ page: WorkspacePage) -> some View {
         Button { navigation.selection = page; sidebarFocus = page } label: {
             HStack(spacing: 12) {
-                Image(systemName: page.symbol).font(.system(size: 18, weight: .semibold))
+                Image(systemName: page.symbol).font(.system(size: 17, weight: .medium))
                     .frame(width: 24)
-                Text(page.title).font(.subheadline.weight(navigation.selection == page ? .bold : .medium))
+                Text(page.title).font(.subheadline.weight(navigation.selection == page ? .semibold : .regular))
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                if navigation.selection == page {
-                    Image(systemName: "arrow.up.right").font(.system(size: 11, weight: .heavy)).accessibilityHidden(true)
-                }
-            }.foregroundStyle(navigation.selection == page ? NASStyle.ink : .white.opacity(0.72))
-                .padding(.horizontal, 14).frame(minHeight: 48)
-                .background(navigation.selection == page ? NASStyle.signal : hoveredPage == page ? .white.opacity(0.08) : .clear,
-                            in: RoundedRectangle(cornerRadius: 16))
-                .contentShape(RoundedRectangle(cornerRadius: 16))
+            }.foregroundStyle(navigation.selection == page ? NASStyle.accent : Color.primary.opacity(0.8))
+                .padding(.horizontal, 12).frame(minHeight: 44)
+                .background(navigation.selection == page ? NASStyle.selection : hoveredPage == page ? NASStyle.inset : .clear,
+                            in: RoundedRectangle(cornerRadius: 10))
+                .contentShape(RoundedRectangle(cornerRadius: 10))
         }.buttonStyle(.plain)
             .onHover { hoveredPage = $0 ? page : nil }
             .focusable()

@@ -112,7 +112,7 @@ struct NASMonitorView: View {
     private var deviceIdentity: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text(snapshot?.system?.model ?? "Synology NAS").font(.system(size: 32, weight: .bold, design: .rounded))
+                Text(snapshot?.system?.model ?? "Synology NAS").font(.system(size: 26, weight: .semibold))
                 connectionStatus
             }
             if let system = snapshot?.system {
@@ -156,14 +156,14 @@ struct NASMonitorView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(snapshot?.system?.model ?? "Synology NAS").font(.system(size: 26, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    Text(snapshot?.system?.model ?? "Synology NAS").font(.system(size: 24, weight: .semibold)).foregroundStyle(.primary)
                     if let system = snapshot?.system {
                         if let version = system.version {
-                            Text(version).font(.caption2).foregroundStyle(.white.opacity(0.62))
+                            Text(version).font(.caption2).foregroundStyle(.secondary)
                                 .lineLimit(1).minimumScaleFactor(0.8)
                         }
                         Text("已运行 " + NASMonitorFormat.uptime(system.uptime))
-                            .font(.caption).foregroundStyle(.white.opacity(0.62)).lineLimit(1)
+                            .font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     }
                 }
                 Spacer(minLength: 4)
@@ -171,28 +171,29 @@ struct NASMonitorView: View {
                     VStack(spacing: 3) {
                         Image(systemName: automatic && !store.halted ? "arrow.triangle.2.circlepath" : "pause.circle")
                         Text(automatic && !store.halted ? "15 秒" : "手动").font(.caption2)
-                    }.foregroundStyle(NASStyle.signal).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                    }.foregroundStyle(NASStyle.accent).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityLabel(automatic && !store.halted ? "每 15 秒刷新" : "手动刷新").accessibilityIdentifier("monitorAutoRefresh")
                 Button { Task { await store.refresh(client: client) } } label: {
                     Image(systemName: "arrow.clockwise").frame(width: 44, height: 44).contentShape(Rectangle())
-                }.buttonStyle(.plain).foregroundStyle(.white).disabled(store.loading)
+                }.buttonStyle(.plain).foregroundStyle(.primary).disabled(store.loading)
                     .accessibilityLabel("刷新运行状态").accessibilityIdentifier("refreshMonitor")
             }
             HStack(spacing: 10) {
                 HStack(spacing: 5) {
-                    Circle().fill(snapshot?.hasAttention == true || snapshot?.hasData == false || snapshot?.issues.isEmpty == false ? NASStyle.coral : NASStyle.signal).frame(width: 5, height: 5)
-                    Text(statusTitle).font(.caption).foregroundStyle(.white).accessibilityIdentifier("monitorStatus")
+                    Circle().fill(snapshot?.hasAttention == true || snapshot?.hasData == false || snapshot?.issues.isEmpty == false ? NASStyle.coral : NASStyle.accent).frame(width: 5, height: 5)
+                    Text(statusTitle).font(.caption).foregroundStyle(.primary).accessibilityIdentifier("monitorStatus")
                 }
                 if let system = snapshot?.system, let temperature = system.temperature {
                     Text(String(format: "%.0f°C", temperature)).font(.caption).monospacedDigit()
-                        .foregroundStyle(system.temperatureWarning == true ? Color.orange : .white.opacity(0.62))
+                        .foregroundStyle(system.temperatureWarning == true ? Color.orange : .secondary)
                         .accessibilityLabel(system.temperatureWarning == true ? "系统温度告警，\(String(format: "%.0f", temperature)) 摄氏度" : "系统温度，\(String(format: "%.0f", temperature)) 摄氏度")
                 }
                 Spacer(minLength: 0)
                 Text(snapshot.map { $0.updatedAt.formatted(date: .omitted, time: .standard) + " 更新" } ?? "等待读取")
-                    .font(.caption2).foregroundStyle(.white.opacity(0.62)).accessibilityIdentifier("monitorUpdated")
+                    .font(.caption2).foregroundStyle(.secondary).accessibilityIdentifier("monitorUpdated")
             }
-        }.padding(14).background(NASStyle.ink, in: RoundedRectangle(cornerRadius: 22))
+        }.padding(16).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
     private var statusTitle: String {
         guard let snapshot else { return "连接中" }
@@ -215,14 +216,15 @@ struct NASMonitorView: View {
                 networkRate("接收", symbol: "arrow.down.left", value: resources.receivedBytesPerSecond)
                 networkRate("发送", symbol: "arrow.up.right", value: resources.sentBytesPerSecond)
             }.padding(.horizontal, 16).padding(.vertical, 12)
-                .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 16))
+                .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+                .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
         }
     }
 
     private var mobileTrend: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("负载趋势").font(.title3.weight(.bold))
+                Text("负载趋势").font(.headline)
                 Spacer()
                 Text("本次查看").font(.caption).foregroundStyle(.secondary)
             }
@@ -237,7 +239,7 @@ struct NASMonitorView: View {
                             .foregroundStyle(by: .value("指标", "内存")).lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
                     }
                 }
-                .chartYScale(domain: 0...100).chartForegroundStyleScale(["CPU": NASStyle.accent, "内存": NASStyle.violet])
+                .chartYScale(domain: 0...100).chartForegroundStyleScale(["CPU": NASStyle.accent, "内存": NASStyle.blue])
                 .chartXAxis(.hidden)
                 .chartYAxis {
                     AxisMarks(values: [0, 50, 100]) { value in
@@ -254,32 +256,33 @@ struct NASMonitorView: View {
 
     private func percentageCard(_ title: String, value: Double?, symbol: String, subtitle: String, identifier: String) -> some View {
         let isCPU = title == "CPU"
-        let foreground = isCPU ? NASStyle.ink : Color.primary
+        let accent = isCPU ? NASStyle.accent : NASStyle.blue
         return VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 5) {
-                Label(title, systemImage: symbol).font(.caption.weight(.bold))
+                Label(title, systemImage: symbol).font(.caption.weight(.medium))
                 Spacer(minLength: 0)
-            }.foregroundStyle(foreground.opacity(0.7))
+            }.foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline) {
-                Text(NASMonitorFormat.percent(value)).font(.system(size: 38, weight: .bold, design: .rounded))
+                Text(NASMonitorFormat.percent(value)).font(.system(size: 32, weight: .semibold))
                     .monospacedDigit().lineLimit(1).minimumScaleFactor(0.7).accessibilityIdentifier(identifier)
                 Spacer(minLength: 0)
             }
-            Text(subtitle).font(.caption2).foregroundStyle(foreground.opacity(0.65))
+            Text(subtitle).font(.caption2).foregroundStyle(.secondary)
             GeometryReader { geometry in
-                RoundedRectangle(cornerRadius: 2).fill(foreground.opacity(0.1))
+                RoundedRectangle(cornerRadius: 2).fill(NASStyle.inset)
                     .overlay(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2).fill(isCPU ? NASStyle.ink : NASStyle.violet)
+                        RoundedRectangle(cornerRadius: 2).fill(accent)
                             .frame(width: geometry.size.width * min(max((value ?? 0) / 100, 0), 1))
                     }
             }.frame(height: 5).opacity(value == nil ? 0 : 1).accessibilityHidden(true)
-        }.foregroundStyle(foreground).frame(maxWidth: .infinity, alignment: .leading).padding(16)
-            .background(isCPU ? NASStyle.signal : NASStyle.violet.opacity(0.14), in: RoundedRectangle(cornerRadius: 20))
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(16)
+            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 
     private func networkRate(_ title: String, symbol: String, value: Double?) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .semibold)).foregroundStyle(title == "接收" ? NASStyle.blue : NASStyle.coral).accessibilityHidden(true)
+            Image(systemName: symbol).font(.system(size: 16, weight: .medium)).foregroundStyle(NASStyle.accent).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(value == nil ? "—" : NASMonitorFormat.bytes(value) + "/s").font(.subheadline.weight(.semibold)).monospacedDigit()
                     .accessibilityIdentifier(title == "接收" ? "monitorReceive" : "monitorSend")
@@ -290,7 +293,7 @@ struct NASMonitorView: View {
     private func storageSection(_ storage: NASStorageStatus) -> some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 14) {
-                Text("存储空间").font(.title3.weight(.bold))
+                Text("存储空间").font(.headline)
                 if storage.volumes.isEmpty {
                     Text(storage.volumesReported ? "未返回存储空间" : "NAS 未提供存储空间数据").font(.caption).foregroundStyle(.secondary)
                 }
@@ -309,7 +312,7 @@ struct NASMonitorView: View {
                                         RoundedRectangle(cornerRadius: 3).fill(volume.lowSpace ? NASStyle.coral : NASStyle.accent)
                                             .frame(width: geometry.size.width * min(max(fraction, 0), 1))
                                     }
-                            }.frame(height: 12).accessibilityHidden(true)
+                            }.frame(height: 7).accessibilityHidden(true)
                             HStack {
                                 Text(NASMonitorFormat.bytes(volume.used) + " / " + NASMonitorFormat.bytes(volume.total))
                                 Spacer()
@@ -323,7 +326,7 @@ struct NASMonitorView: View {
             }.monitorSection()
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("硬盘健康").font(.title3.weight(.bold))
+                    Text("硬盘健康").font(.headline)
                     Spacer()
                     Text("\(storage.disks.count) 块").font(.caption).foregroundStyle(.secondary)
                 }
@@ -353,6 +356,7 @@ struct NASMonitorView: View {
 
 private extension View {
     func monitorSection() -> some View {
-        padding(.top, 16).overlay(alignment: .top) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
+        padding(16).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 }

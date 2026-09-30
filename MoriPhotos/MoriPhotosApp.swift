@@ -114,11 +114,11 @@ struct EmptyCard: View {
     let message: String
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: icon).font(.system(size: 32, weight: .semibold))
-                .foregroundStyle(NASStyle.ink).frame(width: 76, height: 76)
-                .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 23))
-                .rotationEffect(.degrees(-8)).padding(.bottom, 8).accessibilityHidden(true)
-            Text(title).font(.title2.weight(.bold)).tracking(-0.5)
+            Image(systemName: icon).font(.system(size: 28, weight: .regular))
+                .foregroundStyle(NASStyle.accent).frame(width: 64, height: 64)
+                .background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 18))
+                .padding(.bottom, 4).accessibilityHidden(true)
+            Text(title).font(.title3.weight(.semibold))
             Text(message).font(.subheadline).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
         }.frame(maxWidth: 380).padding(.horizontal, 20).padding(.vertical, 28)

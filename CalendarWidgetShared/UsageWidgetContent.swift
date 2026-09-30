@@ -8,17 +8,20 @@ struct UsageWidgetContent: View {
     let size: UsageWidgetSize
     var isPreview = false
     @Environment(\.colorScheme) private var colorScheme
-    private let signal = Color(red: 0.81, green: 0.98, blue: 0.34)
-    private let ink = Color(red: 0.035, green: 0.055, blue: 0.075)
-    private let violet = Color(red: 0.85, green: 0.81, blue: 0.98)
+    private var accent: Color {
+        colorScheme == .dark ? Color(red: 0.48, green: 0.79, blue: 0.72) : Color(red: 0.10, green: 0.43, blue: 0.38)
+    }
+    private var violet: Color {
+        colorScheme == .dark ? Color(red: 0.72, green: 0.68, blue: 0.91) : Color(red: 0.43, green: 0.38, blue: 0.68)
+    }
     private var visibleWindows: [UsageWidgetWindow] { Array(snapshot.windows.prefix(size == .small ? 1 : 2)) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 5) {
                 Image(systemName: "chart.bar.fill").font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(colorScheme == .dark ? signal : ink)
-                Text("Codex 额度").font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(accent)
+                Text("Codex 额度").font(.system(size: 12, weight: .semibold))
                 Spacer(minLength: 2)
                 if isPreview {
                     Text("示例").font(.system(size: 9, weight: .semibold)).foregroundStyle(.secondary)
@@ -32,7 +35,7 @@ struct UsageWidgetContent: View {
             } else {
                 HStack(spacing: 8) {
                     ForEach(Array(visibleWindows.enumerated()), id: \.element.id) { index, window in
-                        reading(window, color: index == 0 ? signal : violet)
+                        reading(window, color: index == 0 ? accent : violet)
                     }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 HStack(spacing: 4) {
@@ -50,7 +53,7 @@ struct UsageWidgetContent: View {
     private var emptyContent: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(snapshot.status == .notConnected ? "尚未连接" : snapshot.status == .unavailable ? "暂不可用" : "未提供额度")
-                .font(.system(size: size == .small ? 24 : 27, weight: .bold)).lineLimit(1).minimumScaleFactor(0.8)
+                .font(.system(size: size == .small ? 23 : 26, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
             Text(snapshot.status == .ready ? "当前数据没有可显示的额度窗口" : "打开森空间查看与更新")
                 .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if isPreview { Text("示例状态").font(.system(size: 9)).foregroundStyle(.secondary) }
@@ -63,21 +66,21 @@ struct UsageWidgetContent: View {
         return VStack(alignment: .leading, spacing: 2) {
             Text(window.label).font(.system(size: 10, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
             if stale {
-                Text("待更新").font(.system(size: 21, weight: .black, design: .rounded)).lineLimit(1).minimumScaleFactor(0.8)
+                Text("待更新").font(.system(size: 21, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.8)
                 Text(remaining.map { "上次剩余 " + percentage($0) + "%" } ?? "上次读数未提供")
                     .font(.system(size: 9)).lineLimit(1).minimumScaleFactor(0.8)
             } else if let remaining {
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text(percentage(remaining)).font(.system(size: 32, weight: .black, design: .rounded)).tracking(-1.5)
-                    Text("%").font(.system(size: 16, weight: .bold))
+                    Text(percentage(remaining)).font(.system(size: 32, weight: .semibold)).monospacedDigit()
+                    Text("%").font(.system(size: 15, weight: .medium)).foregroundStyle(.secondary)
                 }.lineLimit(1).minimumScaleFactor(0.7)
                     .accessibilityElement(children: .ignore).accessibilityLabel("剩余 \(percentage(remaining)) 百分比")
                 HStack(spacing: 5) {
                     Text("剩余").font(.system(size: 8, weight: .medium))
                     GeometryReader { geometry in
-                        Capsule().fill(ink.opacity(0.12))
+                        Capsule().fill(color.opacity(0.14))
                             .overlay(alignment: .leading) {
-                                Capsule().fill(ink).frame(width: geometry.size.width * remaining / 100)
+                                Capsule().fill(color).frame(width: geometry.size.width * remaining / 100)
                             }
                     }.frame(height: 3).accessibilityHidden(true)
                 }
@@ -97,8 +100,8 @@ struct UsageWidgetContent: View {
                 Text("重置时间未提供").font(.system(size: 8)).lineLimit(1)
             }
         }
-        .foregroundStyle(ink).padding(8).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .background(color, in: RoundedRectangle(cornerRadius: 13))
+        .foregroundStyle(.primary).padding(10).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
         .privacySensitive()
     }
 

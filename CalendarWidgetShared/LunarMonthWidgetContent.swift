@@ -7,21 +7,20 @@ struct LunarMonthWidgetContent: View {
     @Environment(\.colorScheme) private var colorScheme
     private var layout: CalendarLayout { CalendarLayout() }
     private var accent: Color {
-        colorScheme == .dark ? signal : Color(red: 0.29, green: 0.37, blue: 0.08)
+        colorScheme == .dark
+            ? Color(red: 0.48, green: 0.79, blue: 0.72)
+            : Color(red: 0.10, green: 0.43, blue: 0.38)
     }
-
-    private var signal: Color { Color(red: 0.81, green: 0.97, blue: 0.28) }
-    private var ink: Color { Color(red: 0.08, green: 0.10, blue: 0.10) }
 
     var body: some View {
         let days = layout.days(in: date)
         let rows = days.count / 7
         VStack(spacing: 0) {
-            header.frame(height: isLarge ? 56 : 30)
+            header.frame(height: isLarge ? 48 : 30)
             HStack(spacing: 0) {
                 ForEach(Array(["一", "二", "三", "四", "五", "六", "日"].enumerated()), id: \.offset) { index, title in
                     Text(title).font(.system(size: isLarge ? 11 : 9, weight: .medium))
-                        .foregroundStyle(index >= 5 ? accent : .secondary)
+                        .foregroundStyle(index >= 5 ? Color.secondary.opacity(0.7) : Color.secondary)
                         .frame(maxWidth: .infinity)
                 }
             }.frame(height: isLarge ? 24 : 14)
@@ -46,10 +45,9 @@ struct LunarMonthWidgetContent: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 8) {
             HStack(alignment: .firstTextBaseline, spacing: 7) {
-                Text(String(format: "%02d", layout.calendar.component(.month, from: date)))
-                    .font(.system(size: isLarge ? 42 : 24, weight: .black, design: .rounded)).tracking(-1.5)
-                    .foregroundStyle(ink).padding(.horizontal, isLarge ? 10 : 7)
-                    .background(signal, in: RoundedRectangle(cornerRadius: isLarge ? 9 : 6))
+                Text("\(layout.calendar.component(.month, from: date))月")
+                    .font(.system(size: isLarge ? 28 : 20, weight: .semibold))
+                    .foregroundStyle(.primary)
                     .accessibilityLabel("\(layout.calendar.component(.month, from: date))月")
                 Text(String(layout.calendar.component(.year, from: date)))
                     .font(.system(size: isLarge ? 12 : 10)).foregroundStyle(.secondary)
@@ -74,11 +72,11 @@ struct LunarMonthWidgetContent: View {
         let inMonth = layout.calendar.isDate(day, equalTo: date, toGranularity: .month)
         // On compact six-week widgets, a single line keeps the lunar text readable.
         let inline = !isLarge && rowHeight < 26
-        let dayColor: Color = today ? (inline ? accent : ink) : inMonth ? .primary : .secondary.opacity(0.4)
+        let dayColor: Color = today ? accent : inMonth ? .primary : .secondary.opacity(0.4)
         let lunarColor: Color = today ? accent : !inMonth ? .secondary.opacity(0.4) : lunar.festival != nil ? accent : .secondary
         return Link(destination: CalendarWidgetRoute.url(for: day)) {
             let dayNumber = Text(String(layout.calendar.component(.day, from: day)))
-                .font(.system(size: isLarge ? 18 : inline ? 10 : 12, weight: today ? .black : .medium))
+                .font(.system(size: isLarge ? 18 : inline ? 10 : 12, weight: today ? .semibold : .regular))
                 .monospacedDigit()
                 .foregroundStyle(dayColor)
                 .lineLimit(1).minimumScaleFactor(0.9)
@@ -101,7 +99,7 @@ struct LunarMonthWidgetContent: View {
                     VStack(spacing: isLarge ? 2 : 0) {
                         dayNumber
                             .frame(width: max(14, min(isLarge ? 28 : 18, rowHeight - 18)), height: max(14, min(isLarge ? 28 : 18, rowHeight - 18)))
-                            .background(today ? signal : .clear, in: RoundedRectangle(cornerRadius: 6))
+                            .background(today ? accent.opacity(0.12) : .clear, in: RoundedRectangle(cornerRadius: 6))
                             .overlay(alignment: .topTrailing) {
                                 if let holiday {
                                     HolidayBadge(kind: holiday.kind, fontSize: 8)
@@ -117,7 +115,7 @@ struct LunarMonthWidgetContent: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .bottom) {
-                if today && inline { Rectangle().fill(signal).frame(height: 2).padding(.horizontal, 3) }
+                if today && inline { Rectangle().fill(accent).frame(height: 1).padding(.horizontal, 3) }
             }
             .padding(.horizontal, isLarge ? 3 : 1)
             .padding(.vertical, 1)

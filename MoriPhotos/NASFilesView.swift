@@ -21,7 +21,7 @@ struct NASFilesHomeView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        StorageConnectionHeading(title: "连接文件", detail: "共享文件夹与本机下载，一处浏览", symbol: "folder", color: NASStyle.blue)
+                        StorageConnectionHeading(title: "群晖文件", detail: "浏览共享文件夹，下载需要的文件", symbol: "folder", color: NASStyle.accent)
                         NASConnectionStatus(service: .files)
                         Button { connect = true } label: {
                             NASActionLabel(title: app.hasSavedConnection ? "文件连接设置" : "连接群晖文件", subtitle: "File Station", symbol: "folder")
@@ -29,8 +29,8 @@ struct NASFilesHomeView: View {
                         NavigationLink { NASDownloadsView(manager: app.downloads, owner: app.fileAccountID).toolbar(.visible, for: .navigationBar) } label: {
                             NASActionLabel(title: "下载", subtitle: "任务与离线文件", symbol: "arrow.down.circle")
                         }.buttonStyle(.plain).accessibilityIdentifier("openDownloads")
-                    }.padding(24).frame(maxWidth: 520, alignment: .leading)
-                        .frame(maxWidth: .infinity, alignment: .center).padding(.top, 8)
+                    }.padding(20).frame(maxWidth: 520, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }.background(NASStyle.canvas)
             }
         }.sheet(isPresented: $connect) { NavigationStack { ConnectionView(service: .files) }.desktopSheet() }
@@ -88,12 +88,14 @@ struct NASFileBrowserView: View {
             .accessibilityIdentifier("toggleNASFileSearch")
     }
     private var fileControls: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text(folder == nil ? "共享文件夹" : "文件").font(.system(.title3, design: .rounded, weight: .heavy)).tracking(-0.5)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(folder == nil ? "共享文件夹" : "文件").font(.headline).accessibilityAddTraits(.isHeader)
+                    Text(query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "\(filteredItems.count) 项匹配")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
+                }
                 Spacer()
-                Text(query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "\(filteredItems.count) 项匹配")
-                    .font(.caption.monospacedDigit().weight(.semibold)).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
                 searchToggle
                 optionsMenu
             }
@@ -105,9 +107,9 @@ struct NASFileBrowserView: View {
                         .focused($searchFocused).submitLabel(.search).onSubmit { searchFocused = false }
                         .accessibilityIdentifier("nasFileSearch")
                 }.font(.subheadline).padding(.horizontal, 10).frame(minHeight: 44)
-                    .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 7)).padding(.trailing, 8)
+                    .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 12)).padding(.trailing, 8)
             }
-        }.buttonStyle(.plain).padding(.leading, 16).padding(.trailing, 8).padding(.bottom, showingSearch || folder != nil ? 10 : 0)
+        }.buttonStyle(.plain).padding(.leading, 16).padding(.trailing, 8).padding(.vertical, 8)
     }
     private var mobileBrowser: some View {
         VStack(spacing: 0) {
@@ -152,14 +154,14 @@ struct NASFileRow: View {
     var body: some View {
         HStack(spacing: 12) {
             StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir)
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(file.name).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
                 HStack(spacing: 8) {
                     if !file.isdir, let size = file.size { Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
                     if let date = file.modified { Text(date.formatted(date: .abbreviated, time: .shortened)) }
                 }.font(.caption).foregroundStyle(.secondary)
             }
-        }.frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).padding(.vertical, 6)
+        }.frame(maxWidth: .infinity, minHeight: 48, alignment: .leading).padding(.vertical, 5)
     }
 }
 
@@ -173,10 +175,10 @@ struct NASFileDetailView: View {
     @State private var video: VideoSelection?
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                StorageFileBadge(name: file.name, symbol: file.icon, folder: false, expanded: true)
+            VStack(alignment: .leading, spacing: 20) {
+                StorageFileBadge(name: file.name, symbol: file.icon, folder: false, expanded: true).frame(width: 82)
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(file.name).font(.system(.title2, design: .rounded, weight: .bold))
+                    Text(file.name).font(.title2.weight(.semibold))
                         .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     if let size = file.size {
                         Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))
@@ -321,7 +323,7 @@ struct FileExportSheet: UIViewControllerRepresentable {
 }
 
 
-/// Graphic file markers keep type visible in both compact lists and wide grids.
+/// Subtle type colours make files scannable without competing with their names.
 struct StorageFileBadge: View {
     let name: String
     let symbol: String
@@ -329,29 +331,25 @@ struct StorageFileBadge: View {
     var expanded = false
     private var suffix: String { String(name.split(separator: ".").last ?? "FILE").uppercased() }
     private var color: Color {
-        if folder { return NASStyle.signal }
+        if folder { return NASStyle.accent }
         switch suffix {
-        case "JPG", "JPEG", "PNG", "HEIC", "GIF", "WEBP": return Color(red: 0.79, green: 0.74, blue: 0.98)
-        case "MP4", "MOV", "MKV", "M4V": return Color(red: 0.99, green: 0.73, blue: 0.63)
-        case "PDF", "TXT", "MD", "DOC", "DOCX": return Color(red: 0.65, green: 0.80, blue: 0.96)
-        default: return Color(red: 0.79, green: 0.74, blue: 0.98)
+        case "JPG", "JPEG", "PNG", "HEIC", "GIF", "WEBP": return NASStyle.violet
+        case "MP4", "MOV", "MKV", "M4V": return NASStyle.coral
+        case "PDF", "TXT", "MD", "DOC", "DOCX": return NASStyle.blue
+        default: return .secondary
         }
     }
     var body: some View {
         Group {
             if expanded {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text(folder ? "FOLDER" : String(suffix.prefix(7))).font(.system(size: 9, weight: .heavy, design: .monospaced)).tracking(1)
-                        Spacer(minLength: 0)
-                        Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .bold))
-                    }
-                    Image(systemName: symbol).font(.system(size: 32, weight: .medium)).frame(maxWidth: .infinity, alignment: .leading)
-                }.padding(13).frame(maxWidth: .infinity).frame(height: 94)
+                Image(systemName: symbol).font(.system(size: 34, weight: .regular))
+                    .symbolRenderingMode(.hierarchical)
+                    .frame(maxWidth: .infinity).frame(height: 82)
             } else {
-                Image(systemName: symbol).font(.system(size: 20, weight: .medium)).frame(width: 44, height: 48)
+                Image(systemName: symbol).font(.system(size: 20, weight: .regular))
+                    .symbolRenderingMode(.hierarchical).frame(width: 42, height: 42)
             }
-        }.foregroundStyle(NASStyle.ink).background(color, in: RoundedRectangle(cornerRadius: expanded ? 14 : 11))
+        }.foregroundStyle(color).background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
             .accessibilityHidden(true)
     }
 }

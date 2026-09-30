@@ -12,8 +12,8 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                preferencesSection("存储服务", index: "01") {
+            VStack(alignment: .leading, spacing: 22) {
+                preferencesSection("存储服务") {
                     NavigationLink { ConnectionView() } label: {
                         SettingsRow(title: "群晖照片", subtitle: "Synology Photos", symbol: "photo.on.rectangle", value: app.client == nil ? "未连接" : "已连接")
                     }
@@ -27,7 +27,7 @@ struct SettingsView: View {
                     }.accessibilityIdentifier("oneDriveSettings")
                 }
 
-                preferencesSection("备份与设备", index: "02") {
+                preferencesSection("备份与设备") {
                     NavigationLink { PhotoBackupView() } label: {
                         SettingsRow(title: "新照片备份", subtitle: "原图保存到群晖", symbol: "arrow.up.doc", value: backup.configuration.enabled ? "已开启" : "未开启")
                     }.accessibilityIdentifier("newPhotoBackupSettings")
@@ -41,7 +41,7 @@ struct SettingsView: View {
                     }.accessibilityIdentifier("usageSettings")
                 }
 
-                preferencesSection("本机设置", index: "03") {
+                preferencesSection("本机设置") {
                     Button { AppPlatform.openPhotoSettings() } label: {
                         SettingsRow(title: "照片权限", subtitle: AppPlatform.libraryName, symbol: "hand.raised", value: library.canRead ? (library.authorization == .limited ? "部分照片" : "全部照片") : "未授权")
                     }.accessibilityLabel("打开系统权限设置")
@@ -80,18 +80,16 @@ struct SettingsView: View {
         .workspaceNavigationTitle("设置").navigationBarTitleDisplayMode(.inline)
     }
 
-    private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.leading, 56) }
+    private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.leading, 48) }
 
-    private func preferencesSection<Content: View>(_ title: String, index: String, @ViewBuilder content: () -> Content) -> some View {
+    private func preferencesSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title).font(.title3.weight(.bold))
-                Spacer()
-                Text(index).font(.caption.monospaced().weight(.bold)).foregroundStyle(.secondary)
-            }.padding(.horizontal, 2)
+            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
             VStack(spacing: 0, content: content)
                 .padding(.horizontal, 16)
-                .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 22))
+                .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+                .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
         }
     }
 }
@@ -105,9 +103,9 @@ private struct SettingsRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(symbol == "cloud" ? NASStyle.blue : NASStyle.ink)
-                .frame(width: 42, height: 42)
-                .background(symbol == "cloud" ? NASStyle.blue.opacity(0.12) : NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
+            Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(symbol == "cloud" ? NASStyle.blue : NASStyle.accent)
+                .frame(width: 36, height: 36)
+                .background(symbol == "cloud" ? NASStyle.blue.opacity(0.08) : NASStyle.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
@@ -117,7 +115,7 @@ private struct SettingsRow: View {
             if let value { Text(value).font(.caption.weight(.medium)).foregroundStyle(value == "已连接" || value == "已开启" ? NASStyle.accent : .secondary) }
             if chevron { Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary).accessibilityHidden(true) }
         }
-        .padding(.vertical, 13)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading).contentShape(Rectangle())
     }
 }
@@ -139,21 +137,20 @@ struct ConnectionView: View {
     @FocusState private var focus: Field?
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 22) {
                 HStack(alignment: .top, spacing: 16) {
                     Image(systemName: service == .photos ? "photo.on.rectangle" : (service == .files ? "folder" : "waveform.path.ecg"))
-                        .font(.system(size: 25, weight: .medium)).foregroundStyle(NASStyle.signal)
+                        .font(.system(size: 22, weight: .regular)).foregroundStyle(NASStyle.accent)
+                        .frame(width: 42, height: 42).background(NASStyle.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
                     VStack(alignment: .leading, spacing: 7) {
                         Text(service == .photos ? "Synology Photos" : (service == .files ? "File Station" : "NAS 运行状态"))
-                            .font(.title3.weight(.bold)).foregroundStyle(.white)
-                        Text(connectionDescription).font(.caption).foregroundStyle(.white.opacity(0.68))
+                            .font(.system(size: 24, weight: .semibold)).foregroundStyle(.primary)
+                        Text(connectionDescription).font(.subheadline).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
-                    Image(systemName: "lock.shield").foregroundStyle(NASStyle.signal).accessibilityHidden(true)
-                }.padding(20).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(NASStyle.ink, in: RoundedRectangle(cornerRadius: 22))
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.bottom, 2)
 
-                connectionSection("服务器", index: "01") {
+                connectionSection("服务器") {
                     TextField("https://nas.example.com:5001", text: $app.credentials.address)
                         .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("nasAddress")
                         .focused($focus, equals: .address).submitLabel(.next).onSubmit { focus = .username }
@@ -161,19 +158,20 @@ struct ConnectionView: View {
                     Text(service == .photos ? "也可使用 /photo 地址。需从本机直接访问，暂不支持 QuickConnect 中继。" : "使用可从本机直接访问的 DSM HTTPS 地址。")
                         .font(.caption).foregroundStyle(.secondary)
                 }.disabled(app.connecting)
-                connectionSection("登录信息", index: "02") {
+                connectionSection("登录信息") {
                     VStack(spacing: 0) {
                         TextField("账号", text: $app.credentials.username).textContentType(.username).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("nasUsername")
                             .focused($focus, equals: .username).submitLabel(.next).onSubmit { focus = .password }
-                            .padding(16).frame(minHeight: 54)
+                            .padding(16).frame(minHeight: 50)
                         inputRule
                         SecureField("密码", text: $app.credentials.password).textContentType(.password).accessibilityIdentifier("nasPassword")
                             .focused($focus, equals: .password).submitLabel(.done).onSubmit { focus = nil }
-                            .padding(16).frame(minHeight: 54)
+                            .padding(16).frame(minHeight: 50)
                         inputRule
                         TextField("验证码（开启双重验证时填写）", text: $otp).textContentType(.oneTimeCode).keyboardType(.numberPad).focused($focus, equals: .otp)
-                            .padding(16).frame(minHeight: 54)
-                    }.textFieldStyle(.plain).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 16))
+                            .padding(16).frame(minHeight: 50)
+                    }.textFieldStyle(.plain).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay { RoundedRectangle(cornerRadius: 12).stroke(NASStyle.outline, lineWidth: 0.5) }
                     Toggle("在钥匙串中保存登录信息", isOn: $app.remember).font(.subheadline).frame(minHeight: 44)
                     Text("保存后自动恢复照片、文件和状态连接；主动断开后暂停自动连接。")
                         .font(.caption).foregroundStyle(.secondary)
@@ -185,12 +183,10 @@ struct ConnectionView: View {
                         Task { if await app.connect(otp: otp, service: service) { otp = ""; dismiss() } }
                     } label: {
                         HStack {
-                            if app.connecting { ProgressView().tint(NASStyle.ink) }
+                            if app.connecting { ProgressView().tint(.white) }
                             Text(app.connecting ? (app.connectionPhase?.title ?? "正在连接…") : "登录并连接").font(.headline)
-                            Spacer()
-                            Image(systemName: "arrow.up.right").font(.system(size: 17, weight: .semibold))
-                        }.padding(.horizontal, 20).frame(minHeight: 56).foregroundStyle(NASStyle.ink)
-                            .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 16))
+                        }.padding(.horizontal, 20).frame(maxWidth: .infinity, minHeight: 50).foregroundStyle(.white)
+                            .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
                     }.buttonStyle(.plain)
                         .disabled(app.connecting || app.credentials.address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || app.credentials.username.isEmpty || app.credentials.password.isEmpty).accessibilityIdentifier("loginNAS")
                     if app.connecting {
@@ -236,13 +232,9 @@ struct ConnectionView: View {
         Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.horizontal, 16)
     }
 
-    private func connectionSection<Content: View>(_ title: String, index: String, @ViewBuilder content: () -> Content) -> some View {
+    private func connectionSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(title).font(.subheadline.weight(.bold))
-                Spacer()
-                Text(index).font(.caption.monospaced()).foregroundStyle(.secondary)
-            }
+            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
             content()
         }
     }
@@ -251,7 +243,8 @@ struct ConnectionView: View {
 
 private extension View {
     func connectionInput() -> some View {
-        textFieldStyle(.plain).padding(16).frame(minHeight: 54)
-            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 16))
+        textFieldStyle(.plain).padding(16).frame(minHeight: 50)
+            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 12))
+            .overlay { RoundedRectangle(cornerRadius: 12).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 }

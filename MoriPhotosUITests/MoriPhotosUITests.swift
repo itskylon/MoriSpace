@@ -16,8 +16,11 @@ final class MoriPhotosUITests: XCTestCase {
         XCTAssertTrue(app.buttons["全选"].waitForExistence(timeout: 5))
         XCTAssertTrue(selection.isHittable)
         selection.tap()
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "label CONTAINS %@", "选择"), object: selection)], timeout: 5), .completed)
+        XCTAssertFalse(app.buttons["全选"].exists)
         let capture = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-        capture.name = "bold-phone-large-text"; capture.lifetime = .keepAlways; add(capture)
+        capture.name = "photo-controls-large-text"; capture.lifetime = .keepAlways; add(capture)
     }
 
     func testModernOverviewKeepsPhotosAndStorageAboveFold() {
