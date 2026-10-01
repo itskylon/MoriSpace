@@ -2,7 +2,15 @@
 
 自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、OneDrive 文件、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口与 Microsoft Graph，没有第三方运行时 SDK，也不通过中转服务器传输照片和文件。
 
-当前版本：**0.25.0（41）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+当前版本：**0.26.0（42）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+
+## 0.26 OneDrive 直接网页登录
+
+OneDrive 未连接页面及连接设置增加「直接网页登录」，在 App 内打开微软官方登录网页，不要求 Azure 注册或 Client ID。网页账号由微软处理，App 不读取账号密码、不导出网页登录凭据，也不将网页凭据转换为 Graph 访问令牌。WebKit 使用本机持久化网站数据；首次登录需要在微软页面输入账号并完成验证，是否免登录取决于微软会话是否有效。该网页登录状态与原生文件授权、原生退出相互独立；网页版退出需在微软页面操作。
+
+网页登录提供微软网页本身的文件操作，不会使森空间的原生文件目录自动变成已连接。原生预览、下载记录及视频续播仍需完成微软应用注册与 Graph 授权。网页下载和 WebKit 不支持的内容会提示使用「在浏览器打开」，不会保存为森空间的原生下载记录。提供网页后退、前进、刷新和浏览器入口，手机、iPad 与 Mac 共用此功能。主页面导航仅允许 HTTPS 的微软域名，证书继续由系统验证。
+
+验证：3 项网页导航边界单元测试通过，手机原生预览／下载／退出回归及网页版入口／返回场景通过，iPad 网页版入口／返回场景通过。iPhone / Mac Release 构建与签名校验通过，两端已覆盖安装 0.26.0（42）；手机查询版本并成功启动，Mac 核对最终安装文件、设置版本及真实微软密码登录页。尚待本人输入微软密码完成登录，因此不宣称真实云盘文件读取或重启后免登录已验收。测试截图中的原生目录使用隔离示例数据。
 
 ## 0.25 设备总览与统一视觉
 
@@ -174,7 +182,7 @@ iOS App Group 默认为 `group.dev.kylon.MoriPhotos.calendar`；换用自己的 
 
 ## 连接 OneDrive
 
-OneDrive 首次使用需要注册一个 Microsoft Entra 应用，然后在「OneDrive → 连接微软账号」中填写它的 **Application (client) ID**。这是带短横线的 UUID，不是邮箱、密码或 Client Secret；Client ID 仅保存于当前设备的应用配置，不需要写入源码。
+OneDrive 的原生文件功能首次使用需要注册一个 Microsoft Entra 应用，然后在「OneDrive → 连接微软账号」中填写它的 **Application (client) ID**。这是带短横线的 UUID，不是邮箱、密码或 Client Secret；Client ID 仅保存于当前设备的应用配置，不需要写入源码。
 
 1. 在 [Microsoft Entra 应用注册](https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) 创建或打开应用。受支持的账号类型必须包含实际使用的账号：Outlook／Hotmail 等个人 OneDrive 需要包含「个人 Microsoft 账户」；工作或学校账号需要相应的组织账号支持。若同时使用两类账号，选择包含任何组织目录和个人 Microsoft 账户的类型。组织的管理员同意策略仍然适用。
 2. 在身份验证中添加「移动和桌面应用」平台，登记完整回调地址 `msauth.dev.kylon.MoriPhotos://auth`。本项目的 iPhone、iPad 和 Mac Catalyst 共用这一地址；自行更改 bundle identifier 时，需要同步更新 OAuth 配置、URL Types 和微软应用注册。

@@ -61,6 +61,37 @@ final class OneDriveUITests: XCTestCase {
         XCTAssertFalse(app.buttons["oneDriveSignIn"].isEnabled)
         capture(app, wide ? "onedrive-ipad-connection" : "onedrive-phone-connection")
     }
+    func testOfficialWebEntryWorksWithoutClientIDAndReturnsToStorage() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--empty-connection-fixture"]
+        app.launch()
+        if app.buttons["sidebar_oneDrive"].waitForExistence(timeout: 2) {
+            app.buttons["sidebar_oneDrive"].tap()
+        } else {
+            app.phoneMenus.buttons["存储"].tap()
+            app.buttons["storageSourceMenu"].tap()
+            app.buttons["storageChooseOneDrive"].tap()
+        }
+        let entry = app.buttons["oneDriveWebSignIn"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 5))
+        XCTAssertTrue(entry.isEnabled)
+        entry.tap()
+        XCTAssertTrue(app.buttons["oneDriveWebDone"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.webViews["oneDriveOfficialWeb"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["oneDriveWebExternal"].isHittable)
+        capture(app, "onedrive-official-web")
+        app.buttons["oneDriveWebDone"].tap()
+        XCTAssertTrue(app.buttons["connectOneDrive"].waitForExistence(timeout: 5))
+        app.buttons["connectOneDrive"].tap()
+        XCTAssertTrue(app.buttons["oneDriveWebSignInSettings"].waitForExistence(timeout: 5))
+        app.buttons["oneDriveWebSignInSettings"].tap()
+        XCTAssertTrue(app.buttons["oneDriveWebDone"].waitForExistence(timeout: 5))
+        app.buttons["oneDriveWebDone"].tap()
+        XCTAssertTrue(app.textFields["oneDriveClientID"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["oneDriveSignIn"].isEnabled)
+        capture(app, "onedrive-web-and-native-connection")
+    }
     private func capture(_ app: XCUIApplication, _ name: String) {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = name; shot.lifetime = .keepAlways; add(shot)
     }

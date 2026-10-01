@@ -124,6 +124,7 @@ struct OneDriveHomeView: View {
     @EnvironmentObject private var session: OneDriveSession
     @State private var settings = false
     @State private var offlineDownloads = false
+    @State private var web = false
     var body: some View {
         Group {
             if let client = session.client, let account = session.account {
@@ -131,14 +132,15 @@ struct OneDriveHomeView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        StorageConnectionHeading(title: "OneDrive", detail: "连接微软账号，浏览云端文件", symbol: "cloud", color: NASStyle.blue)
+                        StorageConnectionHeading(title: "OneDrive", detail: "用微软账号登录，浏览云端文件", symbol: "cloud", color: NASStyle.blue)
+                        OneDriveWebEntry { web = true }
                         if session.isConnecting { ProgressView("正在连接…") }
                         if let error = session.error {
                             ErrorBanner(message: error)
                             Button("重试已保存的连接") { Task { await session.restoreIfNeeded(retry: true) } }.disabled(session.isConnecting)
                         }
                         Button { settings = true } label: {
-                            NASActionLabel(title: "连接微软账号", subtitle: "个人或工作 / 学校 OneDrive", symbol: "person.crop.circle")
+                            NASActionLabel(title: "连接原生文件功能", subtitle: "App 内预览、下载与视频续播", symbol: "person.crop.circle")
                         }.buttonStyle(.plain).disabled(session.isConnecting).accessibilityIdentifier("connectOneDrive")
                         Button { offlineDownloads = true } label: {
                             Label("查看本机下载", systemImage: "arrow.down.circle").font(.subheadline)
@@ -149,6 +151,7 @@ struct OneDriveHomeView: View {
             }
         }.workspaceNavigationTitle("OneDrive").navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $settings) { NavigationStack { OneDriveConnectionView() }.desktopSheet(width: 620, height: 540) }
+            .sheet(isPresented: $web) { NavigationStack { OneDriveWebView() }.desktopSheet(width: 1080, height: 780) }
             .sheet(isPresented: $offlineDownloads) { NavigationStack { OneDriveDownloadsView(accountID: nil) }.desktopSheet() }
             .task(id: isActive) { if isActive { await session.restoreIfNeeded() } }
     }
@@ -159,10 +162,14 @@ struct OneDriveConnectionView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var clientID = ""
     @State private var disconnect = false
+    @State private var web = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 StorageConnectionHeading(title: "OneDrive", detail: "连接你的微软云盘", symbol: "cloud", color: NASStyle.blue)
+                OneDriveWebEntry(identifier: "oneDriveWebSignInSettings") { web = true }
+                Divider()
+                Text("原生文件功能 · 应用配置").font(.subheadline.weight(.semibold))
                 if let account = session.account {
                     HStack(spacing: 12) {
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(NASStyle.accent)
@@ -220,6 +227,7 @@ struct OneDriveConnectionView: View {
         }.phoneMenuScrolling().background(NASStyle.canvas)
             .navigationTitle("云端连接").navigationBarTitleDisplayMode(.inline)
             .onAppear { clientID = session.clientID }
+            .sheet(isPresented: $web) { NavigationStack { OneDriveWebView() }.desktopSheet(width: 1080, height: 780) }
             .interactiveDismissDisabled(session.isConnecting)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() }.disabled(session.isConnecting) } }
             .confirmationDialog("退出会移除本机登录状态并取消正在进行的传输。已下载文件保留在本机。", isPresented: $disconnect, titleVisibility: .visible) {
@@ -524,3 +532,18 @@ struct OneDriveDownloadsView: View {
     }
 }
 private struct OneDriveExportSelection: Identifiable { let id = UUID(); let url: URL }
+
+private struct OneDriveWebEntry: View {
+    let open: () -> Void
+    let identifier: String
+    init(identifier: String = "oneDriveWebSignIn", open: @escaping () -> Void) { self.identifier = identifier; self.open = open }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button(action: open) {
+                NASActionLabel(title: "直接网页登录", subtitle: "微软官方 OneDrive · 无需 Client ID", symbol: "globe")
+            }.buttonStyle(.plain).accessibilityIdentifier(identifier)
+            Text("在微软页面输入账号密码。网页登录状态独立保存；网页文件操作由微软提供，不会连接森空间的原生文件功能。")
+                .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
