@@ -176,6 +176,22 @@ final class HomeOverviewUITests: XCTestCase {
         XCTAssertTrue(title.waitForExistence(timeout: 5))
     }
 
+    func testLargeTextHomeAndSettingsKeepNavigationReachable() {
+        continueAfterFailure = false
+        let app = launch(arguments: fixtureArguments + ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"])
+        XCTAssertTrue(app.buttons["homeDevice"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["homeDevice"].isHittable)
+        capture("home-large-text")
+        revealButton("homeNASFiles", in: app).tap()
+        XCTAssertTrue(app.buttons["nasFolder_测试共享"].waitForExistence(timeout: 8))
+        app.phoneMenus.buttons["设置"].tap()
+        revealButton("newPhotoBackupSettings", in: app).tap()
+        XCTAssertTrue(app.buttons["chooseBackupFolder"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.navigationBars.buttons.firstMatch.exists)
+        XCTAssertTrue(app.navigationBars.buttons.firstMatch.isHittable, "Settings destinations must retain native back navigation")
+        capture("backup-large-text")
+    }
+
     func testEmptyHomeShowsUnknownDeviceMetricsAndOpensNASConnection() {
         continueAfterFailure = false
         let app = launch(arguments: ["--empty-connection-fixture"])

@@ -116,7 +116,7 @@ struct LocalLibraryView: View {
             .background(NASStyle.canvas)
     }
     private var libraryTitle: some View {
-        Text("照片").font(.title.weight(.semibold))
+        Text("照片").font(.system(size: 26, weight: .semibold))
             .foregroundStyle(.primary).accessibilityIdentifier("localLibraryTitle")
     }
     private var photoCountBadge: some View {

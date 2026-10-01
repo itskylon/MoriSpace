@@ -3,27 +3,29 @@ import SwiftUI
 enum NASStyle {
     static let canvas = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.055, green: 0.065, blue: 0.075, alpha: 1)
-            : UIColor(red: 0.965, green: 0.973, blue: 0.973, alpha: 1)
+            ? UIColor(red: 0.065, green: 0.085, blue: 0.115, alpha: 1)
+            : UIColor(red: 0.956, green: 0.968, blue: 0.981, alpha: 1)
     })
     static let surface = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.105, green: 0.119, blue: 0.130, alpha: 1)
+            ? UIColor(red: 0.108, green: 0.137, blue: 0.174, alpha: 1)
             : .white
     })
     static let surfaceRaised = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.16, green: 0.175, blue: 0.185, alpha: 1)
+            ? UIColor(red: 0.15, green: 0.185, blue: 0.222, alpha: 1)
             : UIColor(red: 0.925, green: 0.940, blue: 0.938, alpha: 1)
     })
     static let accent = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.48, green: 0.79, blue: 0.72, alpha: 1)
-            : UIColor(red: 0.10, green: 0.43, blue: 0.38, alpha: 1)
+            ? UIColor(red: 0.46, green: 0.84, blue: 0.75, alpha: 1)
+            : UIColor(red: 0.08, green: 0.41, blue: 0.43, alpha: 1)
     })
     // Filled actions use white labels; selection surfaces use the adaptive accent.
     static let signal = Color(red: 0.16, green: 0.48, blue: 0.43)
     static let selection = accent.opacity(0.12)
+    static let hero = LinearGradient(colors: [Color(red: 0.07, green: 0.24, blue: 0.30), Color(red: 0.08, green: 0.42, blue: 0.41)], startPoint: .topLeading, endPoint: .bottomTrailing)
+    static let heroText = Color.white.opacity(0.84)
     static let sidebar = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
             ? UIColor(red: 0.080, green: 0.097, blue: 0.102, alpha: 1)
@@ -156,5 +158,16 @@ struct MoriSectionHeading: View {
     var body: some View {
         Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             .accessibilityAddTraits(.isHeader)
+    }
+}
+
+extension View {
+    func moriPanel(radius: CGFloat = 22) -> some View {
+        background(NASStyle.surface, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
+    }
+    func moriHeroPanel() -> some View {
+        background(NASStyle.hero, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: 26, style: .continuous).strokeBorder(.white.opacity(0.10), lineWidth: 1) }
     }
 }

@@ -202,8 +202,7 @@ struct PhotoBackupView: View {
 
 private extension View {
     func backupPanel() -> some View {
-        padding(18).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-            .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
+        padding(18).moriPanel()
     }
 }
 

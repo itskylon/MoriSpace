@@ -6,6 +6,7 @@ struct SettingsView: View {
     @EnvironmentObject private var backup: PhotoBackupManager
     @EnvironmentObject private var oneDrive: OneDriveSession
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var cleared = false
     @State private var showDetails = false
 
@@ -14,7 +15,15 @@ struct SettingsView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                Group {
+                VStack(alignment: .leading, spacing: 24) {
+                    if !AppPlatform.isMac && sizeClass != .regular {
+                        HStack(spacing: 12) {
+                            Text("设置").font(.system(size: 26, weight: .semibold))
+                            Spacer()
+                            Image("AppBrand").resizable().scaledToFit().frame(width: 36, height: 36)
+                                .clipShape(RoundedRectangle(cornerRadius: 11)).accessibilityHidden(true)
+                        }.padding(.bottom, 2)
+                    }
                     if geometry.size.width >= 850 && !dynamicTypeSize.isAccessibilitySize {
                         HStack(alignment: .top, spacing: 24) {
                             VStack(alignment: .leading, spacing: 24) {
@@ -43,21 +52,22 @@ struct SettingsView: View {
             .background(NASStyle.canvas)
         }
         .workspaceNavigationTitle("设置").navigationBarTitleDisplayMode(.inline)
+        .toolbar(AppPlatform.isMac || sizeClass == .regular ? .automatic : .hidden, for: .navigationBar)
     }
 
     private var connections: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("存储连接")
             VStack(spacing: 0) {
-                NavigationLink { ConnectionView() } label: {
+                NavigationLink { ConnectionView().toolbar(.visible, for: .navigationBar) } label: {
                     SettingsServiceCard(title: "群晖照片", symbol: "photo.on.rectangle", connected: app.client != nil)
                 }
                 rowDivider
-                NavigationLink { ConnectionView(service: .files) } label: {
+                NavigationLink { ConnectionView(service: .files).toolbar(.visible, for: .navigationBar) } label: {
                     SettingsServiceCard(title: "群晖文件", symbol: "folder", connected: app.fileClient != nil)
                 }
                 rowDivider
-                NavigationLink { OneDriveConnectionView() } label: {
+                NavigationLink { OneDriveConnectionView().toolbar(.visible, for: .navigationBar) } label: {
                     SettingsServiceCard(title: "OneDrive", symbol: "cloud", connected: oneDrive.account != nil)
                 }.accessibilityIdentifier("oneDriveSettings")
             }.padding(.horizontal, 16).settingsPanel()
@@ -66,11 +76,11 @@ struct SettingsView: View {
 
     private var backupAndDevices: some View {
         preferencesSection("备份与工具") {
-            NavigationLink { PhotoBackupView() } label: {
+            NavigationLink { PhotoBackupView().toolbar(.visible, for: .navigationBar) } label: {
                 SettingsRow(title: "新照片备份", subtitle: "原图保存到群晖", symbol: "arrow.up.doc", value: backup.configuration.enabled ? "已开启" : "未开启")
             }.accessibilityIdentifier("newPhotoBackupSettings")
             rowDivider
-            NavigationLink { NASMonitorHomeView() } label: {
+            NavigationLink { NASMonitorHomeView().toolbar(.visible, for: .navigationBar) } label: {
                 SettingsRow(title: "NAS 运行状态", subtitle: "负载、容量与硬盘健康", symbol: "waveform.path.ecg")
             }
 
@@ -138,7 +148,7 @@ private struct SettingsServiceCard: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 19)).foregroundStyle(NASStyle.accent)
-                .frame(width: 32, height: 36).accessibilityHidden(true)
+                .frame(width: 36, height: 36).background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 11)).accessibilityHidden(true)
             Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
             Spacer(minLength: 8)
             HStack(spacing: 5) {
@@ -178,8 +188,7 @@ private struct SettingsRow: View {
 
 private extension View {
     func settingsPanel() -> some View {
-        background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 20))
-            .overlay { RoundedRectangle(cornerRadius: 20).stroke(NASStyle.outline, lineWidth: 0.5) }
+        moriPanel()
     }
 }
 

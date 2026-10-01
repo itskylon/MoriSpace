@@ -9,7 +9,7 @@ struct CalendarHomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var compactDayHeight: CGFloat = 52
     @ScaledMetric(relativeTo: .caption) private var eventTimeWidth: CGFloat = 50
-    @ScaledMetric(relativeTo: .title2) private var monthTitleSize: CGFloat = 26
+    @ScaledMetric(relativeTo: .title2) private var monthTitleSize: CGFloat = 28
     @State private var presentation: CalendarPresentation?
     @State private var showingCalendars = false
     var isActive = true
@@ -35,13 +35,13 @@ struct CalendarHomeView: View {
                                 HStack(alignment: .top, spacing: 16) {
                                     VStack(spacing: 0) {
                                         primaryContent(desktop: true, availableHeight: geometry.size.height)
-                                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+                                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 22))
                                         calendarFooter.padding(.horizontal, 8).padding(.vertical, 12)
                                     }.frame(maxWidth: .infinity)
                                     agenda(for: store.selectedDate)
                                         .padding(18)
                                         .frame(width: min(340, max(280, geometry.size.width * 0.28)))
-                                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+                                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 22))
                                 }.padding(.horizontal, 20).padding(.bottom, 20)
                             }.phoneMenuScrolling(active: isActive).refreshable { await store.refresh() }
                         } else {
@@ -51,7 +51,7 @@ struct CalendarHomeView: View {
                                     if store.displayMode == .month {
                                         agenda(for: store.selectedDate)
                                             .padding(16)
-                                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+                                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 22))
                                     }
                                     calendarFooter.padding(.horizontal, 8).padding(.bottom, 8)
                                 }.padding(.horizontal, 12).padding(.bottom, 12)

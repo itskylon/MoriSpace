@@ -156,14 +156,14 @@ struct NASMonitorView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(snapshot?.system?.model ?? "Synology NAS").font(.system(size: 24, weight: .semibold)).foregroundStyle(.primary)
+                    Text(snapshot?.system?.model ?? "Synology NAS").font(.system(size: 24, weight: .semibold)).foregroundStyle(.white)
                     if let system = snapshot?.system {
                         if let version = system.version {
-                            Text(version).font(.caption2).foregroundStyle(.secondary)
+                            Text(version).font(.caption2).foregroundStyle(NASStyle.heroText)
                                 .lineLimit(1).minimumScaleFactor(0.8)
                         }
                         Text("已运行 " + NASMonitorFormat.uptime(system.uptime))
-                            .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            .font(.caption).foregroundStyle(NASStyle.heroText).lineLimit(1)
                     }
                 }
                 Spacer(minLength: 4)
@@ -171,29 +171,28 @@ struct NASMonitorView: View {
                     VStack(spacing: 3) {
                         Image(systemName: automatic && !store.halted ? "arrow.triangle.2.circlepath" : "pause.circle")
                         Text(automatic && !store.halted ? "15 秒" : "手动").font(.caption2)
-                    }.foregroundStyle(NASStyle.accent).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                    }.foregroundStyle(.white).frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityLabel(automatic && !store.halted ? "每 15 秒刷新" : "手动刷新").accessibilityIdentifier("monitorAutoRefresh")
                 Button { Task { await store.refresh(client: client) } } label: {
                     Image(systemName: "arrow.clockwise").frame(width: 44, height: 44).contentShape(Rectangle())
-                }.buttonStyle(.plain).foregroundStyle(.primary).disabled(store.loading)
+                }.buttonStyle(.plain).foregroundStyle(.white).disabled(store.loading)
                     .accessibilityLabel("刷新运行状态").accessibilityIdentifier("refreshMonitor")
             }
             HStack(spacing: 10) {
                 HStack(spacing: 5) {
-                    Circle().fill(snapshot?.hasAttention == true || snapshot?.hasData == false || snapshot?.issues.isEmpty == false ? NASStyle.coral : NASStyle.accent).frame(width: 5, height: 5)
-                    Text(statusTitle).font(.caption).foregroundStyle(.primary).accessibilityIdentifier("monitorStatus")
+                    Circle().fill(snapshot?.hasAttention == true || snapshot?.hasData == false || snapshot?.issues.isEmpty == false ? NASStyle.coral : .white).frame(width: 5, height: 5)
+                    Text(statusTitle).font(.caption).foregroundStyle(.white).accessibilityIdentifier("monitorStatus")
                 }
                 if let system = snapshot?.system, let temperature = system.temperature {
                     Text(String(format: "%.0f°C", temperature)).font(.caption).monospacedDigit()
-                        .foregroundStyle(system.temperatureWarning == true ? Color.orange : .secondary)
+                        .foregroundStyle(system.temperatureWarning == true ? Color.orange : NASStyle.heroText)
                         .accessibilityLabel(system.temperatureWarning == true ? "系统温度告警，\(String(format: "%.0f", temperature)) 摄氏度" : "系统温度，\(String(format: "%.0f", temperature)) 摄氏度")
                 }
                 Spacer(minLength: 0)
                 Text(snapshot.map { $0.updatedAt.formatted(date: .omitted, time: .standard) + " 更新" } ?? "等待读取")
-                    .font(.caption2).foregroundStyle(.secondary).accessibilityIdentifier("monitorUpdated")
+                    .font(.caption2).foregroundStyle(NASStyle.heroText).accessibilityIdentifier("monitorUpdated")
             }
-        }.padding(16).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
-            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
+        }.padding(18).moriHeroPanel()
     }
     private var statusTitle: String {
         guard let snapshot else { return "连接中" }
@@ -218,8 +217,8 @@ struct NASMonitorView: View {
                 networkRate("接收", symbol: "arrow.down.left", value: resources.receivedBytesPerSecond)
                 networkRate("发送", symbol: "arrow.up.right", value: resources.sentBytesPerSecond)
             }.padding(16)
-        }.background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 18))
-            .overlay { RoundedRectangle(cornerRadius: 18).stroke(NASStyle.outline, lineWidth: 0.5) }
+        }.background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 22))
+            .overlay { RoundedRectangle(cornerRadius: 22).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 
     private var mobileTrend: some View {

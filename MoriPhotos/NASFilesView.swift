@@ -184,7 +184,7 @@ struct NASFileBrowserView: View {
                         ContentUnavailableView(query.isEmpty ? (folder == nil ? "没有可访问的共享文件夹" : "这是一个空文件夹") : "没有匹配的文件", systemImage: query.isEmpty ? "folder" : "magnifyingglass", description: Text(query.isEmpty ? (folder == nil ? "请检查账号的共享文件夹权限。" : "可以返回上级继续浏览。") : "搜索范围为当前已载入的文件。"))
                     }
                 }.listRowBackground(NASStyle.surface)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14))
+                    .listRowInsets(EdgeInsets(top: 9, leading: 14, bottom: 9, trailing: 14))
                     .listRowSeparatorTint(NASStyle.outline)
             }.phoneMenuScrolling(active: isActive).listStyle(.plain).scrollContentBackground(.hidden).contentMargins(.top, 0, for: .scrollContent)
                 .clipShape(RoundedRectangle(cornerRadius: 18)).padding(.horizontal, 16)
@@ -393,7 +393,8 @@ struct StorageFileBadge: View {
                     .frame(width: 64, height: 64)
             } else {
                 Image(systemName: symbol).font(.system(size: 20, weight: .regular))
-                    .symbolRenderingMode(.hierarchical).frame(width: 32, height: 36)
+                    .symbolRenderingMode(.hierarchical).frame(width: 40, height: 42)
+                    .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
             }
         }.foregroundStyle(color)
             .accessibilityHidden(true)
