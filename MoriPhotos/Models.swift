@@ -104,11 +104,11 @@ func friendlyError(_ error: Error) -> String {
         case .cannotConnectToHost:
             return "无法连接 NAS 的地址或端口\(code)。请检查 NAS 的 HTTPS 服务、端口以及当前 VPN 或代理设置。"
         case .notConnectedToInternet:
-            return "当前 App 无法使用网络\(code)。请检查网络连接；使用蜂窝网络时检查森空间的蜂窝数据权限，访问局域网 NAS 时检查“本地网络”权限。"
+            return "当前 App 无法使用网络\(code)。请检查网络连接；使用蜂窝网络时检查\(AppBrand.name)的蜂窝数据权限，访问局域网 NAS 时检查“本地网络”权限。"
         case .networkConnectionLost:
             return "与 NAS 的网络连接已中断\(code)。请等待网络稳定后重试；切换 Wi-Fi、蜂窝网络或 VPN 也可能中断请求。"
         case .dataNotAllowed:
-            return "系统不允许此请求使用当前数据网络\(code)。请检查森空间的蜂窝数据权限，或切换到可用的 Wi-Fi 后重试。"
+            return "系统不允许此请求使用当前数据网络\(code)。请检查\(AppBrand.name)的蜂窝数据权限，或切换到可用的 Wi-Fi 后重试。"
         case .secureConnectionFailed:
             return "无法与 NAS 建立 HTTPS 安全连接\(code)，TLS 握手失败。请检查 NAS 的 HTTPS 服务、端口以及当前 VPN 或代理设置，再重试。"
         case .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateHasUnknownRoot, .serverCertificateNotYetValid:

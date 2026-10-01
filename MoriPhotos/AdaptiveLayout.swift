@@ -122,8 +122,10 @@ struct DesktopWorkspaceView: View {
                         .frame(width: 40, height: 40).background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 12))
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("森空间").font(.headline).foregroundStyle(.primary)
-                        Text("Mori Space").font(.caption).foregroundStyle(.secondary)
+                        Text(AppBrand.name).font(.headline).foregroundStyle(.primary)
+                        if AppBrand.name != "Mori Space" {
+                            Text("Mori Space").font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                     Spacer()
                 }.padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 24)

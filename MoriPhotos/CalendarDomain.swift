@@ -139,7 +139,7 @@ enum CalendarAccess: Equatable {
         switch self {
         case .notDetermined: "连接系统日历，即可查看和管理日程。日程保存在你选择的日历账户中。"
         case .writeOnly: "目前只能添加日程。请允许完整日历访问，才能显示已有日程。"
-        case .denied: "日历访问已关闭。请在系统设置中允许森空间访问日历。"
+        case .denied: "日历访问已关闭。请在系统设置中允许\(AppBrand.name)访问日历。"
         case .restricted: "这台设备限制了日历访问，请检查屏幕使用时间或设备管理设置。"
         case .full: ""
         }

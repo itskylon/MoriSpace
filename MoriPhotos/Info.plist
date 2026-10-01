@@ -9,7 +9,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>森空间</string>
+	<string>Mori Space</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -17,7 +17,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>Mori Space</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -35,6 +35,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>MoriAppName</key>
+	<string>Mori Space</string>
 	<key>MoriCalendarAppGroup</key>
 	<string>$(MORI_CALENDAR_APP_GROUP)</string>
 	<key>NSAppTransportSecurity</key>
@@ -43,7 +45,7 @@
 		<true/>
 	</dict>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>用于在森空间查看、新建和编辑你的系统日历日程，包括重复事件与提醒。日程保存在你选择的日历账户中。</string>
+	<string>用于在 App 中查看、新建和编辑你的系统日历日程，包括重复事件与提醒。日程保存在你选择的日历账户中。</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>用于连接局域网内的群晖 NAS 并浏览照片和文件。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

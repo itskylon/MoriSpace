@@ -191,7 +191,7 @@ struct PhotoBackupView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("保存静态原图与 Live Photo 的原始视频，不压缩、不删除本机照片。跳过截图和独立视频；新保存或同步到本机、且拍摄时间在开启之后的图片也可能纳入备份。")
                 Text("关闭后重新开启同一位置，会补传期间的新照片。更换位置后从选择时开始备份，旧备份留在原目录。")
-                Text(AppPlatform.isMac ? "森空间运行时检查 Mac 照片图库，切换到其他窗口也可继续。退出 App 或 Mac 休眠后暂停，下次打开会补传。手机照片需由手机端备份，或先同步到 Mac 图库。" : "打开森空间时自动检查并补传；后台由 iOS 安排运行，无法保证拍照后立即上传。关闭后台 App 刷新、低电量或强制退出 App 时，可能要等下次打开才能继续。")
+                Text(AppPlatform.isMac ? "\(AppBrand.name)运行时检查 Mac 照片图库，切换到其他窗口也可继续。退出 App 或 Mac 休眠后暂停，下次打开会补传。手机照片需由手机端备份，或先同步到 Mac 图库。" : "打开\(AppBrand.name)时自动检查并补传；后台由 iOS 安排运行，无法保证拍照后立即上传。关闭后台 App 刷新、低电量或强制退出 App 时，可能要等下次打开才能继续。")
                 Text("断网会保留备份记录并稍后重试。每个原始文件通过 NAS 大小与内容校验后，才记为已备份；同名但内容不同的文件不会被覆盖。")
             }.font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
         } label: { Text("备份范围与运行方式").frame(minHeight: 44) }

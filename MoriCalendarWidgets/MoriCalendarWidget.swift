@@ -39,7 +39,7 @@ struct MoriCalendarWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: MoriCalendarTimeline()) { MoriCalendarWidgetView(entry: $0) }
             .configurationDisplayName("日历与农历")
-            .description("查看日期、农历和近期日程，轻点打开森空间。")
+            .description(Text("查看日期、农历和近期日程，轻点打开\(AppBrand.name)。"))
             .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

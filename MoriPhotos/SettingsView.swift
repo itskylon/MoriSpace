@@ -106,7 +106,7 @@ struct SettingsView: View {
                     Image("AppBrand").resizable().scaledToFit().frame(width: 36, height: 36)
                         .clipShape(RoundedRectangle(cornerRadius: 10)).accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("森空间").font(.subheadline.weight(.semibold))
+                        Text(AppBrand.name).font(.subheadline.weight(.semibold))
                         Text("版本 \(version) · 个人使用版").font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("appVersion")
                     }
                     Spacer(minLength: 0)

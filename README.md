@@ -2,7 +2,15 @@
 
 自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口，没有第三方运行时 SDK，也不通过中转服务器传输照片和文件。
 
-当前版本：**0.27.0（43）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+当前版本：**0.27.1（44）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+
+## 0.27.1 名称随系统语言
+
+使用 Apple 的 InfoPlist.strings 本地化 App 与日历扩展的显示名称：简体中文「森空间」、繁体中文「森空間」、英文及未匹配语言回退「Mori Space」。首页、侧栏、设置及包含 App 名称的提示读取相同的本地化资源。跟随系统的语言偏好，也遵循设备为该 App 单独指定的语言；语言更改后重新打开 App。此更新只调整品牌名称，其他界面文案仍保留中文。
+
+Mac 安装包使用 `Mori Space.app` 文件名，与未本地化显示名匹配，使 Finder 能按系统语言显示名称；Bundle ID 与数据位置保持一致。
+
+验证：手机 Release、Mac Release 与模拟器 Debug 构建通过。对三个构建中的主 App 与日历扩展分别检查简体、繁体、英文及法语回退，共 24 项打包资源名称核对通过；Mac 实际启动后，英文系统偏好下的首页、侧栏与 App 菜单显示 Mori Space。
 
 ## 0.27 移除 OneDrive
 

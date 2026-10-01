@@ -12,13 +12,14 @@ final class CalendarWidgetUITests: XCTestCase {
             let frame = element.frame
             return !frame.isEmpty && springboard.frame.contains(frame)
         }
-        var icon = springboard.icons["森空间"].firstMatch
+        let names = ["森空间", "森空間", "Mori Space"]
+        var icon = springboard.icons.matching(NSPredicate(format: "label IN %@", names)).firstMatch
         XCTAssertTrue(icon.waitForExistence(timeout: 10))
         // Offscreen icons may report hittable despite a zero-size frame on iOS 27.
         if !visibleIcon(icon) {
             XCUIDevice.shared.press(.home)
             for _ in 0..<6 {
-                if let visible = springboard.icons.matching(identifier: "森空间").allElementsBoundByIndex.first(where: visibleIcon) {
+                if let visible = springboard.icons.matching(NSPredicate(format: "label IN %@", names)).allElementsBoundByIndex.first(where: visibleIcon) {
                     icon = visible
                     break
                 }
@@ -37,8 +38,8 @@ final class CalendarWidgetUITests: XCTestCase {
         if !addWidget.waitForExistence(timeout: 4) { print(springboard.debugDescription) }
         XCTAssertTrue(addWidget.exists); addWidget.tap()
         let search = springboard.searchFields.firstMatch
-        XCTAssertTrue(search.waitForExistence(timeout: 8)); search.tap(); search.typeText("森空间")
-        let result = springboard.staticTexts["森空间"].firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 8)); search.tap(); search.typeText(icon.label)
+        let result = springboard.staticTexts[icon.label].firstMatch
         if !result.waitForExistence(timeout: 8) { print(springboard.debugDescription) }
         XCTAssertTrue(result.exists); result.tap()
         return springboard
@@ -55,7 +56,7 @@ final class CalendarWidgetUITests: XCTestCase {
         // consistently expose the widget's child labels to XCTest. Keep both
         // family screenshots for visual inspection and verify the system flow.
         XCTAssertTrue(title.exists)
-        let preview = springboard.buttons["森空间, 日历与农历"].firstMatch
+        let preview = springboard.buttons.matching(NSPredicate(format: "label ENDSWITH %@", ", 日历与农历")).firstMatch
         XCTAssertTrue(preview.waitForExistence(timeout: 5))
         XCTAssertTrue((preview.value as? String ?? "").contains("Medium"))
         let medium = XCTAttachment(screenshot: springboard.screenshot()); medium.name = "widget-system-medium"; medium.lifetime = .keepAlways; add(medium)

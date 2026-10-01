@@ -51,7 +51,7 @@ struct HomeOverviewView: View {
     private var header: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("森空间").font(.system(size: 25, weight: .semibold)).accessibilityIdentifier("homeTitle")
+                Text(AppBrand.name).font(.system(size: 25, weight: .semibold)).accessibilityIdentifier("homeTitle")
                 Text(Date().formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
                     .font(.caption).foregroundStyle(.secondary)
             }

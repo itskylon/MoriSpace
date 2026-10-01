@@ -1,5 +1,6 @@
 name: MoriPhotos
 options:
+  developmentLanguage: en
   bundleIdPrefix: dev.kylon
   deploymentTarget:
     iOS: '17.0'
@@ -9,8 +10,8 @@ settings:
     TARGETED_DEVICE_FAMILY: '1,2'
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ''
-    MARKETING_VERSION: '0.27.0'
-    CURRENT_PROJECT_VERSION: '43'
+    MARKETING_VERSION: '0.27.1'
+    CURRENT_PROJECT_VERSION: '44'
     MORI_CALENDAR_APP_GROUP: group.dev.kylon.MoriPhotos.calendar
     'MORI_CALENDAR_APP_GROUP[sdk=macosx*]': $(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -42,7 +43,9 @@ targets:
     info:
       path: MoriPhotos/Info.plist
       properties:
-        CFBundleDisplayName: 森空间
+        CFBundleDisplayName: Mori Space
+        CFBundleName: Mori Space
+        MoriAppName: Mori Space
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         MoriCalendarAppGroup: $(MORI_CALENDAR_APP_GROUP)
@@ -55,7 +58,7 @@ targets:
         NSPhotoLibraryUsageDescription: 用于浏览和管理本机照片；开启新照片备份后，将新照片原图备份到你选择的群晖 NAS。
         NSPhotoLibraryAddUsageDescription: 用于将你选择的群晖照片保存到本机照片图库。
         NSLocalNetworkUsageDescription: 用于连接局域网内的群晖 NAS 并浏览照片和文件。
-        NSCalendarsFullAccessUsageDescription: 用于在森空间查看、新建和编辑你的系统日历日程，包括重复事件与提醒。日程保存在你选择的日历账户中。
+        NSCalendarsFullAccessUsageDescription: 用于在 App 中查看、新建和编辑你的系统日历日程，包括重复事件与提醒。日程保存在你选择的日历账户中。
         PHPhotoLibraryPreventAutomaticLimitedAccessAlert: true
         UIBackgroundModes: [processing]
         BGTaskSchedulerPermittedIdentifiers: [dev.kylon.MoriPhotos.new-photo-backup]
@@ -70,6 +73,7 @@ targets:
           enabled: 1
     sources:
       - path: MoriCalendarWidgets/MoriCalendarWidget.swift
+      - path: MoriCalendarWidgets/Localization
       - path: CalendarWidgetShared
       - path: MoriPhotos/CalendarDomain.swift
     settings:
@@ -82,7 +86,9 @@ targets:
     info:
       path: MoriCalendarWidgets/Info.plist
       properties:
-        CFBundleDisplayName: 森空间日历
+        CFBundleDisplayName: Mori Space Calendar
+        CFBundleName: Mori Space Calendar
+        MoriAppName: Mori Space
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         MoriCalendarAppGroup: $(MORI_CALENDAR_APP_GROUP)
@@ -94,6 +100,7 @@ targets:
     deploymentTarget: '14.0'
     sources:
       - path: MoriCalendarWidgets/MoriCalendarWidget.swift
+      - path: MoriCalendarWidgets/Localization
       - path: CalendarWidgetShared
       - path: MoriPhotos/CalendarDomain.swift
     settings:
@@ -107,7 +114,9 @@ targets:
     info:
       path: MoriCalendarWidgets/InfoMac.plist
       properties:
-        CFBundleDisplayName: 森空间日历
+        CFBundleDisplayName: Mori Space Calendar
+        CFBundleName: Mori Space Calendar
+        MoriAppName: Mori Space
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         MoriCalendarAppGroup: $(MORI_CALENDAR_APP_GROUP)

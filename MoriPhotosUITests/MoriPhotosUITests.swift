@@ -675,7 +675,7 @@ final class MoriPhotosUITests: XCTestCase {
         brand.name = "28-森空间设置"; brand.lifetime = .keepAlways; add(brand)
         XCUIDevice.shared.press(.home)
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        XCTAssertTrue(springboard.icons["森空间"].waitForExistence(timeout: 5))
+        XCTAssertTrue(springboard.icons.matching(NSPredicate(format: "label IN %@", ["森空间", "森空間", "Mori Space"])).firstMatch.waitForExistence(timeout: 5))
         let icon = XCTAttachment(screenshot: springboard.screenshot())
         icon.name = "29-森空间桌面图标"; icon.lifetime = .keepAlways; add(icon)
     }

@@ -53,7 +53,7 @@ final class PhotoLibraryStore: NSObject, ObservableObject, PHPhotoLibraryChangeO
         var status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
         if status == .notDetermined { status = await PHPhotoLibrary.requestAuthorization(for: .addOnly) }
         guard status == .authorized || status == .limited else {
-            throw NSError(domain: "Photos", code: 1, userInfo: [NSLocalizedDescriptionKey: "请在系统设置中允许森空间添加照片。"])
+            throw NSError(domain: "Photos", code: 1, userInfo: [NSLocalizedDescriptionKey: "请在系统设置中允许\(AppBrand.name)添加照片。"])
         }
         try await PHPhotoLibrary.shared().performChanges {
             let request = PHAssetCreationRequest.forAsset()
