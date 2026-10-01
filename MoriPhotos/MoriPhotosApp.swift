@@ -8,7 +8,6 @@ struct MoriPhotosApp: App {
     @StateObject private var navigation = WorkspaceNavigation()
     @StateObject private var library = PhotoLibraryStore()
     @StateObject private var calendar = CalendarStore(widgetCache: .shared)
-    @StateObject private var oneDrive: OneDriveSession
     @StateObject private var app: AppState
     @StateObject private var backup: PhotoBackupManager
     @Environment(\.scenePhase) private var scenePhase
@@ -17,11 +16,6 @@ struct MoriPhotosApp: App {
         let backups = PhotoBackupManager(app: state)
         _app = StateObject(wrappedValue: state)
         _backup = StateObject(wrappedValue: backups)
-        #if DEBUG && (targetEnvironment(simulator) || MORI_DESKTOP_QA)
-        _oneDrive = StateObject(wrappedValue: OneDriveFixture.enabled ? OneDriveFixture.session() : OneDriveSession())
-        #else
-        _oneDrive = StateObject(wrappedValue: OneDriveSession())
-        #endif
         BackupAppDelegate.manager = backups
     }
     var body: some Scene {
@@ -33,10 +27,6 @@ struct MoriPhotosApp: App {
             .environmentObject(app)
             .environmentObject(backup)
             .environmentObject(calendar)
-            .environmentObject(oneDrive)
-            .onChange(of: oneDrive.account?.driveID) { previous, current in
-                if let previous, previous != current { OneDriveMediaStore.shared.cancel(accountID: previous) }
-            }
             .task { backup.foregroundChanged(scenePhase == .active) }
             .task { await calendar.refreshWidgetSnapshot() }
             .onOpenURL { url in

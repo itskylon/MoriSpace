@@ -9,8 +9,8 @@ settings:
     TARGETED_DEVICE_FAMILY: '1,2'
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ''
-    MARKETING_VERSION: '0.26.0'
-    CURRENT_PROJECT_VERSION: '42'
+    MARKETING_VERSION: '0.27.0'
+    CURRENT_PROJECT_VERSION: '43'
     MORI_CALENDAR_APP_GROUP: group.dev.kylon.MoriPhotos.calendar
     'MORI_CALENDAR_APP_GROUP[sdk=macosx*]': $(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar
     ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -51,8 +51,6 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: dev.kylon.MoriPhotos.calendar
             CFBundleURLSchemes: [morispace]
-          - CFBundleURLName: dev.kylon.MoriPhotos.onedrive
-            CFBundleURLSchemes: [msauth.dev.kylon.MoriPhotos]
         UILaunchScreen: {}
         NSPhotoLibraryUsageDescription: 用于浏览和管理本机照片；开启新照片备份后，将新照片原图备份到你选择的群晖 NAS。
         NSPhotoLibraryAddUsageDescription: 用于将你选择的群晖照片保存到本机照片图库。

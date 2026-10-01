@@ -71,11 +71,10 @@ struct HomeOverviewView: View {
         }
     }
     private func shortcuts(wide: Bool) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: typeSize.isAccessibilitySize ? 1 : wide ? 4 : 2), spacing: 12) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: typeSize.isAccessibilitySize ? 1 : wide ? 3 : 2), spacing: 12) {
             shortcut("本机照片", subtitle: library.canRead ? "\(library.assets.count) 张照片" : "浏览照片图库", icon: "photo.on.rectangle", page: .local, id: "homeLocalPhotos")
             shortcut("群晖照片", subtitle: "个人与共享空间", icon: "photo.stack", page: .photos, id: "homeNASPhotos")
             shortcut("群晖文件", subtitle: "文件夹与文档", icon: "folder", page: .files, id: "homeNASFiles")
-            shortcut("OneDrive", subtitle: "云端文件", icon: "cloud", page: .oneDrive, id: "homeOneDrive")
         }
     }
 
@@ -129,11 +128,8 @@ struct HomeOverviewView: View {
         if usesSidebar { navigation.selection = page; return }
         switch page {
         case .photos, .files, .monitor:
-            navigation.storageUsesOneDrive = false
             navigation.storageSection = page == .photos ? "照片" : page == .files ? "文件" : "状态"
             navigation.phoneSelection = .photos
-        case .oneDrive:
-            navigation.storageUsesOneDrive = true; navigation.phoneSelection = .photos
         default: navigation.phoneSelection = page
         }
     }

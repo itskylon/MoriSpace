@@ -4,7 +4,6 @@ struct SettingsView: View {
     @EnvironmentObject private var app: AppState
     @EnvironmentObject private var library: PhotoLibraryStore
     @EnvironmentObject private var backup: PhotoBackupManager
-    @EnvironmentObject private var oneDrive: OneDriveSession
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var cleared = false
@@ -66,10 +65,7 @@ struct SettingsView: View {
                 NavigationLink { ConnectionView(service: .files).toolbar(.visible, for: .navigationBar) } label: {
                     SettingsServiceCard(title: "群晖文件", symbol: "folder", connected: app.fileClient != nil)
                 }
-                rowDivider
-                NavigationLink { OneDriveConnectionView().toolbar(.visible, for: .navigationBar) } label: {
-                    SettingsServiceCard(title: "OneDrive", symbol: "cloud", connected: oneDrive.account != nil)
-                }.accessibilityIdentifier("oneDriveSettings")
+
             }.padding(.horizontal, 16).settingsPanel()
         }
     }
@@ -117,7 +113,7 @@ struct SettingsView: View {
                 }.padding(.top, 4)
                 DisclosureGroup(isExpanded: $showDetails) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("支持 iPhone、iPad（iOS 17 及以上）与 Mac（macOS 14 及以上）。群晖使用 DSM 7 / Synology Photos；OneDrive 使用微软授权登录。文件在设备与相应存储服务之间传输。")
+                        Text("支持 iPhone、iPad（iOS 17 及以上）与 Mac（macOS 14 及以上）。群晖使用 DSM 7 / Synology Photos。文件在设备与相应存储服务之间传输。")
                         Text(AppPlatform.isMac ? "支持本机照片管理与备份、群晖文件下载、视频播放和 NAS 状态查看。备份与下载需保持 App 运行；退出或休眠后暂停。暂不支持 QuickConnect 中继、视频转码与人脸识别。" : "支持新照片自动备份、照片管理、群晖文件浏览与下载、视频播放和 NAS 状态查看。备份可由系统安排后台补传；文件下载需保持 App 在前台。暂不支持 QuickConnect 中继、视频转码与人脸识别。")
                     }.font(.footnote).foregroundStyle(.secondary).padding(.top, 8)
                 } label: { Text("版本与使用说明").frame(minHeight: 44) }

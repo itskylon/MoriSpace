@@ -2,7 +2,7 @@ import SwiftUI
 
 struct NASHomeView: View {
     var isActive = true
-    var sourceControl: AnyView? = nil
+    @ScaledMetric(relativeTo: .title2) private var sourceTitleSize = 24
     @State private var connection = false
     @EnvironmentObject private var navigation: WorkspaceNavigation
     private var section: String { navigation.storageSection }
@@ -51,7 +51,7 @@ struct NASHomeView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    if let sourceControl { sourceControl }
+                    Text("群晖").font(.system(size: sourceTitleSize, weight: .semibold))
                     Spacer(minLength: 0)
                     connectionButton
                 }

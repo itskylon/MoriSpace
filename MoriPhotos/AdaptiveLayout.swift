@@ -18,7 +18,7 @@ enum AppPlatform {
 }
 
 enum WorkspacePage: String, CaseIterable, Identifiable {
-    case local, photos, files, downloads, monitor, backup, settings, calendar, oneDrive, home
+    case local, photos, files, downloads, monitor, backup, settings, calendar, home
     var id: String { rawValue }
     var title: String {
         switch self {
@@ -31,7 +31,6 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
         case .backup: "照片备份"
         case .settings: "设置"
         case .calendar: "日历"
-        case .oneDrive: "OneDrive"
         }
     }
     var symbol: String {
@@ -45,7 +44,6 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
         case .backup: "icloud.and.arrow.up"
         case .settings: "gearshape"
         case .calendar: "calendar"
-        case .oneDrive: "cloud"
         }
     }
 }
@@ -54,7 +52,6 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
     @Published var selection: WorkspacePage = .home
     @Published var phoneSelection: WorkspacePage = .home
     @Published var storageSection = "照片"
-    @Published var storageUsesOneDrive = false
     @Published var paths: [WorkspacePage: NavigationPath] = [:]
 }
 
@@ -72,7 +69,6 @@ struct AdaptiveRootView: View {
             }
             .onChange(of: navigation.phoneSelection) { _, _ in phoneMenu.expand() }
             .onChange(of: navigation.storageSection) { _, _ in phoneMenu.expand() }
-            .onChange(of: navigation.storageUsesOneDrive) { _, _ in phoneMenu.expand() }
         }
     }
 }
@@ -102,7 +98,7 @@ private struct PhoneWorkspaceView: View {
         switch page {
         case .home: NavigationStack { HomeOverviewView(isActive: navigation.phoneSelection == page) }
         case .local: NavigationStack { LocalLibraryView(isActive: navigation.phoneSelection == page) }
-        case .photos: StorageHomeView(isActive: navigation.phoneSelection == page)
+        case .photos: NASHomeView(isActive: navigation.phoneSelection == page)
         case .calendar: NavigationStack { CalendarHomeView(isActive: navigation.phoneSelection == page) }
         case .settings: NavigationStack { SettingsView() }
         default: EmptyView()
@@ -134,7 +130,7 @@ struct DesktopWorkspaceView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
                         row(.home)
-                        sidebarGroup("资料库", pages: [.local, .photos, .files, .oneDrive])
+                        sidebarGroup("资料库", pages: [.local, .photos, .files])
                         sidebarGroup("工具", pages: [.calendar, .downloads, .monitor, .backup])
                     }.padding(.horizontal, 12)
                 }.scrollIndicators(.hidden)
@@ -200,7 +196,7 @@ struct DesktopWorkspaceView: View {
             .accessibilityIdentifier("sidebar_" + page.rawValue)
     }
     private func moveSidebar(by offset: Int) {
-        let pages: [WorkspacePage] = [.home, .local, .photos, .files, .oneDrive, .calendar, .downloads, .monitor, .backup, .settings]
+        let pages: [WorkspacePage] = [.home, .local, .photos, .files, .calendar, .downloads, .monitor, .backup, .settings]
         guard let index = pages.firstIndex(of: navigation.selection), pages.indices.contains(index + offset) else { return }
         navigation.selection = pages[index + offset]
         sidebarFocus = pages[index + offset]
@@ -215,7 +211,6 @@ struct DesktopWorkspaceView: View {
         case .backup: PhotoBackupView()
         case .settings: SettingsView()
         case .calendar: CalendarHomeView(isActive: navigation.selection == page)
-        case .oneDrive: OneDriveHomeView(isActive: navigation.selection == page)
         case .home: HomeOverviewView(isActive: navigation.selection == page)
         }
     }

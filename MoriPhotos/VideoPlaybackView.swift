@@ -86,25 +86,6 @@ final class VideoPlaybackModel: ObservableObject {
             player.pause()
         }
     }
-    /// A cloud provider supplies a fresh HTTPS content URL or an app-owned local file.
-    /// No account token, cookie, or signed URL is persisted by the player.
-    func openExternal(url: URL, progressKey: String, canPlayNatively: Bool) async {
-        stop(); error = nil; progressError = nil; resumedFrom = nil; elapsed = 0; duration = 0; preparing = true
-        let ticket = generation
-        defer { if ticket == generation { preparing = false } }
-        do {
-            guard canPlayNatively, url.isFileURL || (url.scheme?.lowercased() == "https" && url.host != nil && url.user == nil && url.password == nil) else {
-                throw VideoPlaybackError.unsupportedFormat
-            }
-            let asset = AVURLAsset(url: url, options: [AVURLAssetHTTPCookiesKey: [HTTPCookie]()])
-            try await prepare(asset: asset, key: progressKey, ticket: ticket)
-        } catch {
-            guard ticket == generation, !Task.isCancelled else { return }
-            self.error = "视频暂时无法播放，请重新获取播放地址或下载后打开。"
-            player.pause()
-        }
-    }
-
     private func prepare(asset: AVURLAsset, key: String, ticket: UUID) async throws {
         try Task.checkCancellation()
         guard ticket == generation else { throw CancellationError() }

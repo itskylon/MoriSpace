@@ -32,14 +32,6 @@
 				<string>morispace</string>
 			</array>
 		</dict>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>dev.kylon.MoriPhotos.onedrive</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>msauth.dev.kylon.MoriPhotos</string>
-			</array>
-		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>

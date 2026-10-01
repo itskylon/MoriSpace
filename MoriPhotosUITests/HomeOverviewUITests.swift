@@ -2,8 +2,7 @@ import XCTest
 
 final class HomeOverviewUITests: XCTestCase {
     private let fixtureArguments = [
-        "--nas-connection-fixture", "--reset-nas-connection-fixture", "--calendar-fixture",
-        "--onedrive-fixture"
+        "--nas-connection-fixture", "--reset-nas-connection-fixture", "--calendar-fixture"
     ]
 
     func testPhoneMenuShrinksWhileBrowsingAndExpandsForNavigation() {
@@ -78,7 +77,7 @@ final class HomeOverviewUITests: XCTestCase {
         assertHomeDevice(app)
         let viewport = CGRect(x: app.frame.minX, y: app.frame.minY, width: app.frame.width,
                               height: app.phoneMenus.firstMatch.frame.minY - app.frame.minY)
-        for id in ["homeLocalPhotos", "homeNASPhotos", "homeNASFiles", "homeOneDrive", "homeDevice"] {
+        for id in ["homeLocalPhotos", "homeNASPhotos", "homeNASFiles", "homeDevice"] {
             assertVisible(app.buttons[id], in: viewport)
         }
         for id in ["homeCPU", "homeMemory"] { assertVisible(app.staticTexts[id], in: viewport) }
@@ -139,7 +138,7 @@ final class HomeOverviewUITests: XCTestCase {
         XCTAssertTrue(sidebar.exists)
         let title = app.staticTexts["homeTitle"]
         XCTAssertGreaterThanOrEqual(title.frame.minX, sidebar.frame.maxX, "The overview must use the detail column")
-        for id in ["homeLocalPhotos", "homeNASPhotos", "homeNASFiles", "homeOneDrive", "homeDevice"] {
+        for id in ["homeLocalPhotos", "homeNASPhotos", "homeNASFiles", "homeDevice"] {
             assertVisible(app.buttons[id], in: app.frame)
         }
         for id in ["homeCPU", "homeMemory"] { assertVisible(app.staticTexts[id], in: app.frame) }
@@ -162,11 +161,6 @@ final class HomeOverviewUITests: XCTestCase {
         app.buttons["homeNASPhotos"].tap()
         XCTAssertTrue(app.buttons.matching(identifier: "nasPhotoCell").firstMatch.waitForExistence(timeout: 10))
         XCTAssertTrue(app.buttons["sidebar_photos"].isSelected)
-        home.tap()
-        XCTAssertTrue(title.waitForExistence(timeout: 5))
-        app.buttons["homeOneDrive"].tap()
-        XCTAssertTrue(app.buttons["oneDriveItem_photos"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.buttons["sidebar_oneDrive"].isSelected)
         home.tap()
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         app.buttons["homeDevice"].tap()

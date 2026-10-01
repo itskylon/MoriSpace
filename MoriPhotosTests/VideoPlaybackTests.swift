@@ -107,64 +107,6 @@ final class VideoPlaybackTests: XCTestCase {
         XCTAssertGreaterThan(model.elapsed, 0.5)
     }
     @MainActor
-    func testExternalVideoPlaysResumesAndStopsWithoutChangingOtherProgress() async throws {
-        let data = try fixture()
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let store = VideoProgressStore(directory: directory)
-        let nasFile = NASFile(name: "existing.mp4", path: "/existing.mp4", isdir: false, additional: nil)
-        let existingKey = VideoProgressStore.key(owner: "existing-nas-account", file: nasFile)
-        try store.save(key: existingKey, position: 9, duration: 40)
-        let cloudFile = OneDriveItem(id: "synthetic-video", name: "sample.mp4", size: Int64(data.count),
-                                    mimeType: "video/mp4", eTag: "version-one", driveID: "synthetic-drive")
-        let key = OneDriveMediaIdentity.key(item: cloudFile, accountID: "synthetic-account")
-        let model = VideoPlaybackModel(progressStore: store)
-        defer { model.stop() }
-        await model.openExternal(url: FileStationFixture.videoURL, progressKey: key, canPlayNatively: true)
-        XCTAssertNil(model.error)
-        XCTAssertGreaterThan(model.duration, 30)
-        let output = AVPlayerItemVideoOutput(pixelBufferAttributes: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA])
-        model.player.currentItem?.add(output)
-        await wait { model.elapsed > 0.5 || model.error != nil }
-        XCTAssertNil(model.error)
-        var hasFrame = false
-        await wait {
-            hasFrame = output.copyPixelBuffer(forItemTime: model.player.currentTime(), itemTimeForDisplay: nil) != nil
-            return hasFrame
-        }
-        XCTAssertTrue(hasFrame, "The external-asset path must decode a frame, not just construct an AVPlayer")
-        model.jump(15)
-        await wait { model.elapsed >= 15 }
-        model.pause()
-        let stoppedAt = model.player.currentTime().seconds
-        let duration = model.duration
-        let previousItem = try XCTUnwrap(model.player.currentItem)
-        model.stop(); model.stop()
-        XCTAssertNil(model.player.currentItem)
-        XCTAssertFalse(model.playing); XCTAssertFalse(model.preparing); XCTAssertFalse(model.buffering)
-        XCTAssertEqual(model.player.rate, 0)
-        let frozenElapsed = model.elapsed
-        // Notifications from an old item and late timer callbacks must not mutate
-        // the stopped model or overwrite a saved position.
-        NotificationCenter.default.post(name: .AVPlayerItemFailedToPlayToEndTime, object: previousItem)
-        try await Task.sleep(for: .milliseconds(300))
-        XCTAssertNil(model.error)
-        XCTAssertEqual(model.elapsed, frozenElapsed, accuracy: 0.01)
-
-        let reopenedStore = VideoProgressStore(directory: directory)
-        XCTAssertEqual(try XCTUnwrap(reopenedStore.position(for: key, duration: duration)), stoppedAt, accuracy: 0.5)
-        XCTAssertEqual(reopenedStore.position(for: existingKey, duration: 40), 9)
-        let resumed = VideoPlaybackModel(progressStore: reopenedStore)
-        defer { resumed.stop() }
-        await resumed.openExternal(url: FileStationFixture.videoURL, progressKey: key, canPlayNatively: true)
-        XCTAssertNil(resumed.error)
-        XCTAssertEqual(try XCTUnwrap(resumed.resumedFrom), stoppedAt, accuracy: 0.5)
-        XCTAssertEqual(resumed.player.currentTime().seconds, stoppedAt, accuracy: 1)
-        resumed.stop()
-        XCTAssertNil(resumed.player.currentItem)
-        XCTAssertEqual(VideoProgressStore(directory: directory).position(for: existingKey, duration: 40), 9)
-    }
-    @MainActor
     func testOnlineProgressResumesOfflineAfterRecreationAndRestartClearsIt() async throws {
         _ = try fixture()
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
