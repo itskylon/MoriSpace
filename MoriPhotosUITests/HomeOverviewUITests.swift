@@ -14,6 +14,7 @@ final class HomeOverviewUITests: XCTestCase {
         app.phoneMenus.buttons["设置"].tap()
         XCTAssertTrue(app.buttons["newPhotoBackupSettings"].waitForExistence(timeout: 5))
         let expandedWidth = bar.frame.width
+        assertMenuLayout(app, selected: "设置", expanded: true)
         capture("phone-menu-expanded")
         app.swipeUp()
         XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "收起" }, on: bar))
@@ -23,6 +24,7 @@ final class HomeOverviewUITests: XCTestCase {
             XCTAssertTrue(button.isHittable)
             XCTAssertGreaterThanOrEqual(button.frame.height, 44)
         }
+        assertMenuLayout(app, selected: "设置", expanded: false)
         capture("phone-menu-scrolling")
         app.swipeDown()
         XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "展开" }, on: bar))
@@ -39,6 +41,7 @@ final class HomeOverviewUITests: XCTestCase {
 
         app.phoneMenus.buttons["存储"].tap()
         XCTAssertTrue(app.buttons.matching(identifier: "nasPhotoCell").firstMatch.waitForExistence(timeout: 10))
+        assertMenuLayout(app, selected: "存储", expanded: true)
         capture("phone-photos-menu-expanded")
         app.swipeUp()
         XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "收起" }, on: bar))
@@ -47,6 +50,24 @@ final class HomeOverviewUITests: XCTestCase {
         app.buttons["nasSectionFiles"].tap()
         XCTAssertTrue(app.buttons["nasFolder_测试共享"].waitForExistence(timeout: 10))
         XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "展开" }, on: bar))
+    }
+
+    private func assertMenuLayout(_ app: XCUIApplication, selected: String, expanded: Bool) {
+        let buttons = app.phoneMenus.buttons.allElementsBoundByIndex
+        let activeWidth = app.phoneMenus.buttons[selected].frame.width
+        let inactive = buttons.filter { $0.label != selected }
+        if expanded {
+            XCTAssertGreaterThan(activeWidth, inactive[0].frame.width + 16)
+        } else {
+            XCTAssertEqual(activeWidth, inactive[0].frame.width, accuracy: 1)
+        }
+        for (index, button) in buttons.enumerated() {
+            XCTAssertGreaterThanOrEqual(button.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(button.frame.minX, app.frame.minX)
+            XCTAssertLessThanOrEqual(button.frame.maxX, app.frame.maxX)
+            if index > 0 { XCTAssertGreaterThanOrEqual(button.frame.minX, buttons[index - 1].frame.maxX + 3) }
+        }
+        for button in inactive { XCTAssertEqual(button.frame.width, inactive[0].frame.width, accuracy: 1) }
     }
 
     func testPhoneHomeShowsDeviceAndKeepsFileLocationAcrossQuickLinks() {

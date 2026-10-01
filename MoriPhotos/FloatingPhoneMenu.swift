@@ -31,7 +31,7 @@ struct FloatingPhoneMenu: View {
     var body: some View {
         Group {
             if !keyboardVisible {
-                HStack(spacing: 2) {
+                PhoneMenuLayout(selectedIndex: pages.firstIndex(of: selection) ?? 0, expanded: !compact && !fullLabels) {
                     ForEach(pages) { page in
                         Button {
                             state.expand()
@@ -39,10 +39,10 @@ struct FloatingPhoneMenu: View {
                         } label: {
                             label(page)
                             .foregroundStyle(Color.primary.opacity(selection == page ? 1 : 0.72))
-                            .frame(maxWidth: .infinity).frame(height: fullLabels ? 58 : compact ? 44 : 48)
+                            .frame(maxWidth: .infinity).frame(height: fullLabels ? 58 : compact ? 44 : 50)
                             .background {
                                 if selection == page {
-                                    Capsule().fill(Color.primary.opacity(0.09))
+                                    Capsule().fill(Color.primary.opacity(0.12))
                                         .matchedGeometryEffect(id: "selectedPage", in: selectionIndicator)
                                 }
                             }
@@ -58,7 +58,7 @@ struct FloatingPhoneMenu: View {
                 }
                 .padding(compact ? 4 : 6)
                 .containerRelativeFrame(.horizontal) { width, _ in
-                    compact ? max(240, min(268, width - 76)) : min(360, width - 48)
+                    compact ? max(240, min(268, width - 64)) : min(380, width - 32)
                 }
                 .phoneMenuGlass()
                 .shadow(color: .black.opacity(0.07), radius: 12, y: 4)
@@ -84,9 +84,9 @@ struct FloatingPhoneMenu: View {
                 Text(title(page)).font(.caption2.weight(.medium)).lineLimit(1)
             }.accessibilityHidden(true)
         } else {
-            HStack(spacing: selection == page && !compact ? 5 : 0) {
+            HStack(spacing: selection == page && !compact ? 7 : 0) {
                 Image(systemName: symbol(page)).font(.system(size: compact ? 19 : 21, weight: .regular))
-                Text(title(page)).font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                Text(title(page)).font(.system(size: 12, weight: .semibold)).lineLimit(1)
                     .fixedSize().frame(width: selection == page && !compact ? nil : 0)
                     .opacity(selection == page && !compact ? 1 : 0).clipped()
             }.accessibilityHidden(true)
@@ -103,6 +103,33 @@ struct FloatingPhoneMenu: View {
         case .photos: "externaldrive"
         case .settings: "slider.horizontal.3"
         default: page.symbol
+        }
+    }
+}
+
+// Reserve room for the current destination's name without squeezing its neighbours.
+private struct PhoneMenuLayout: Layout {
+    var selectedIndex: Int
+    var expanded: Bool
+    private let spacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        CGSize(width: proposal.width ?? 348,
+               height: subviews.map { $0.sizeThatFits(.unspecified).height }.max() ?? 50)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard !subviews.isEmpty else { return }
+        let count = CGFloat(subviews.count)
+        let available = max(0, bounds.width - spacing * (count - 1))
+        let selectedWidth = expanded ? min(100, available - 44 * (count - 1)) : available / count
+        let otherWidth = expanded && count > 1 ? (available - selectedWidth) / (count - 1) : available / count
+        var x = bounds.minX
+        for (index, view) in subviews.enumerated() {
+            let width = expanded && index == selectedIndex ? selectedWidth : otherWidth
+            view.place(at: CGPoint(x: x, y: bounds.midY), anchor: .leading,
+                       proposal: ProposedViewSize(width: width, height: bounds.height))
+            x += width + spacing
         }
     }
 }
