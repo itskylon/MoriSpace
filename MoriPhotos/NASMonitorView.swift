@@ -39,7 +39,7 @@ struct NASMonitorView: View {
     var body: some View {
         GeometryReader { geometry in
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 14) {
                 if geometry.size.width >= 700 { desktopHeader.padding(.bottom, 4) }
                 else { statusHeader }
                 if store.loading && snapshot == nil { ProgressView("正在读取运行状态…").frame(maxWidth: .infinity).padding(24) }
@@ -192,7 +192,7 @@ struct NASMonitorView: View {
                 Text(snapshot.map { $0.updatedAt.formatted(date: .omitted, time: .standard) + " 更新" } ?? "等待读取")
                     .font(.caption2).foregroundStyle(.secondary).accessibilityIdentifier("monitorUpdated")
             }
-        }.padding(16).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+        }.padding(16).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
             .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
     private var statusTitle: String {
@@ -207,18 +207,19 @@ struct NASMonitorView: View {
         return !snapshot.hasData || !snapshot.issues.isEmpty || snapshot.hasAttention ? .orange : NASStyle.accent
     }
     private func resourceCards(_ resources: NASResourceStatus) -> some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
                 percentageCard("CPU", value: resources.cpu, symbol: "cpu", subtitle: "当前负载", identifier: "monitorCPU")
+                Divider().frame(height: 76)
                 percentageCard("内存", value: resources.memory, symbol: "memorychip", subtitle: NASMonitorFormat.bytes(resources.memoryBytes), identifier: "monitorMemory")
             }
+            Divider().padding(.horizontal, 16)
             HStack(spacing: 20) {
                 networkRate("接收", symbol: "arrow.down.left", value: resources.receivedBytesPerSecond)
                 networkRate("发送", symbol: "arrow.up.right", value: resources.sentBytesPerSecond)
-            }.padding(.horizontal, 16).padding(.vertical, 12)
-                .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
-                .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
-        }
+            }.padding(16)
+        }.background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 18))
+            .overlay { RoundedRectangle(cornerRadius: 18).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 
     private var mobileTrend: some View {
@@ -276,8 +277,7 @@ struct NASMonitorView: View {
                     }
             }.frame(height: 5).opacity(value == nil ? 0 : 1).accessibilityHidden(true)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(16)
-            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
-            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
+
     }
 
     private func networkRate(_ title: String, symbol: String, value: Double?) -> some View {
@@ -356,7 +356,7 @@ struct NASMonitorView: View {
 
 private extension View {
     func monitorSection() -> some View {
-        padding(16).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
+        padding(16).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
             .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 }

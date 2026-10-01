@@ -18,24 +18,27 @@ struct HomeOverviewView: View {
         GeometryReader { geometry in
             let wide = geometry.size.width >= 820 && !typeSize.isAccessibilitySize
             ScrollView {
-                VStack(alignment: .leading, spacing: wide ? 28 : 22) {
+                VStack(alignment: .leading, spacing: wide ? 24 : 20) {
                     header
-                    shortcuts(wide: wide)
+                    VStack(alignment: .leading, spacing: 12) {
+                        MoriSectionHeading("存储入口")
+                        shortcuts(wide: wide)
+                    }
                     if wide {
                         HStack(alignment: .top, spacing: 20) {
                             device.frame(maxWidth: .infinity)
-                            VStack(spacing: 14) { calendarCard; backupCard; downloadsCard }
+                            dailyTasks
                                 .frame(width: min(geometry.size.width * 0.32, 340))
                         }
                     } else {
-                        device
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: typeSize.isAccessibilitySize ? 1 : 2), spacing: 12) {
-                            calendarCard; backupCard
+                        VStack(alignment: .leading, spacing: 12) {
+                            MoriSectionHeading("设备概览")
+                            device
                         }
-                        downloadsCard
+                        dailyTasks
                     }
                 }
-                .padding(wide ? 28 : 20)
+                .padding(.horizontal, wide ? 28 : 20).padding(.top, 12).padding(.bottom, 24)
                 .frame(maxWidth: 1240).frame(maxWidth: .infinity, alignment: .top)
             }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
         }
@@ -54,7 +57,7 @@ struct HomeOverviewView: View {
     private var header: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 5) {
-                Text("首页").font(.system(size: 28, weight: .bold)).accessibilityIdentifier("homeTitle")
+                Text("森空间").font(.system(size: 30, weight: .bold)).accessibilityIdentifier("homeTitle")
                 Text(Date().formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
                     .font(.subheadline).foregroundStyle(.secondary)
             }
@@ -68,7 +71,7 @@ struct HomeOverviewView: View {
     }
 
     private func shortcuts(wide: Bool) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: typeSize.isAccessibilitySize ? 1 : wide ? 4 : 2), spacing: 12) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: typeSize.isAccessibilitySize ? 2 : 4), spacing: 12) {
             shortcut("本机照片", subtitle: library.canRead ? "\(library.assets.count) 张照片" : "浏览照片图库", icon: "photo.on.rectangle", color: NASStyle.accent, page: .local, id: "homeLocalPhotos")
             shortcut("群晖照片", subtitle: "个人与共享空间", icon: "photo.stack", color: .indigo, page: .photos, id: "homeNASPhotos")
             shortcut("群晖文件", subtitle: "文件夹与文档", icon: "folder", color: .orange, page: .files, id: "homeNASFiles")
@@ -78,18 +81,30 @@ struct HomeOverviewView: View {
 
     private func shortcut(_ title: String, subtitle: String, icon: String, color: Color, page: WorkspacePage, id: String) -> some View {
         Button { open(page) } label: {
-            HStack(spacing: 10) {
-                Image(systemName: icon).font(.system(size: 21, weight: .medium)).foregroundStyle(color)
-                    .frame(width: 34, height: 38)
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                    Text(subtitle).font(.caption2).foregroundStyle(.secondary)
-                }.frame(maxWidth: .infinity, alignment: .leading)
-            }.padding(.horizontal, 12).padding(.vertical, 17).frame(maxWidth: .infinity, alignment: .leading)
-                .homeSurface()
+            VStack(spacing: 10) {
+                Image(systemName: icon).font(.system(size: 23, weight: .regular)).foregroundStyle(color)
+                    .frame(width: 48, height: 48)
+                    .background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 15))
+                VStack(spacing: 4) {
+                    Text(title).font(.caption.weight(.semibold)).foregroundStyle(.primary).lineLimit(1)
+                    Text(subtitle).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
+                }
+            }.frame(maxWidth: .infinity, minHeight: 92).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityIdentifier(id)
     }
 
+    private var dailyTasks: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            MoriSectionHeading("日常")
+            VStack(spacing: 0) {
+                calendarCard
+                Divider().padding(.leading, 60)
+                backupCard
+                Divider().padding(.leading, 60)
+                downloadsCard
+            }.homeSurface()
+        }
+    }
     private var device: some View {
         HomeDeviceCard(isActive: isActive && detail == nil) { open(.monitor) }.id(app.monitorConnectionID)
     }
@@ -227,23 +242,24 @@ private struct HomeSummaryCard: View {
     let open: () -> Void
     var body: some View {
         Button(action: open) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 7) {
-                    Image(systemName: icon).foregroundStyle(color)
-                    Text(title).foregroundStyle(.secondary)
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
-                }.font(.caption.weight(.medium))
-                Text(value).font(.system(size: 22, weight: .semibold)).foregroundStyle(.primary)
-                Text(subtitle).font(.caption2).foregroundStyle(.secondary)
-            }.frame(maxWidth: .infinity, minHeight: 96, alignment: .topLeading).padding(17).homeSurface()
+            HStack(spacing: 12) {
+                Image(systemName: icon).font(.system(size: 18)).foregroundStyle(color)
+                    .frame(width: 34, height: 34).background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                Text(value).font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
+                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+            }.padding(14).frame(maxWidth: .infinity, minHeight: 72).contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityIdentifier(id)
     }
 }
 
 private extension View {
     func homeSurface() -> some View {
-        background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-            .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
+        background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 20))
+            .overlay { RoundedRectangle(cornerRadius: 20).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 }

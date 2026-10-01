@@ -56,7 +56,7 @@ struct NASHomeView: View {
                     connectionButton
                 }
                 NASSectionTabs(selection: selection)
-            }.padding(.horizontal, 16).padding(.bottom, 8).background(NASStyle.canvas)
+            }.padding(.horizontal, 16).background(NASStyle.canvas)
             Rectangle().fill(NASStyle.outline).frame(height: 0.5)
         }
     }

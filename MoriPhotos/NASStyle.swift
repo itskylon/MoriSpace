@@ -71,7 +71,9 @@ struct NASSectionTabs: View {
                     }
                     .foregroundStyle(selection == title ? NASStyle.accent : Color.secondary)
                     .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(selection == title ? NASStyle.selection : .clear, in: RoundedRectangle(cornerRadius: 11))
+                    .overlay(alignment: .bottom) {
+                        Capsule().fill(selection == title ? NASStyle.accent : .clear).frame(height: 2).padding(.horizontal, 14)
+                    }
                     .contentShape(Rectangle())
                 }.buttonStyle(.plain)
                     .accessibilityAddTraits(selection == title ? .isSelected : [])
@@ -136,12 +138,23 @@ struct MoriFilterBar: View {
                     Text(title).font(.subheadline.weight(selection == title ? .semibold : .medium))
                         .foregroundStyle(selection == title ? NASStyle.accent : Color.secondary)
                         .padding(.horizontal, 17).frame(minWidth: 44, minHeight: 44)
-                        .background(selection == title ? NASStyle.selection : .clear, in: Capsule())
+                        .overlay(alignment: .bottom) {
+                            Capsule().fill(selection == title ? NASStyle.accent : .clear).frame(height: 2).padding(.horizontal, 17)
+                        }
                         .contentShape(Capsule())
                 }.buttonStyle(.plain)
                     .accessibilityAddTraits(selection == title ? .isSelected : [])
                     .accessibilityIdentifier("photoFilter_" + title)
             }
         }
+    }
+}
+
+struct MoriSectionHeading: View {
+    let title: String
+    init(_ title: String) { self.title = title }
+    var body: some View {
+        Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            .accessibilityAddTraits(.isHeader)
     }
 }

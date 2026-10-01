@@ -27,7 +27,7 @@ struct PhotoBackupView: View {
                             }.frame(maxWidth: .infinity, alignment: .topLeading)
                         }
                     } else {
-                        VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 16) {
                             overview
                             if let error = backup.error { ErrorBanner(message: error) }
                             destination

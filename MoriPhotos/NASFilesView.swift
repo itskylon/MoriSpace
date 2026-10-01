@@ -128,14 +128,21 @@ struct NASFileBrowserView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(directoryContext).font(.caption).foregroundStyle(.secondary)
-                        .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
-                        .accessibilityLabel("当前位置：\(folder?.path ?? "群晖共享文件夹")")
+                    if folder != nil {
+                        Text(directoryContext).font(.caption).foregroundStyle(.secondary)
+                            .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                            .accessibilityLabel("当前位置：\(folder?.path ?? "群晖共享文件夹")")
+                    }
                     if folder == nil {
                         Text("共享文件夹").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
                     }
+                    Text(query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "\(filteredItems.count) 项匹配")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
                 }
                 Spacer()
+                NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner).toolbar(.visible, for: .navigationBar) } label: {
+                    Image(systemName: "arrow.down.circle").font(.system(size: 19)).frame(width: 44, height: 44)
+                }.foregroundStyle(NASStyle.accent).accessibilityLabel("下载任务与已下载").accessibilityIdentifier("openDownloadsShortcut")
                 optionsMenu
             }
             if dynamicTypeSize.isAccessibilitySize {
@@ -176,19 +183,12 @@ struct NASFileBrowserView: View {
                     } else if filteredItems.isEmpty && store.error == nil {
                         ContentUnavailableView(query.isEmpty ? (folder == nil ? "没有可访问的共享文件夹" : "这是一个空文件夹") : "没有匹配的文件", systemImage: query.isEmpty ? "folder" : "magnifyingglass", description: Text(query.isEmpty ? (folder == nil ? "请检查账号的共享文件夹权限。" : "可以返回上级继续浏览。") : "搜索范围为当前已载入的文件。"))
                     }
-                }.listRowBackground(NASStyle.canvas)
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                }.listRowBackground(NASStyle.surface)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14))
                     .listRowSeparatorTint(NASStyle.outline)
             }.phoneMenuScrolling(active: isActive).listStyle(.plain).scrollContentBackground(.hidden).contentMargins(.top, 0, for: .scrollContent)
-            Rectangle().fill(NASStyle.outline).frame(height: 0.5)
-            HStack(spacing: 12) {
-                NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner).toolbar(.visible, for: .navigationBar) } label: {
-                    Label("下载", systemImage: "arrow.down.circle").font(.subheadline.weight(.medium)).frame(minHeight: 44)
-                }.accessibilityLabel("下载任务与已下载").accessibilityIdentifier("openDownloadsFooter")
-                Spacer(minLength: 8)
-                Text(query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "\(filteredItems.count) 项匹配")
-                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
-            }.padding(.horizontal, 16).background(NASStyle.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 18)).padding(.horizontal, 16)
+
         }.background(NASStyle.canvas)
     }
     private func refresh() async { await store.reset(client: client, path: folder?.path, sort: sort, ascending: ascending) }

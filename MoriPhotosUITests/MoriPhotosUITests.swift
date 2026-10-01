@@ -64,6 +64,10 @@ final class MoriPhotosUITests: XCTestCase {
         app.launch()
         app.phoneMenus.buttons["存储"].tap()
         app.buttons["nasSectionFiles"].tap()
+        XCTAssertTrue(app.buttons["openDownloadsShortcut"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["openDownloadsShortcut"].isHittable)
+        XCTAssertLessThan(app.buttons["openDownloadsShortcut"].frame.maxY, app.phoneMenus.firstMatch.frame.minY)
+
         XCTAssertTrue(app.buttons["nasFolder_测试共享"].waitForExistence(timeout: 10))
         app.buttons["toggleNASFileSearch"].tap()
         let search = app.textFields["nasFileSearch"]

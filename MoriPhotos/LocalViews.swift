@@ -150,7 +150,8 @@ struct LocalLibraryView: View {
                 if wide { selectionButton }
             }
         }.padding(.horizontal, 16).padding(.top, wide ? 12 : 0)
-            .padding(.bottom, 8).background(NASStyle.canvas)
+            .padding(.bottom, 0).background(NASStyle.canvas)
+            .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 0.5) }
     }
     private var libraryCount: some View {
         HStack(spacing: 10) {

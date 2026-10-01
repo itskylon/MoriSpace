@@ -7,7 +7,7 @@ struct CalendarHomeView: View {
     @Environment(\.wideWorkspace) private var wide
     @Environment(\.scenePhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ScaledMetric(relativeTo: .body) private var compactDayHeight: CGFloat = 58
+    @ScaledMetric(relativeTo: .body) private var compactDayHeight: CGFloat = 52
     @ScaledMetric(relativeTo: .caption) private var eventTimeWidth: CGFloat = 50
     @ScaledMetric(relativeTo: .title2) private var monthTitleSize: CGFloat = 26
     @State private var presentation: CalendarPresentation?
@@ -48,13 +48,12 @@ struct CalendarHomeView: View {
                             ScrollView {
                                 VStack(spacing: 12) {
                                     primaryContent(desktop: false, availableHeight: geometry.size.height)
-                                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
                                     if store.displayMode == .month {
                                         agenda(for: store.selectedDate)
                                             .padding(16)
                                             .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
                                     }
-                                    calendarFooter.padding(.horizontal, 4).padding(.bottom, 8)
+                                    calendarFooter.padding(.horizontal, 8).padding(.bottom, 8)
                                 }.padding(.horizontal, 12).padding(.bottom, 12)
                             }.phoneMenuScrolling(active: isActive).refreshable { await store.refresh() }
                         }
@@ -164,7 +163,8 @@ struct CalendarHomeView: View {
             }
         }
         .padding(.horizontal, desktop ? 20 : 16)
-        .padding(.top, desktop ? 12 : 4).padding(.bottom, 12)
+        .padding(.top, desktop ? 12 : 8).padding(.bottom, 8)
+        .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 0.5) }
     }
 
     private var headerActions: some View {
@@ -236,8 +236,9 @@ struct CalendarHomeView: View {
                         .foregroundStyle(store.displayMode == mode ? NASStyle.accent : .secondary)
                         .padding(.horizontal, 10)
                         .frame(minWidth: 44, minHeight: 44)
-                        .background(store.displayMode == mode ? NASStyle.accent.opacity(0.1) : .clear,
-                                    in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(alignment: .bottom) {
+                            Capsule().fill(store.displayMode == mode ? NASStyle.accent : .clear).frame(height: 2).padding(.horizontal, 10)
+                        }
                         .contentShape(Rectangle())
                 }.buttonStyle(.plain)
                     .accessibilityIdentifier("calendarMode_" + mode.rawValue)

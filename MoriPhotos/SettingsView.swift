@@ -48,17 +48,19 @@ struct SettingsView: View {
     private var connections: some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("存储连接")
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: dynamicTypeSize.isAccessibilitySize ? 1 : 3), spacing: 10) {
+            VStack(spacing: 0) {
                 NavigationLink { ConnectionView() } label: {
                     SettingsServiceCard(title: "群晖照片", symbol: "photo.on.rectangle", connected: app.client != nil)
                 }
+                rowDivider
                 NavigationLink { ConnectionView(service: .files) } label: {
                     SettingsServiceCard(title: "群晖文件", symbol: "folder", connected: app.fileClient != nil)
                 }
+                rowDivider
                 NavigationLink { OneDriveConnectionView() } label: {
                     SettingsServiceCard(title: "OneDrive", symbol: "cloud", connected: oneDrive.account != nil)
                 }.accessibilityIdentifier("oneDriveSettings")
-            }
+            }.padding(.horizontal, 16).settingsPanel()
         }
     }
 
@@ -117,7 +119,7 @@ struct SettingsView: View {
     private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.leading, 44) }
 
     private func sectionTitle(_ title: String) -> some View {
-        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary).padding(.horizontal, 4)
+        MoriSectionHeading(title).padding(.horizontal, 4)
     }
 
     private func preferencesSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -134,21 +136,17 @@ private struct SettingsServiceCard: View {
     let connected: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: symbol).font(.system(size: 20, weight: .medium)).foregroundStyle(NASStyle.accent)
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
-            }.accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                HStack(spacing: 5) {
-                    Circle().fill(connected ? NASStyle.accent : Color.secondary.opacity(0.5)).frame(width: 5, height: 5).accessibilityHidden(true)
-                    Text(connected ? "已连接" : "未连接").font(.caption).foregroundStyle(connected ? NASStyle.accent : .secondary)
-                }
+        HStack(spacing: 12) {
+            Image(systemName: symbol).font(.system(size: 19)).foregroundStyle(NASStyle.accent)
+                .frame(width: 32, height: 36).accessibilityHidden(true)
+            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+            Spacer(minLength: 8)
+            HStack(spacing: 5) {
+                Circle().fill(connected ? NASStyle.accent : Color.secondary.opacity(0.4)).frame(width: 5, height: 5)
+                Text(connected ? "已连接" : "未连接").font(.caption).foregroundStyle(connected ? NASStyle.accent : .secondary)
             }
-        }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading).settingsPanel().contentShape(RoundedRectangle(cornerRadius: 16))
+            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+        }.frame(maxWidth: .infinity, minHeight: 64).contentShape(Rectangle())
     }
 }
 
@@ -180,8 +178,8 @@ private struct SettingsRow: View {
 
 private extension View {
     func settingsPanel() -> some View {
-        background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-            .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
+        background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 20))
+            .overlay { RoundedRectangle(cornerRadius: 20).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 }
 
