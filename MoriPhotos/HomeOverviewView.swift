@@ -18,22 +18,24 @@ struct HomeOverviewView: View {
         GeometryReader { geometry in
             let wide = geometry.size.width >= 820 && !typeSize.isAccessibilitySize
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 18) {
                     header
                     if wide {
-                        HStack(alignment: .top, spacing: 20) {
-                            device.frame(maxWidth: .infinity)
-                            dailyTasks.frame(width: min(geometry.size.width * 0.34, 360))
+                        HStack(alignment: .top, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 20) {
+                                device
+                                storageShortcuts
+                            }.frame(maxWidth: .infinity)
+                            dailyTasks.frame(width: 320)
                         }
-                        storageShortcuts(wide: true)
                     } else {
                         device
-                        storageShortcuts(wide: false)
+                        storageShortcuts
                         dailyTasks
                     }
                 }
-                .padding(.horizontal, wide ? 28 : 20).padding(.top, 12).padding(.bottom, 24)
-                .frame(maxWidth: 1240).frame(maxWidth: .infinity, alignment: .top)
+                .padding(.horizontal, wide ? 24 : 16).padding(.top, 12).padding(.bottom, 24)
+                .frame(maxWidth: 1120).frame(maxWidth: .infinity, alignment: .top)
             }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
         }
         .workspaceNavigationTitle("首页").navigationBarTitleDisplayMode(.inline)
@@ -51,7 +53,7 @@ struct HomeOverviewView: View {
     private var header: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(AppBrand.name).font(.system(size: 25, weight: .semibold)).accessibilityIdentifier("homeTitle")
+                Text(AppBrand.name).font(.title2.weight(.semibold)).accessibilityIdentifier("homeTitle")
                 Text(Date().formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -64,32 +66,35 @@ struct HomeOverviewView: View {
         }
     }
 
-    private func storageShortcuts(wide: Bool) -> some View {
+    private var storageShortcuts: some View {
         VStack(alignment: .leading, spacing: 12) {
             MoriSectionHeading("你的存储")
-            shortcuts(wide: wide)
+            shortcuts
         }
     }
-    private func shortcuts(wide: Bool) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: typeSize.isAccessibilitySize ? 1 : wide ? 3 : 2), spacing: 12) {
+    private var shortcuts: some View {
+        VStack(spacing: 0) {
             shortcut("本机照片", subtitle: library.canRead ? "\(library.assets.count) 张照片" : "浏览照片图库", icon: "photo.on.rectangle", page: .local, id: "homeLocalPhotos")
+            Divider().padding(.leading, 60)
             shortcut("群晖照片", subtitle: "个人与共享空间", icon: "photo.stack", page: .photos, id: "homeNASPhotos")
+            Divider().padding(.leading, 60)
             shortcut("群晖文件", subtitle: "文件夹与文档", icon: "folder", page: .files, id: "homeNASFiles")
-        }
+        }.moriPanel(radius: 18)
     }
 
     private func shortcut(_ title: String, subtitle: String, icon: String, page: WorkspacePage, id: String) -> some View {
         Button { open(page) } label: {
             HStack(spacing: 12) {
                 Image(systemName: icon).font(.system(size: 20, weight: .regular)).foregroundStyle(NASStyle.accent)
-                    .frame(width: 26, height: 36)
+                    .frame(width: 34, height: 34).background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 9))
                 VStack(alignment: .leading, spacing: 5) {
                     Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
                     Text(subtitle).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 0)
-            }.padding(14).frame(maxWidth: .infinity, minHeight: 76, alignment: .leading).moriPanel(radius: 18)
-                .contentShape(RoundedRectangle(cornerRadius: 18))
+                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
+            }.padding(.horizontal, 14).padding(.vertical, 11).frame(maxWidth: .infinity, minHeight: 62, alignment: .leading)
+                .contentShape(Rectangle())
         }.buttonStyle(.plain).accessibilityIdentifier(id)
     }
 
@@ -100,7 +105,7 @@ struct HomeOverviewView: View {
                 calendarCard
                 backupCard
             }
-            downloadsCard
+            downloadsCard.padding(.horizontal, 14).moriPanel(radius: 18)
         }
     }
     private var device: some View {
@@ -152,7 +157,7 @@ private struct HomeDeviceCard: View {
         return snapshot.issues.isEmpty ? "运行正常" : "部分信息不可用"
     }
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             Button(action: open) {
                 HStack(spacing: 12) {
                     Image(systemName: "externaldrive").font(.system(size: 26)).foregroundStyle(.white)
@@ -182,7 +187,7 @@ private struct HomeDeviceCard: View {
             if let volumes = snapshot?.storage?.volumes, !volumes.isEmpty {
                 Rectangle().fill(.white.opacity(0.16)).frame(height: 0.5)
                 ForEach(volumes.prefix(2)) { volume in
-                    VStack(alignment: .leading, spacing: 7) {
+                    VStack(alignment: .leading, spacing: 5) {
                         HStack {
                             Text(volume.id.replacingOccurrences(of: "volume_", with: "存储空间 ")).foregroundStyle(NASStyle.heroText)
                             Spacer()
@@ -190,7 +195,13 @@ private struct HomeDeviceCard: View {
                                 .monospacedDigit().foregroundStyle(NASStyle.heroText)
                         }.font(.caption2)
                         if let fraction = volume.fraction {
-                            ProgressView(value: fraction).tint(volume.lowSpace || volume.health == .critical ? .orange : .white)
+                            GeometryReader { geometry in
+                                Capsule().fill(.white.opacity(0.16))
+                                    .overlay(alignment: .leading) {
+                                        Capsule().fill(volume.lowSpace || volume.health == .critical ? Color.orange : .white.opacity(0.8))
+                                            .frame(width: geometry.size.width * min(max(fraction, 0), 1))
+                                    }
+                            }.frame(height: 3).accessibilityHidden(true)
                         }
                     }
                 }
@@ -198,7 +209,7 @@ private struct HomeDeviceCard: View {
                 Text(snapshot?.hasData == true ? "存储容量暂不可用" : "连接后查看负载、温度与存储容量")
                     .font(.caption).foregroundStyle(NASStyle.heroText)
             }
-        }.padding(20).moriHeroPanel()
+        }.padding(16).moriHeroPanel()
         .task(id: "\(isActive)-\(scenePhase)") {
             guard isActive && scenePhase == .active else { store.stop(); return }
             await app.restoreConnection(service: .monitor)
@@ -208,10 +219,10 @@ private struct HomeDeviceCard: View {
         .onDisappear { store.stop() }
     }
     private func metric(_ title: String, value: String, id: String) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 5) {
             Text(title).font(.caption).foregroundStyle(NASStyle.heroText)
             Text(value).font(.system(size: 27, weight: .semibold, design: .rounded)).monospacedDigit().foregroundStyle(.white).accessibilityIdentifier(id)
-        }.frame(maxWidth: .infinity, alignment: .center)
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 8)
     }
 }
 
@@ -252,10 +263,10 @@ private struct HomeSummaryCard: View {
                             Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                             Spacer(minLength: 0)
                         }
-                        Text(value).font(.system(size: 24, weight: .semibold)).foregroundStyle(.primary)
+                        Text(value).font(.title3.weight(.semibold)).foregroundStyle(.primary)
                         Text(subtitle).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
-                    }.padding(16).frame(maxWidth: .infinity, minHeight: 116, alignment: .leading).moriPanel()
-                        .contentShape(RoundedRectangle(cornerRadius: 22))
+                    }.padding(14).frame(maxWidth: .infinity, minHeight: 104, alignment: .leading).moriPanel(radius: 18)
+                        .contentShape(RoundedRectangle(cornerRadius: 18))
                 }
             }
         }.buttonStyle(.plain).accessibilityIdentifier(id)

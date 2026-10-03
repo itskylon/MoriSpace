@@ -2,7 +2,6 @@ import SwiftUI
 
 struct NASHomeView: View {
     var isActive = true
-    @ScaledMetric(relativeTo: .title2) private var sourceTitleSize = 24
     @State private var connection = false
     @EnvironmentObject private var navigation: WorkspaceNavigation
     private var section: String { navigation.storageSection }
@@ -49,14 +48,11 @@ struct NASHomeView: View {
     }
     private var sectionHeader: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("群晖").font(.system(size: sourceTitleSize, weight: .semibold))
-                    Spacer(minLength: 0)
-                    connectionButton
-                }
+            HStack(spacing: 4) {
                 NASSectionTabs(selection: selection)
-            }.padding(.horizontal, 16).background(NASStyle.canvas)
+                Spacer(minLength: 0)
+                connectionButton
+            }.padding(.horizontal, 12).padding(.vertical, 4).background(NASStyle.canvas)
             Rectangle().fill(NASStyle.outline).frame(height: 0.5)
         }
     }

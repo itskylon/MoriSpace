@@ -16,15 +16,15 @@ struct PhotoBackupView: View {
                 Group {
                     if geometry.size.width >= 850 && !dynamicTypeSize.isAccessibilitySize {
                         HStack(alignment: .top, spacing: 24) {
-                            VStack(alignment: .leading, spacing: 20) {
+                            VStack(alignment: .leading, spacing: 16) {
                                 overview
                                 if let error = backup.error { ErrorBanner(message: error) }
-                                backupDetails
-                            }.frame(maxWidth: .infinity, alignment: .topLeading)
-                            VStack(alignment: .leading, spacing: 20) {
                                 destination
-                                preferences
                             }.frame(maxWidth: .infinity, alignment: .topLeading)
+                            VStack(alignment: .leading, spacing: 16) {
+                                preferences
+                                backupDetails
+                            }.frame(width: 340, alignment: .topLeading)
                         }
                     } else {
                         VStack(alignment: .leading, spacing: 16) {
@@ -36,7 +36,7 @@ struct PhotoBackupView: View {
                         }
                     }
                 }
-                .padding(AppPlatform.isMac ? 28 : 20)
+                .padding(AppPlatform.isMac ? 24 : 16)
                 .frame(maxWidth: 1120)
                 .frame(maxWidth: .infinity, alignment: .top)
             }.phoneMenuScrolling().background(NASStyle.canvas)

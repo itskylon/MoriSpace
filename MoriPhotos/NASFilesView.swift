@@ -183,11 +183,10 @@ struct NASFileBrowserView: View {
                     } else if filteredItems.isEmpty && store.error == nil {
                         ContentUnavailableView(query.isEmpty ? (folder == nil ? "没有可访问的共享文件夹" : "这是一个空文件夹") : "没有匹配的文件", systemImage: query.isEmpty ? "folder" : "magnifyingglass", description: Text(query.isEmpty ? (folder == nil ? "请检查账号的共享文件夹权限。" : "可以返回上级继续浏览。") : "搜索范围为当前已载入的文件。"))
                     }
-                }.listRowBackground(NASStyle.surface)
-                    .listRowInsets(EdgeInsets(top: 9, leading: 14, bottom: 9, trailing: 14))
+                }.listRowBackground(NASStyle.canvas)
+                    .listRowInsets(EdgeInsets(top: 11, leading: 16, bottom: 11, trailing: 16))
                     .listRowSeparatorTint(NASStyle.outline)
             }.phoneMenuScrolling(active: isActive).listStyle(.plain).scrollContentBackground(.hidden).contentMargins(.top, 0, for: .scrollContent)
-                .clipShape(RoundedRectangle(cornerRadius: 18)).padding(.horizontal, 16)
 
         }.background(NASStyle.canvas)
     }

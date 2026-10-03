@@ -18,7 +18,7 @@ struct NASMonitorHomeView: View {
                         }.buttonStyle(.plain).accessibilityIdentifier("connectMonitor")
                         Text("使用已保存账号读取运行状态。部分 DSM 系统监控项目需要管理员权限。")
                             .font(.footnote).foregroundStyle(.secondary)
-                    }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity, alignment: .top)
+                    }.padding(16).frame(maxWidth: 520).frame(maxWidth: .infinity, alignment: .top)
                 }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
             }
         }.workspaceNavigationTitle("NAS 状态").navigationBarTitleDisplayMode(.inline)
@@ -54,7 +54,7 @@ struct NASMonitorView: View {
                     }
                     if snapshot.hasData {
                         if geometry.size.width >= 700 {
-                            NASMonitorDesktopDashboard(snapshot: snapshot, samples: store.samples, width: geometry.size.width - 48)
+                            NASMonitorDesktopDashboard(snapshot: snapshot, samples: store.samples, width: min(geometry.size.width - 48, 1152))
                         } else {
                             if let resources = snapshot.resources { resourceCards(resources) }
                             if let storage = snapshot.storage { storageSection(storage) }
@@ -66,7 +66,7 @@ struct NASMonitorView: View {
                     .font(.caption).foregroundStyle(.secondary).padding(.top, 2)
             }
             .padding(geometry.size.width >= 700 ? 24 : 16)
-            .frame(maxWidth: .infinity, alignment: .top)
+            .frame(maxWidth: 1200, alignment: .top).frame(maxWidth: .infinity, alignment: .top)
         }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
             .refreshable { await store.refresh(client: client) }
         }

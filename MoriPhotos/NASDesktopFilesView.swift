@@ -147,15 +147,17 @@ private struct DesktopFileContents: View {
 
     private var iconGrid: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120, maximum: 154), spacing: 12)], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 230, maximum: 340), spacing: 12)], spacing: 12) {
                 ForEach(matchingFiles) { file in
-                    VStack(spacing: 6) {
-                        StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir, expanded: true)
-                        Text(file.name).font(.subheadline.weight(.medium)).lineLimit(2)
-                            .multilineTextAlignment(.center).truncationMode(.middle).frame(maxWidth: .infinity, minHeight: 32, alignment: .top)
-                        Text(file.isdir ? (directory.folder == nil ? "共享文件夹" : "文件夹") : size(file)).font(.caption2).monospacedDigit().foregroundStyle(.secondary).frame(maxWidth: .infinity)
-                    }.frame(maxWidth: .infinity).padding(8)
-                        .background(directory.selection == file.id ? NASStyle.accent.opacity(0.08) : hoveredFile == file.id ? NASStyle.inset : Color.clear, in: RoundedRectangle(cornerRadius: 14))
+                    HStack(spacing: 12) {
+                        StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(file.name).font(.subheadline.weight(.medium)).lineLimit(2).truncationMode(.middle)
+                            Text(file.isdir ? (directory.folder == nil ? "共享文件夹" : "文件夹") : size(file))
+                                .font(.caption2).monospacedDigit().foregroundStyle(.secondary)
+                        }.frame(maxWidth: .infinity, alignment: .leading)
+                    }.frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).padding(12)
+                        .background(directory.selection == file.id ? NASStyle.selection : hoveredFile == file.id ? NASStyle.inset : NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
                         .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(directory.selection == file.id ? NASStyle.accent.opacity(0.55) : .clear, lineWidth: 1) }
                         .onHover { hoveredFile = $0 ? file.id : nil }
                         .contentShape(Rectangle())

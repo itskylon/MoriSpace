@@ -162,7 +162,7 @@ struct MoriSectionHeading: View {
 }
 
 extension View {
-    func moriPanel(radius: CGFloat = 22) -> some View {
+    func moriPanel(radius: CGFloat = 18) -> some View {
         background(NASStyle.surface, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay { RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
     }

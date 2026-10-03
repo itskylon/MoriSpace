@@ -14,10 +14,10 @@ struct SettingsView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 18) {
                     if !AppPlatform.isMac && sizeClass != .regular {
                         HStack(spacing: 12) {
-                            Text("设置").font(.system(size: 26, weight: .semibold))
+                            Text("设置").font(.title2.weight(.semibold))
                             Spacer()
                             Image("AppBrand").resizable().scaledToFit().frame(width: 36, height: 36)
                                 .clipShape(RoundedRectangle(cornerRadius: 11)).accessibilityHidden(true)
@@ -25,17 +25,17 @@ struct SettingsView: View {
                     }
                     if geometry.size.width >= 850 && !dynamicTypeSize.isAccessibilitySize {
                         HStack(alignment: .top, spacing: 24) {
-                            VStack(alignment: .leading, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 18) {
                                 connections
                                 backupAndDevices
                             }.frame(maxWidth: .infinity, alignment: .topLeading)
-                            VStack(alignment: .leading, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 18) {
                                 localPreferences
                                 about
-                            }.frame(maxWidth: .infinity, alignment: .topLeading)
+                            }.frame(width: 340, alignment: .topLeading)
                         }
                     } else {
-                        VStack(alignment: .leading, spacing: 22) {
+                        VStack(alignment: .leading, spacing: 18) {
                             connections
                             backupAndDevices
                             localPreferences
@@ -44,7 +44,7 @@ struct SettingsView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .padding(AppPlatform.isMac ? 28 : 20)
+                .padding(AppPlatform.isMac ? 24 : 16)
                 .frame(maxWidth: 1120)
                 .frame(maxWidth: .infinity, alignment: .top)
             }.phoneMenuScrolling()

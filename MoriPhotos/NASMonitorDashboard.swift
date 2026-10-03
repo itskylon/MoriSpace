@@ -9,7 +9,7 @@ struct NASMonitorDesktopDashboard: View {
     private let memoryColor = NASStyle.blue
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 16) {
             if let resources = snapshot.resources {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: width >= 820 ? 4 : 2), spacing: 12) {
                     metric("CPU", symbol: "cpu", value: NASMonitorFormat.percent(resources.cpu),
@@ -24,8 +24,8 @@ struct NASMonitorDesktopDashboard: View {
             }
             if width >= 820, snapshot.resources != nil, let storage = snapshot.storage {
                 HStack(alignment: .top, spacing: 16) {
-                    trend.frame(width: (width - 16) * 0.5)
-                    volumes(storage).frame(maxWidth: .infinity)
+                    trend.frame(maxWidth: .infinity)
+                    volumes(storage).frame(width: min(420, (width - 16) * 0.42))
                 }
             } else {
                 if snapshot.resources != nil { trend }
@@ -36,7 +36,7 @@ struct NASMonitorDesktopDashboard: View {
     }
 
     private func metric(_ title: String, symbol: String, value: String, detail: String, percentage: Double?, color: Color, identifier: String) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text(title).font(.subheadline.weight(.medium))
                 Spacer()

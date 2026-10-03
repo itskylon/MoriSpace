@@ -28,7 +28,7 @@ struct LocalLibraryView: View {
     var body: some View {
         VStack(spacing: 0) {
             if !wide { phoneHeader }
-            if library.canRead { libraryToolbar }
+            if library.canRead && wide { libraryToolbar }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
@@ -98,25 +98,32 @@ struct LocalLibraryView: View {
         .onChange(of: library.assets.map(\.localIdentifier)) { _, ids in selected.formIntersection(Set(ids)) }
     }
     private var phoneHeader: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if dynamicTypeSize.isAccessibilitySize {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
                 libraryTitle
-                if library.canRead {
-                    HStack(spacing: 8) { photoCountBadge; Spacer(minLength: 4); selectionButton }
-                }
-            } else {
-                HStack(alignment: .center, spacing: 12) {
-                    libraryTitle
-                    if library.canRead { photoCountBadge }
-                    Spacer(minLength: 6)
-                    if library.canRead { selectionButton }
-                }
+                if library.canRead { photoCountBadge }
+                Spacer(minLength: 0)
             }
-        }.padding(.horizontal, 20).padding(.vertical, 6).frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+            if library.canRead {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        MoriFilterBar(titles: ["全部", "收藏", "截图"], selection: $filter)
+                        Spacer(minLength: 0)
+                        selectionButton
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        MoriFilterBar(titles: ["全部", "收藏", "截图"], selection: $filter)
+                        HStack { Spacer(); selectionButton }
+                    }
+                }
+                if selecting { libraryCount }
+            }
+        }.padding(.horizontal, 16).padding(.top, 8).frame(maxWidth: .infinity, alignment: .leading)
             .background(NASStyle.canvas)
+            .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 0.5) }
     }
     private var libraryTitle: some View {
-        Text("照片").font(.system(size: 26, weight: .semibold))
+        Text("照片").font(.title2.weight(.semibold))
             .foregroundStyle(.primary).accessibilityIdentifier("localLibraryTitle")
     }
     private var photoCountBadge: some View {

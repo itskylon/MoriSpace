@@ -9,7 +9,7 @@ struct CalendarHomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var compactDayHeight: CGFloat = 52
     @ScaledMetric(relativeTo: .caption) private var eventTimeWidth: CGFloat = 50
-    @ScaledMetric(relativeTo: .title2) private var monthTitleSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .title2) private var monthTitleSize: CGFloat = 24
     @State private var presentation: CalendarPresentation?
     @State private var showingCalendars = false
     var isActive = true
@@ -40,7 +40,7 @@ struct CalendarHomeView: View {
                                     }.frame(maxWidth: .infinity)
                                     agenda(for: store.selectedDate)
                                         .padding(18)
-                                        .frame(width: min(340, max(280, geometry.size.width * 0.28)))
+                                        .frame(width: 300)
                                         .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 22))
                                 }.padding(.horizontal, 20).padding(.bottom, 20)
                             }.phoneMenuScrolling(active: isActive).refreshable { await store.refresh() }
@@ -48,10 +48,11 @@ struct CalendarHomeView: View {
                             ScrollView {
                                 VStack(spacing: 12) {
                                     primaryContent(desktop: false, availableHeight: geometry.size.height)
+                                        .padding(.vertical, 8).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 18))
                                     if store.displayMode == .month {
                                         agenda(for: store.selectedDate)
                                             .padding(16)
-                                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 22))
+                                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 18))
                                     }
                                     calendarFooter.padding(.horizontal, 8).padding(.bottom, 8)
                                 }.padding(.horizontal, 12).padding(.bottom, 12)
@@ -142,22 +143,22 @@ struct CalendarHomeView: View {
                     HStack(spacing: 8) {
                         monthTitle
                         Spacer(minLength: 8)
-                        headerActions
+                        monthNavigation
                     }
                     VStack(alignment: .leading, spacing: 4) {
                         monthTitle
-                        HStack { Spacer(minLength: 0); headerActions }
+                        HStack { Spacer(minLength: 0); monthNavigation }
                     }
                 }
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: 8) {
-                        monthNavigation
-                        Spacer(minLength: 8)
                         displayModes
+                        Spacer(minLength: 8)
+                        headerActions
                     }
                     VStack(alignment: .leading, spacing: 4) {
-                        monthNavigation
                         displayModes
+                        headerActions
                     }
                 }
             }
