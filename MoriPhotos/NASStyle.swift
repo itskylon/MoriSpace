@@ -3,33 +3,35 @@ import SwiftUI
 enum NASStyle {
     static let canvas = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.055, green: 0.063, blue: 0.079, alpha: 1)
-            : UIColor(red: 0.964, green: 0.964, blue: 0.957, alpha: 1)
+            ? UIColor(red: 0.045, green: 0.049, blue: 0.061, alpha: 1)
+            : UIColor(red: 0.969, green: 0.961, blue: 0.937, alpha: 1)
     })
     static let surface = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.094, green: 0.106, blue: 0.129, alpha: 1)
+            ? UIColor(red: 0.090, green: 0.094, blue: 0.110, alpha: 1)
             : .white
     })
     static let surfaceRaised = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.137, green: 0.153, blue: 0.180, alpha: 1)
-            : UIColor(red: 0.937, green: 0.941, blue: 0.953, alpha: 1)
+            ? UIColor(red: 0.145, green: 0.149, blue: 0.169, alpha: 1)
+            : UIColor(red: 0.925, green: 0.918, blue: 0.894, alpha: 1)
     })
     static let accent = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.57, green: 0.70, blue: 1, alpha: 1)
-            : UIColor(red: 0.20, green: 0.31, blue: 0.74, alpha: 1)
+            ? UIColor(red: 0.58, green: 0.66, blue: 1, alpha: 1)
+            : UIColor(red: 0.17, green: 0.24, blue: 0.91, alpha: 1)
     })
     // Filled actions use white labels; selection surfaces use the adaptive accent.
-    static let signal = Color(red: 0.23, green: 0.35, blue: 0.78)
+    static let signal = Color(red: 0.20, green: 0.27, blue: 0.93)
+    static let lime = Color(red: 0.843, green: 0.980, blue: 0.353)
+    static let paper = Color(red: 0.969, green: 0.961, blue: 0.937)
     static let selection = accent.opacity(0.11)
-    static let hero = LinearGradient(colors: [Color(red: 0.10, green: 0.15, blue: 0.25), Color(red: 0.16, green: 0.24, blue: 0.38)], startPoint: .topLeading, endPoint: .bottomTrailing)
+    static let hero = LinearGradient(colors: [Color(red: 0.16, green: 0.21, blue: 0.84), Color(red: 0.24, green: 0.33, blue: 0.98)], startPoint: .topLeading, endPoint: .bottomTrailing)
     static let heroText = Color.white.opacity(0.84)
     static let sidebar = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.070, green: 0.078, blue: 0.098, alpha: 1)
-            : UIColor(red: 0.945, green: 0.949, blue: 0.956, alpha: 1)
+            ? UIColor(red: 0.065, green: 0.069, blue: 0.080, alpha: 1)
+            : UIColor(red: 0.945, green: 0.933, blue: 0.898, alpha: 1)
     })
     static let ink = Color(red: 0.035, green: 0.055, blue: 0.075)
     static let violet = Color(uiColor: UIColor { traits in
@@ -47,7 +49,7 @@ enum NASStyle {
             ? UIColor(red: 1, green: 0.57, blue: 0.42, alpha: 1)
             : UIColor(red: 0.76, green: 0.24, blue: 0.13, alpha: 1)
     })
-    static let outline = Color.primary.opacity(0.07)
+    static let outline = Color.primary.opacity(0.12)
     static let inset = Color.primary.opacity(0.045)
 }
 
@@ -71,9 +73,9 @@ struct NASSectionTabs: View {
                             .font(.system(size: 13, weight: .semibold))
                         Text(title).font(.subheadline.weight(selection == title ? .semibold : .medium))
                     }
-                    .foregroundStyle(selection == title ? NASStyle.accent : Color.secondary)
-                    .padding(.horizontal, 14).frame(minHeight: 44)
-                    .background(selection == title ? NASStyle.selection : .clear, in: Capsule())
+                    .foregroundStyle(selection == title ? Color.white : Color.secondary)
+                    .padding(.horizontal, 16).frame(minHeight: 44)
+                    .background(selection == title ? NASStyle.signal : .clear, in: RoundedRectangle(cornerRadius: 8))
                     .contentShape(Rectangle())
                 }.buttonStyle(.plain)
                     .accessibilityAddTraits(selection == title ? .isSelected : [])
@@ -112,9 +114,9 @@ struct NASFolderChip: View {
                 .lineLimit(1).truncationMode(.middle)
             Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(.tertiary)
         }.padding(.horizontal, 13).frame(minHeight: 44)
-            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 13))
-            .overlay { RoundedRectangle(cornerRadius: 13).strokeBorder(NASStyle.outline, lineWidth: 1) }
-            .contentShape(RoundedRectangle(cornerRadius: 13))
+            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 6))
+            .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
+            .contentShape(RoundedRectangle(cornerRadius: 6))
             .accessibilityElement(children: .ignore).accessibilityLabel("文件夹，\(title)")
     }
 }
@@ -135,11 +137,13 @@ struct MoriFilterBar: View {
                 Button {
                     withAnimation(reduceMotion ? nil : .snappy(duration: 0.2)) { selection = title }
                 } label: {
-                    Text(title).font(.subheadline.weight(selection == title ? .semibold : .medium))
-                        .foregroundStyle(selection == title ? NASStyle.accent : Color.secondary)
-                        .padding(.horizontal, 14).frame(minWidth: 44, minHeight: 44)
-                        .background(selection == title ? NASStyle.selection : .clear, in: Capsule())
-                        .contentShape(Capsule())
+                    Text(title).font(.subheadline.weight(selection == title ? .bold : .medium))
+                        .foregroundStyle(selection == title ? Color.primary : Color.secondary)
+                        .padding(.horizontal, 12).frame(minWidth: 44, minHeight: 44)
+                        .overlay(alignment: .bottom) {
+                            if selection == title { Rectangle().fill(NASStyle.accent).frame(height: 3).padding(.horizontal, 12) }
+                        }
+                        .contentShape(Rectangle())
                 }.buttonStyle(.plain)
                     .accessibilityAddTraits(selection == title ? .isSelected : [])
                     .accessibilityIdentifier("photoFilter_" + title)
@@ -158,7 +162,7 @@ struct MoriSectionHeading: View {
 }
 
 extension View {
-    func moriPanel(radius: CGFloat = 18) -> some View {
+    func moriPanel(radius: CGFloat = 12) -> some View {
         background(NASStyle.surface, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay { RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
     }

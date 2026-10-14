@@ -11,16 +11,30 @@ struct NASMonitorDesktopDashboard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if let resources = snapshot.resources {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: width >= 820 ? 4 : 2), spacing: 12) {
-                    metric("CPU", symbol: "cpu", value: NASMonitorFormat.percent(resources.cpu),
-                           detail: "处理器负载", percentage: resources.cpu, color: NASStyle.accent, identifier: "monitorCPU")
-                    metric("内存", symbol: "memorychip", value: NASMonitorFormat.percent(resources.memory),
-                           detail: "共 " + NASMonitorFormat.bytes(resources.memoryBytes), percentage: resources.memory, color: memoryColor, identifier: "monitorMemory")
-                    metric("接收", symbol: "arrow.down.left", value: rate(resources.receivedBytesPerSecond),
-                           detail: "NAS 实时接收", percentage: nil, color: NASStyle.accent, identifier: "monitorReceive")
-                    metric("发送", symbol: "arrow.up.right", value: rate(resources.sentBytesPerSecond),
-                           detail: "NAS 实时发送", percentage: nil, color: NASStyle.accent, identifier: "monitorSend")
-                }.desktopMonitorPanel()
+                HStack(alignment: .top, spacing: 24) {
+                    processor(resources)
+                        .frame(maxWidth: .infinity)
+                    VStack(alignment: .leading, spacing: 18) {
+                        HStack(alignment: .firstTextBaseline, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Label("内存", systemImage: "memorychip").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                                Text("共 " + NASMonitorFormat.bytes(resources.memoryBytes)).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 0)
+                            Text(NASMonitorFormat.percent(resources.memory))
+                                .font(.system(size: width >= 900 ? 52 : 42, weight: .bold, design: .rounded))
+                                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+                                .accessibilityIdentifier("monitorMemory")
+                        }
+                        MonitorUsageBar(fraction: (resources.memory ?? 0) / 100, color: memoryColor)
+                            .opacity(resources.memory == nil ? 0 : 1)
+                        Rectangle().fill(NASStyle.outline).frame(height: 1)
+                        HStack(alignment: .top, spacing: 24) {
+                            network("接收", symbol: "arrow.down.left", value: rate(resources.receivedBytesPerSecond), identifier: "monitorReceive")
+                            network("发送", symbol: "arrow.up.right", value: rate(resources.sentBytesPerSecond), identifier: "monitorSend")
+                        }
+                    }.padding(.vertical, 12).frame(maxWidth: .infinity)
+                }
             }
             if width >= 820, snapshot.resources != nil, let storage = snapshot.storage {
                 HStack(alignment: .top, spacing: 16) {
@@ -35,27 +49,35 @@ struct NASMonitorDesktopDashboard: View {
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func metric(_ title: String, symbol: String, value: String, detail: String, percentage: Double?, color: Color, identifier: String) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private func processor(_ resources: NASResourceStatus) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text(title).font(.subheadline.weight(.medium))
+                Label("CPU", systemImage: "cpu").font(.subheadline.weight(.semibold))
                 Spacer()
-                Image(systemName: symbol).font(.system(size: 16, weight: .regular)).foregroundStyle(color)
-            }.foregroundStyle(.secondary)
-            Text(value).font(.system(size: width >= 1000 ? 34 : 28, weight: .semibold)).monospacedDigit()
-                .lineLimit(1).minimumScaleFactor(0.55).accessibilityIdentifier(identifier)
-            VStack(alignment: .leading, spacing: 10) {
-                if let percentage { MonitorUsageBar(fraction: percentage / 100, color: color, track: NASStyle.inset) }
-                else { Color.clear.frame(height: 6).accessibilityHidden(true) }
-                Text(detail).font(.caption).foregroundStyle(.secondary)
-            }
-        }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 8).padding(.vertical, 4)
+                Text("当前负载").font(.caption)
+            }.foregroundStyle(.white.opacity(0.8))
+            Text(NASMonitorFormat.percent(resources.cpu))
+                .font(.system(size: width >= 900 ? 78 : 64, weight: .bold, design: .rounded))
+                .tracking(-3).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+                .foregroundStyle(.white).accessibilityIdentifier("monitorCPU")
+            MonitorUsageBar(fraction: (resources.cpu ?? 0) / 100, color: NASStyle.lime, track: .white.opacity(0.2), height: 7)
+                .opacity(resources.cpu == nil ? 0 : 1)
+        }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
+            .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func network(_ title: String, symbol: String, value: String, identifier: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: symbol).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            Text(value).font(.system(size: width >= 1000 ? 30 : 25, weight: .semibold))
+                .monospacedDigit().lineLimit(1).minimumScaleFactor(0.6).accessibilityIdentifier(identifier)
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var trend: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Text("负载趋势").font(.headline)
+                Text("负载趋势").font(.title3.weight(.bold))
                 Spacer()
                 legend("CPU", color: NASStyle.accent)
                 legend("内存", color: memoryColor)
@@ -66,12 +88,12 @@ struct NASMonitorDesktopDashboard: View {
                         if let cpu = sample.cpu {
                             LineMark(x: .value("时间", sample.date), y: .value("使用率", cpu))
                                 .foregroundStyle(by: .value("指标", "CPU"))
-                                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
+                                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
                         }
                         if let memory = sample.memory {
                             LineMark(x: .value("时间", sample.date), y: .value("使用率", memory))
                                 .foregroundStyle(by: .value("指标", "内存"))
-                                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round))
+                                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round))
                         }
                     }
                     .chartYScale(domain: 0...100)
@@ -94,7 +116,7 @@ struct NASMonitorDesktopDashboard: View {
                         Text("下次刷新后显示趋势").font(.caption).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }
-            }.frame(height: samples.count >= 2 ? 166 : 44)
+            }.frame(height: samples.count >= 2 ? 190 : 44)
             Text("本次查看的 CPU 与内存使用率").font(.caption).foregroundStyle(.secondary)
         }.desktopMonitorPanel().accessibilityIdentifier("monitorTrend")
     }
@@ -115,7 +137,7 @@ struct NASMonitorDesktopDashboard: View {
                     }
                     if let fraction = volume.fraction {
                         HStack(alignment: .firstTextBaseline, spacing: 5) {
-                            Text(NASMonitorFormat.bytes(volume.used)).font(.system(size: 22, weight: .semibold)).monospacedDigit()
+                            Text(NASMonitorFormat.bytes(volume.used)).font(.system(size: 25, weight: .bold)).monospacedDigit()
                             Text("/ " + NASMonitorFormat.bytes(volume.total)).font(.caption).foregroundStyle(.secondary)
                             Spacer(minLength: 4)
                             Text(NASMonitorFormat.percent(fraction * 100)).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
@@ -156,9 +178,9 @@ struct NASMonitorDesktopDashboard: View {
 
     private func panelTitle(_ title: String, count: Int) -> some View {
         HStack {
-            Text(title).font(.subheadline.weight(.semibold)).accessibilityAddTraits(.isHeader)
+            Text(title).font(.title3.weight(.bold)).accessibilityAddTraits(.isHeader)
             Spacer()
-            Text(String(count)).font(.caption.monospaced()).foregroundStyle(.secondary)
+            Text(String(format: "%02d", count)).font(.caption.monospaced().weight(.semibold)).foregroundStyle(NASStyle.accent)
         }
     }
     private func legend(_ title: String, color: Color) -> some View {
@@ -178,9 +200,9 @@ private struct MonitorUsageBar: View {
     var height: CGFloat = 6
     var body: some View {
         GeometryReader { geometry in
-            RoundedRectangle(cornerRadius: 3).fill(track)
+            Rectangle().fill(track)
                 .overlay(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3).fill(color).frame(width: geometry.size.width * min(max(fraction, 0), 1))
+                    Rectangle().fill(color).frame(width: geometry.size.width * min(max(fraction, 0), 1))
                 }
         }.frame(height: height).accessibilityHidden(true)
     }
@@ -188,7 +210,7 @@ private struct MonitorUsageBar: View {
 
 private extension View {
     func desktopMonitorPanel() -> some View {
-        padding(20).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-            .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
+        padding(.top, 20).padding(.bottom, 8)
+            .overlay(alignment: .top) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
     }
 }

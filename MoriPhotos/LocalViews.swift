@@ -39,7 +39,7 @@ struct LocalLibraryView: View {
                             Button { showLimited = true } label: {
                                 Label("仅显示已授权照片 · 管理访问范围", systemImage: "hand.raised")
                                     .font(.footnote).frame(maxWidth: .infinity, alignment: .leading).padding(12)
-                                    .background(Theme.accent.opacity(0.07), in: RoundedRectangle(cornerRadius: 10))
+                                    .background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 4))
                             }.padding(.horizontal, 16)
                         }
                         if visible.isEmpty {
@@ -98,8 +98,8 @@ struct LocalLibraryView: View {
         .onChange(of: library.assets.map(\.localIdentifier)) { _, ids in selected.formIntersection(Set(ids)) }
     }
     private var phoneHeader: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
                 libraryTitle
                 if library.canRead { photoCountBadge }
                 Spacer(minLength: 0)
@@ -118,17 +118,20 @@ struct LocalLibraryView: View {
                 }
                 if selecting { libraryCount }
             }
-        }.padding(.horizontal, 16).padding(.top, 8).frame(maxWidth: .infinity, alignment: .leading)
+        }.padding(.horizontal, 18).padding(.top, 8).frame(maxWidth: .infinity, alignment: .leading)
             .background(NASStyle.canvas)
             .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 0.5) }
     }
     private var libraryTitle: some View {
-        Text("照片").font(.title.weight(.bold)).tracking(-0.4)
+        Text("照片")
+            .font(dynamicTypeSize.isAccessibilitySize ? .largeTitle.bold() : .system(size: 38, weight: .black))
+            .tracking(-1.5)
             .foregroundStyle(.primary).accessibilityIdentifier("localLibraryTitle")
     }
     private var photoCountBadge: some View {
-        Text("\(visible.count)").font(.subheadline.monospacedDigit()).lineLimit(1).minimumScaleFactor(0.6)
-            .foregroundStyle(.secondary)
+        Text("\(visible.count)").font(.system(.subheadline, design: .monospaced).weight(.semibold))
+            .lineLimit(1).minimumScaleFactor(0.6)
+            .foregroundStyle(NASStyle.accent)
             .accessibilityLabel("\(visible.count) 张照片")
     }
     private var selectionButton: some View {
@@ -136,9 +139,9 @@ struct LocalLibraryView: View {
             HStack(spacing: 6) {
                 Image(systemName: selecting ? "checkmark" : "checkmark.circle")
                 Text(selecting ? "完成" : "选择")
-            }.font(.subheadline.weight(.medium)).padding(.horizontal, 13).frame(minHeight: 44)
-                .foregroundStyle(NASStyle.accent)
-                .background(NASStyle.selection, in: Capsule())
+            }.font(.subheadline.weight(.bold)).padding(.horizontal, 13).frame(minHeight: 44)
+                .foregroundStyle(selecting ? NASStyle.ink : NASStyle.accent)
+                .background(selecting ? NASStyle.lime : NASStyle.selection, in: RoundedRectangle(cornerRadius: 5))
         }.buttonStyle(.plain).accessibilityIdentifier("localPhotoSelection")
     }
     private var libraryToolbar: some View {
@@ -177,17 +180,36 @@ struct LocalLibraryView: View {
         }.foregroundStyle(.secondary)
     }
     private var accessView: some View {
-        VStack(spacing: 4) {
-            EmptyCard(icon: "photo.stack", title: "你的照片，在这里", message: "允许访问照片图库，即可浏览、收藏和整理本机照片。也可以只选择部分照片。")
-            if library.authorization == .notDetermined {
-                Button { Task { await library.requestAccess() } } label: { Text("开启照片访问").padding(.horizontal, 16).padding(.vertical, 5) }
-                    .buttonStyle(.borderedProminent).accessibilityIdentifier("grantPhotos")
-            } else {
-                Button("前往系统设置") { AppPlatform.openPhotoSettings() }
-                    .buttonStyle(.borderedProminent)
+        VStack(alignment: .leading, spacing: 18) {
+            Image(systemName: "photo.stack")
+                .font(.system(size: 40, weight: .light)).foregroundStyle(NASStyle.accent)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("查看本机照片").font(.title.weight(.heavy))
+                Text("允许访问照片图库，即可浏览、收藏和整理本机照片。也可以只选择部分照片。")
+                    .font(.subheadline).foregroundStyle(.secondary)
             }
-        }.padding(.vertical, 30).frame(maxWidth: .infinity)
-            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+            Group {
+                if library.authorization == .notDetermined {
+                    Button { Task { await library.requestAccess() } } label: {
+                        photoAccessLabel("开启照片访问")
+                    }.accessibilityIdentifier("grantPhotos")
+                } else {
+                    Button { AppPlatform.openPhotoSettings() } label: {
+                        photoAccessLabel("前往系统设置")
+                    }
+                }
+            }.buttonStyle(.plain)
+        }.padding(.vertical, 24).frame(maxWidth: .infinity, alignment: .leading)
+            .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
+    }
+    private func photoAccessLabel(_ title: String) -> some View {
+        HStack {
+            Text(title).font(.subheadline.weight(.bold))
+            Spacer()
+            Image(systemName: "arrow.up.right").accessibilityHidden(true)
+        }.padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 50)
+            .foregroundStyle(.white).background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 5))
     }
     private func run(_ action: @escaping () async -> Void) {
         busy = true

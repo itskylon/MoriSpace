@@ -33,6 +33,7 @@ private struct DesktopFileContents: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            directoryHeading
             browserToolbar
             Rectangle().fill(NASStyle.outline).frame(height: 0.5)
             if let error = store.error {
@@ -72,11 +73,25 @@ private struct DesktopFileContents: View {
         }
     }
 
+    private var directoryHeading: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 14) {
+            Text(directory.folder?.name ?? "共享文件夹")
+                .font(.system(size: 34, weight: .bold)).tracking(-0.8)
+                .lineLimit(1).truncationMode(.middle).accessibilityAddTraits(.isHeader)
+            Text(String(format: "%02d", matchingFiles.count))
+                .font(.subheadline.monospacedDigit().weight(.semibold)).foregroundStyle(NASStyle.accent)
+            Spacer(minLength: 0)
+            Image(systemName: directory.folder == nil ? "externaldrive" : "folder")
+                .font(.system(size: 24, weight: .regular)).foregroundStyle(NASStyle.accent)
+                .accessibilityHidden(true)
+        }.padding(.horizontal, 24).padding(.top, 20).padding(.bottom, 10)
+    }
+
     private var browserToolbar: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) { pathBar; controls }
             VStack(spacing: 4) { pathBar; controls }
-        }.padding(.horizontal, 20).padding(.vertical, 8).background(NASStyle.surface)
+        }.padding(.horizontal, 20).padding(.vertical, 4).background(NASStyle.canvas)
     }
 
     private var pathBar: some View {
@@ -119,7 +134,7 @@ private struct DesktopFileContents: View {
                         .buttonStyle(.plain).accessibilityLabel("清除搜索")
                 }
             }.font(.subheadline).padding(.horizontal, 12).frame(width: 230, height: 44)
-                .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 10))
+                .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
             Menu {
                 Picker("排序", selection: $directory.sort) {
                     ForEach(FileSort.allCases.filter { directory.folder != nil || $0 != .size }) { Text($0.title).tag($0) }
@@ -129,7 +144,7 @@ private struct DesktopFileContents: View {
             HStack(spacing: 2) {
                 viewButton("icons", symbol: "square.grid.2x2", title: "图标视图")
                 viewButton("list", symbol: "list.bullet", title: "列表视图")
-            }.padding(2).background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 10))
+            }.padding(2).background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
             Button { inspector.toggle() } label: { Image(systemName: "sidebar.right").frame(width: 44, height: 44) }
                 .foregroundStyle(inspector ? NASStyle.accent : Color.secondary).help("显示或隐藏信息")
                 .accessibilityLabel("显示或隐藏信息").accessibilityIdentifier("filesInspector")
@@ -139,8 +154,8 @@ private struct DesktopFileContents: View {
         Button { layout = value } label: {
             Image(systemName: symbol).frame(width: 44, height: 44)
                 .foregroundStyle(layout == value ? NASStyle.accent : Color.secondary)
-                .background(layout == value ? NASStyle.surface : Color.clear, in: RoundedRectangle(cornerRadius: 8))
-                .overlay { RoundedRectangle(cornerRadius: 8).strokeBorder(layout == value ? NASStyle.outline : .clear, lineWidth: 0.5) }
+                .background(layout == value ? NASStyle.surface : Color.clear, in: RoundedRectangle(cornerRadius: 4))
+                .overlay { RoundedRectangle(cornerRadius: 4).strokeBorder(layout == value ? NASStyle.outline : .clear, lineWidth: 0.5) }
         }.buttonStyle(.plain).help(title).accessibilityLabel(title)
             .accessibilityAddTraits(layout == value ? .isSelected : [])
             .accessibilityIdentifier("filesView_" + value)
@@ -148,18 +163,30 @@ private struct DesktopFileContents: View {
 
     private var iconGrid: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 230, maximum: 340), spacing: 14)], spacing: 14) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 210, maximum: 340), spacing: 16)], spacing: 20) {
                 ForEach(matchingFiles) { file in
-                    HStack(spacing: 12) {
-                        StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir)
-                        VStack(alignment: .leading, spacing: 7) {
-                            Text(file.name).font(.subheadline.weight(.medium)).lineLimit(2).truncationMode(.middle)
+                    VStack(alignment: .leading, spacing: 18) {
+                        HStack(alignment: .top) {
+                            Image(systemName: file.isdir ? "folder.fill" : file.icon)
+                                .font(.system(size: 35, weight: .regular))
+                                .foregroundStyle(file.isdir ? NASStyle.accent : Color.secondary)
+                                .symbolRenderingMode(.hierarchical).frame(height: 36)
+                            Spacer(minLength: 4)
+                            Image(systemName: file.isdir ? "arrow.up.right" : "ellipsis")
+                                .font(.system(size: 14, weight: .medium)).foregroundStyle(.tertiary)
+                        }.accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(file.name).font(.system(size: 18, weight: .semibold)).lineLimit(2).truncationMode(.middle)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             Text(file.isdir ? (directory.folder == nil ? "共享文件夹" : "文件夹") : size(file))
                                 .font(.caption).monospacedDigit().foregroundStyle(.secondary)
                         }.frame(maxWidth: .infinity, alignment: .leading)
-                    }.frame(maxWidth: .infinity, minHeight: 60, alignment: .leading).padding(14)
-                        .background(directory.selection == file.id ? NASStyle.selection : hoveredFile == file.id ? NASStyle.inset : NASStyle.surface, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(directory.selection == file.id ? NASStyle.accent.opacity(0.55) : NASStyle.outline, lineWidth: directory.selection == file.id ? 1 : 0.5) }
+                    }.frame(maxWidth: .infinity, minHeight: 114, alignment: .topLeading).padding(18)
+                        .background(directory.selection == file.id ? NASStyle.selection : hoveredFile == file.id ? NASStyle.inset : NASStyle.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay(alignment: .bottom) {
+                            Rectangle().fill(directory.selection == file.id ? NASStyle.accent : NASStyle.outline)
+                                .frame(height: directory.selection == file.id ? 3 : 1).padding(.horizontal, 18)
+                        }
                         .onHover { hoveredFile = $0 ? file.id : nil }
                         .contentShape(Rectangle())
                         .onTapGesture(count: 2) { directory.selection = file.id; open(file) }
@@ -170,7 +197,7 @@ private struct DesktopFileContents: View {
                         .accessibilityAction { directory.selection = file.id; open(file) }
                         .accessibilityIdentifier((file.isdir ? "nasFolder_" : "nasFile_") + file.name)
                 }
-            }.padding(20)
+            }.padding(24)
         }.accessibilityIdentifier("desktopFileGrid")
     }
     private var fileTable: some View {
@@ -205,7 +232,7 @@ private struct DesktopFileContents: View {
             if let file = selected {
                 VStack(alignment: .leading, spacing: 18) {
                     StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir, expanded: true).frame(width: 82)
-                    Text(file.name).font(.headline).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+                    Text(file.name).font(.title3.weight(.bold)).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                     Text(file.kindLabel).font(.caption).foregroundStyle(.secondary)
                     Divider()
                     infoRow("大小", value: size(file))

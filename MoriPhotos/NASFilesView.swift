@@ -90,8 +90,7 @@ struct NASFileBrowserView: View {
                 Image(systemName: ascending ? "arrow.up" : "arrow.down").font(.caption.weight(.semibold))
                 Text(sort.title).font(.subheadline.weight(.medium))
             }.foregroundStyle(.primary).padding(.horizontal, 12).frame(minHeight: 44)
-                .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 14))
-                .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
+                .background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 6))
         }.accessibilityLabel("排序方式").accessibilityValue("\(sort.title)，\(ascending ? "升序" : "降序")")
             .accessibilityIdentifier("nasFileSort")
     }
@@ -106,7 +105,7 @@ struct NASFileBrowserView: View {
             }.frame(maxWidth: showingSearch ? nil : .infinity, alignment: .leading)
                 .frame(minWidth: 44, minHeight: 44)
                 .padding(.horizontal, showingSearch ? 0 : 12)
-                .background(showingSearch ? Color.clear : NASStyle.inset, in: RoundedRectangle(cornerRadius: 14))
+                .background(showingSearch ? Color.clear : NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
         }.buttonStyle(.plain).foregroundStyle(.secondary)
             .accessibilityLabel(showingSearch ? "关闭搜索" : "搜索文件")
             .accessibilityIdentifier("toggleNASFileSearch")
@@ -121,7 +120,7 @@ struct NASFileBrowserView: View {
                         .accessibilityIdentifier("nasFileSearch")
                     searchToggle
                 }.font(.subheadline).padding(.leading, 12).frame(minHeight: 44)
-                    .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 14))
+                    .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
             } else { searchToggle }
         }.frame(maxWidth: .infinity)
     }
@@ -135,14 +134,15 @@ struct NASFileBrowserView: View {
                             .accessibilityLabel("当前位置：\(folder?.path ?? "群晖共享文件夹")")
                     }
                     if folder == nil {
-                        Text("共享文件夹").font(.title3.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                        Text("共享文件夹").font(.system(size: 32, weight: .bold)).tracking(-1).accessibilityAddTraits(.isHeader)
                     }
                     Text(query.isEmpty ? "\(store.items.count) / \(store.total) 项" : "\(filteredItems.count) 项匹配")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary).accessibilityIdentifier("fileCount")
+                        .font(.caption.monospacedDigit().weight(.medium)).foregroundStyle(NASStyle.accent).accessibilityIdentifier("fileCount")
                 }
                 Spacer()
                 NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner).toolbar(.visible, for: .navigationBar) } label: {
-                    Image(systemName: "arrow.down.circle").font(.system(size: 19)).frame(width: 44, height: 44)
+                    Image(systemName: "arrow.down").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
+                        .foregroundStyle(NASStyle.ink).background(NASStyle.lime, in: Circle())
                 }.foregroundStyle(NASStyle.accent).accessibilityLabel("下载任务与已下载").accessibilityIdentifier("openDownloadsShortcut")
                 optionsMenu
             }
@@ -184,11 +184,11 @@ struct NASFileBrowserView: View {
                     } else if filteredItems.isEmpty && store.error == nil {
                         ContentUnavailableView(query.isEmpty ? (folder == nil ? "没有可访问的共享文件夹" : "这是一个空文件夹") : "没有匹配的文件", systemImage: query.isEmpty ? "folder" : "magnifyingglass", description: Text(query.isEmpty ? (folder == nil ? "请检查账号的共享文件夹权限。" : "可以返回上级继续浏览。") : "搜索范围为当前已载入的文件。"))
                     }
-                }.listRowBackground(NASStyle.surface)
-                    .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20))
+                }.listRowBackground(NASStyle.canvas)
+                    .listRowInsets(EdgeInsets(top: 13, leading: 20, bottom: 13, trailing: 20))
                     .listRowSeparatorTint(NASStyle.outline)
             }.phoneMenuScrolling(active: isActive).listStyle(.plain).scrollContentBackground(.hidden)
-                .background(NASStyle.surface).contentMargins(.top, 0, for: .scrollContent)
+                .background(NASStyle.canvas).contentMargins(.top, 0, for: .scrollContent)
 
         }.background(NASStyle.canvas)
     }
@@ -201,7 +201,7 @@ struct NASFileRow: View {
         HStack(spacing: 14) {
             StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir)
             VStack(alignment: .leading, spacing: 6) {
-                Text(file.name).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
+                Text(file.name).font(.body.weight(.semibold)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
                 HStack(spacing: 7) {
                     if !file.isdir, let size = file.size { Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
                     if !file.isdir && file.size != nil && file.modified != nil { Text("·") }
@@ -226,7 +226,7 @@ struct NASFileDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
                 StorageFileBadge(name: file.name, symbol: file.icon, folder: false, expanded: true).frame(width: 82)
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(file.name).font(.title2.weight(.semibold))
+                    Text(file.name).font(.system(size: 30, weight: .bold)).tracking(-0.5)
                         .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     if let size = file.size {
                         Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))

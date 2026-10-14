@@ -18,15 +18,15 @@ struct HomeOverviewView: View {
         GeometryReader { geometry in
             let wide = geometry.size.width >= 820 && !typeSize.isAccessibilitySize
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 20) {
                     header
                     if wide {
                         HStack(alignment: .top, spacing: 28) {
-                            VStack(alignment: .leading, spacing: 24) {
+                            VStack(alignment: .leading, spacing: 20) {
                                 storageShortcuts
                                 deviceSection
                             }.frame(maxWidth: .infinity)
-                            dailyTasks.frame(width: 310)
+                            dailyTasks.frame(width: 320)
                         }
                     } else {
                         if typeSize.isAccessibilitySize {
@@ -39,8 +39,8 @@ struct HomeOverviewView: View {
                         dailyTasks
                     }
                 }
-                .padding(.horizontal, wide ? 28 : 20).padding(.top, 14).padding(.bottom, 24)
-                .frame(maxWidth: 1120).frame(maxWidth: .infinity, alignment: .top)
+                .padding(.horizontal, wide ? 32 : 18).padding(.top, 10).padding(.bottom, 24)
+                .frame(maxWidth: 1340).frame(maxWidth: .infinity, alignment: .top)
             }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
         }
         .workspaceNavigationTitle("首页").navigationBarTitleDisplayMode(.inline)
@@ -56,63 +56,116 @@ struct HomeOverviewView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(AppBrand.name).font(.largeTitle.weight(.bold)).tracking(-0.7).accessibilityIdentifier("homeTitle")
-                Text(Date().formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
-                    .font(.caption).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(Date().formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
+                        .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Text(AppBrand.name)
+                        .font(typeSize.isAccessibilitySize ? .title.weight(.black) : .system(size: 42, weight: .black))
+                        .tracking(-1.8).accessibilityIdentifier("homeTitle")
+                }
+                Spacer(minLength: 0)
+                Button { open(.settings) } label: {
+                    Image(systemName: "slider.horizontal.3").font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(NASStyle.ink).frame(width: 48, height: 48)
+                        .background(NASStyle.lime, in: RoundedRectangle(cornerRadius: 12))
+                }.buttonStyle(.plain).accessibilityLabel("设置")
             }
-            Spacer()
-            Button { open(.settings) } label: {
-                Image(systemName: "slider.horizontal.3").font(.system(size: 19))
-                    .frame(width: 44, height: 44).background(NASStyle.surface, in: Circle())
-                    .overlay(Circle().stroke(NASStyle.outline, lineWidth: 0.5))
-            }.buttonStyle(.plain).accessibilityLabel("设置")
+            Rectangle().fill(Color.primary).frame(height: 2)
         }
     }
 
     private var storageShortcuts: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            MoriSectionHeading("资料库")
-            shortcuts
-        }
-    }
-    private var shortcuts: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: typeSize.isAccessibilitySize ? 1 : 3), spacing: 10) {
-            shortcut("本机照片", subtitle: library.canRead ? "\(library.assets.count) 张照片" : "浏览照片图库", icon: "photo.on.rectangle", page: .local, id: "homeLocalPhotos")
-            shortcut("群晖照片", subtitle: "个人与共享", icon: "photo.stack", page: .photos, id: "homeNASPhotos")
-            shortcut("群晖文件", subtitle: "文件与文档", icon: "folder", page: .files, id: "homeNASFiles")
+        Group {
+            if typeSize.isAccessibilitySize {
+                VStack(spacing: 10) {
+                    photoCover
+                    remoteShortcut("群晖照片", subtitle: "个人与共享", icon: "photo.stack", page: .photos, id: "homeNASPhotos", lime: true)
+                    remoteShortcut("群晖文件", subtitle: "文件与文档", icon: "folder", page: .files, id: "homeNASFiles", lime: false)
+                }
+            } else {
+                GeometryReader { geometry in
+                    HStack(spacing: 10) {
+                        photoCover.frame(width: geometry.size.width * 0.57)
+                        VStack(spacing: 10) {
+                            remoteShortcut("群晖照片", subtitle: "个人与共享", icon: "photo.stack", page: .photos, id: "homeNASPhotos", lime: true)
+                            remoteShortcut("群晖文件", subtitle: "文件与文档", icon: "folder", page: .files, id: "homeNASFiles", lime: false)
+                        }.frame(maxWidth: .infinity)
+                    }
+                }.frame(height: usesSidebar ? 260 : 224)
+            }
         }
     }
 
-    private func shortcut(_ title: String, subtitle: String, icon: String, page: WorkspacePage, id: String) -> some View {
-        Button { open(page) } label: {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    Image(systemName: icon).font(.system(size: 22, weight: .medium))
-                        .foregroundStyle(page == .photos ? NASStyle.violet : NASStyle.accent)
-                        .frame(width: 42, height: 42)
-                        .background((page == .photos ? NASStyle.violet : NASStyle.accent).opacity(0.10), in: RoundedRectangle(cornerRadius: 13))
+    private var photoCover: some View {
+        Button { open(.local) } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                GeometryReader { geometry in
+                    ZStack {
+                        if library.canRead && !library.assets.isEmpty {
+                            ForEach(0..<min(3, library.assets.count), id: \.self) { index in
+                                AssetImage(asset: library.assets[index])
+                                    .id(library.assets[index].localIdentifier)
+                                    .frame(width: geometry.size.width * 0.68, height: geometry.size.height * 0.88)
+                                    .clipped().overlay(Rectangle().stroke(.white, lineWidth: 3))
+                                    .rotationEffect(.degrees(Double(index - 1) * 10))
+                                    .offset(x: CGFloat(index - 1) * geometry.size.width * 0.13, y: CGFloat(abs(index - 1)) * 5)
+                            }
+                        } else {
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .font(.system(size: 58, weight: .ultraLight)).foregroundStyle(.white.opacity(0.9))
+                                .rotationEffect(.degrees(-9))
+                        }
+                    }.frame(width: geometry.size.width, height: geometry.size.height)
+                }.frame(minHeight: 106).padding(.top, 12).padding(.horizontal, 8)
+                HStack(alignment: .bottom, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("本机照片").font(typeSize.isAccessibilitySize ? .title2.bold() : .system(size: 25, weight: .bold)).tracking(-0.8)
+                        Text(library.canRead ? "\(library.assets.count) 张照片" : "打开照片图库")
+                            .font(.caption).foregroundStyle(.white.opacity(0.8))
+                    }
                     Spacer(minLength: 0)
-                    Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
+                    Image(systemName: "arrow.up.right").font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(NASStyle.ink).frame(width: 32, height: 32).background(NASStyle.lime, in: Circle())
+                }.padding(16)
+            }.foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 224)
+                .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .contentShape(RoundedRectangle(cornerRadius: 12))
+        }.buttonStyle(.plain)
+            .accessibilityLabel("本机照片，" + (library.canRead ? "\(library.assets.count) 张照片" : "打开照片图库"))
+            .accessibilityIdentifier("homeLocalPhotos")
+    }
+
+    private func remoteShortcut(_ title: String, subtitle: String, icon: String, page: WorkspacePage, id: String, lime: Bool) -> some View {
+        Button { open(page) } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Image(systemName: icon).font(.system(size: 24, weight: .medium))
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .semibold))
                 }
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.8)
-                    Text(subtitle).font(.caption2).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title).font(.headline.weight(.bold)).lineLimit(1).minimumScaleFactor(0.75)
+                    Text(subtitle).font(.caption2).opacity(0.65).lineLimit(1)
                 }
-            }.padding(14).frame(maxWidth: .infinity, minHeight: 128, alignment: .leading)
-                .moriPanel(radius: 20).contentShape(RoundedRectangle(cornerRadius: 20))
+            }.padding(14).frame(maxWidth: .infinity, minHeight: 102, alignment: .leading)
+                .foregroundStyle(lime ? NASStyle.ink : Color.primary)
+                .background(lime ? NASStyle.lime : NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 12))
+                .contentShape(RoundedRectangle(cornerRadius: 12))
         }.buttonStyle(.plain).accessibilityIdentifier(id)
     }
 
     private var dailyTasks: some View {
         VStack(alignment: .leading, spacing: 12) {
-            MoriSectionHeading("日常工具")
+            HomeSectionRule(title: "日常", number: "02")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: typeSize.isAccessibilitySize ? 1 : 2), spacing: 12) {
                 calendarCard
                 backupCard
             }
-            downloadsCard.padding(.horizontal, 14).moriPanel(radius: 18)
+            downloadsCard.padding(.top, 4)
         }
     }
     private var device: some View {
@@ -120,7 +173,7 @@ struct HomeOverviewView: View {
     }
     private var deviceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            MoriSectionHeading("设备状态")
+            HomeSectionRule(title: "我的设备", number: "01")
             device
         }
     }
@@ -192,13 +245,13 @@ private struct HomeDeviceCard: View {
             }
             HStack(spacing: 0) {
                 metric("CPU", value: NASMonitorFormat.percent(snapshot?.resources?.cpu), id: "homeCPU")
-                Rectangle().fill(NASStyle.outline).frame(width: 1, height: 38)
+                Rectangle().fill(Color.white.opacity(0.14)).frame(width: 1, height: 38)
                 metric("内存", value: NASMonitorFormat.percent(snapshot?.resources?.memory), id: "homeMemory")
-                Rectangle().fill(NASStyle.outline).frame(width: 1, height: 38)
+                Rectangle().fill(Color.white.opacity(0.14)).frame(width: 1, height: 38)
                 metric("温度", value: snapshot?.system?.temperature.map { String(format: "%.0f°", $0) } ?? "—", id: "homeTemperature")
             }.padding(.vertical, 3)
             if let volumes = snapshot?.storage?.volumes, !volumes.isEmpty {
-                Rectangle().fill(NASStyle.outline).frame(height: 0.5)
+                Rectangle().fill(Color.white.opacity(0.14)).frame(height: 0.5)
                 ForEach(volumes.prefix(2)) { volume in
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
@@ -209,9 +262,9 @@ private struct HomeDeviceCard: View {
                         }.font(.caption2)
                         if let fraction = volume.fraction {
                             GeometryReader { geometry in
-                                Capsule().fill(NASStyle.inset)
+                                Capsule().fill(Color.white.opacity(0.13))
                                     .overlay(alignment: .leading) {
-                                        Capsule().fill(volume.lowSpace || volume.health == .critical ? Color.orange : NASStyle.accent)
+                                        Capsule().fill(volume.lowSpace || volume.health == .critical ? Color.orange : NASStyle.lime)
                                             .frame(width: geometry.size.width * min(max(fraction, 0), 1))
                                     }
                             }.frame(height: 3).accessibilityHidden(true)
@@ -222,7 +275,8 @@ private struct HomeDeviceCard: View {
                 Text(snapshot?.hasData == true ? "存储容量暂不可用" : "连接后查看负载、温度与存储容量")
                     .font(.caption).foregroundStyle(.secondary)
             }
-        }.padding(18).moriPanel(radius: 22)
+        }.padding(18).background(NASStyle.ink, in: RoundedRectangle(cornerRadius: 12))
+        .environment(\.colorScheme, .dark)
         .task(id: "\(isActive)-\(scenePhase)") {
             guard isActive && scenePhase == .active else { store.stop(); return }
             await app.restoreConnection(service: .monitor)
@@ -234,7 +288,7 @@ private struct HomeDeviceCard: View {
     private func metric(_ title: String, value: String, id: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.system(size: 26, weight: .medium, design: .rounded)).monospacedDigit().foregroundStyle(.primary).accessibilityIdentifier(id)
+            Text(value).font(.title.bold()).tracking(-1).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6).foregroundStyle(NASStyle.lime).accessibilityIdentifier(id)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 8)
     }
 }
@@ -258,30 +312,45 @@ private struct HomeSummaryCard: View {
     let icon: String
     let id: String
     let open: () -> Void
+    @Environment(\.dynamicTypeSize) private var typeSize
     var body: some View {
         Button(action: open) {
-            Group {
-                if id == "homeDownloads" {
-                    HStack(spacing: 10) {
-                        Image(systemName: icon).foregroundStyle(NASStyle.accent)
-                        Text(title).font(.subheadline.weight(.medium)).foregroundStyle(.primary)
-                        Spacer(minLength: 8)
-                        Text(value).font(.caption).foregroundStyle(.secondary)
-                        Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary)
-                    }.frame(minHeight: 44).contentShape(Rectangle())
-                } else {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack(spacing: 7) {
-                            Image(systemName: icon).foregroundStyle(id == "homeCalendar" ? NASStyle.coral : NASStyle.accent)
-                            Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary)
-                            Spacer(minLength: 0)
-                        }
-                        Text(value).font(.title2.weight(.semibold)).foregroundStyle(.primary)
-                        Text(subtitle).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
-                    }.padding(14).frame(maxWidth: .infinity, minHeight: 104, alignment: .leading).moriPanel(radius: 18)
-                        .contentShape(RoundedRectangle(cornerRadius: 18))
-                }
+            if id == "homeDownloads" {
+                HStack(spacing: 10) {
+                    Image(systemName: icon).font(.title3).foregroundStyle(NASStyle.accent)
+                    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                    Spacer(minLength: 8)
+                    Text(value).font(.caption).foregroundStyle(.secondary)
+                    Image(systemName: "arrow.up.right").font(.caption).foregroundStyle(.secondary)
+                }.frame(minHeight: 50).contentShape(Rectangle())
+                    .overlay(alignment: .top) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Text(title).font(.caption.weight(.semibold))
+                        Spacer(minLength: 0)
+                        Image(systemName: "arrow.up.right").font(.caption2.weight(.bold))
+                    }.foregroundStyle(.secondary)
+                    Text(value).font(typeSize.isAccessibilitySize ? .title.bold() : .system(size: id == "homeCalendar" ? 46 : 26, weight: .bold))
+                        .tracking(-1.6).foregroundStyle(.primary).minimumScaleFactor(0.8)
+                    Text(subtitle).font(.caption2).foregroundStyle(.secondary).lineLimit(typeSize.isAccessibilitySize ? nil : 2)
+                }.padding(.vertical, 12).padding(.horizontal, 4)
+                    .frame(maxWidth: .infinity, minHeight: 118, alignment: .leading)
+                    .overlay(alignment: .top) { Rectangle().fill(id == "homeCalendar" ? NASStyle.accent : Color.primary).frame(height: 3) }
+                    .contentShape(Rectangle())
             }
         }.buttonStyle(.plain).accessibilityIdentifier(id)
+    }
+}
+
+private struct HomeSectionRule: View {
+    let title: String
+    let number: String
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(title).font(.subheadline.weight(.bold)).accessibilityAddTraits(.isHeader)
+            Rectangle().fill(NASStyle.outline).frame(height: 1)
+            Text(number).font(.caption2.monospaced()).foregroundStyle(.secondary).accessibilityHidden(true)
+        }
     }
 }

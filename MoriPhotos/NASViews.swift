@@ -52,14 +52,14 @@ struct NASHomeView: View {
                 NASSectionTabs(selection: selection)
                 Spacer(minLength: 0)
                 connectionButton
-            }.padding(.horizontal, 16).padding(.vertical, 4).background(NASStyle.surface)
+            }.padding(.horizontal, 16).padding(.vertical, 4).background(NASStyle.canvas)
             Rectangle().fill(NASStyle.outline).frame(height: 0.5)
         }
     }
     private var connectionButton: some View {
         Button { connection = true } label: {
             Image(systemName: "slider.horizontal.3").font(.body.weight(.semibold)).frame(width: 44, height: 44)
-                .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 12))
+                .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
         }.buttonStyle(.plain).foregroundStyle(.secondary)
             .accessibilityLabel(section == "照片" ? "连接设置" : section == "文件" ? "文件连接设置" : "状态连接设置")
     }
@@ -210,15 +210,16 @@ struct NASBrowserView: View {
                     }
                 } label: {
                     HStack(spacing: 7) {
-                        Image(systemName: space == .personal ? "person.crop.square" : "person.2").foregroundStyle(NASStyle.accent)
-                        Text(space.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                        Text(space.title).font(.system(size: desktopLayout ? 30 : 28, weight: .bold)).tracking(-0.7).foregroundStyle(.primary)
                         Image(systemName: "chevron.down").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
                     }.frame(minHeight: 44)
                 }.tint(NASStyle.accent).accessibilityIdentifier("nasSpaceMenu")
             } else {
                 Text(effectiveSpace.title).font(.subheadline).foregroundStyle(.secondary)
             }
-            Text("\(filteredPhotos.count) 张").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            Text("\(filteredPhotos.count)").font(.caption.monospacedDigit().weight(.semibold))
+                .foregroundStyle(NASStyle.accent).padding(.horizontal, 8).padding(.vertical, 5)
+                .background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 4))
                 .accessibilityLabel("\(filteredPhotos.count) 张照片")
             Spacer(minLength: 8)
             if desktopLayout { searchField.frame(maxWidth: 260) }
@@ -239,7 +240,7 @@ struct NASBrowserView: View {
                     .font(.system(size: 17, weight: .medium)).foregroundStyle(.primary)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityLabel(showingSearch ? "关闭搜索" : "搜索照片和文件夹").accessibilityIdentifier("toggleNASSearch") }
-        }.buttonStyle(.borderless).frame(minHeight: desktopLayout ? 60 : 52)
+        }.buttonStyle(.borderless).frame(minHeight: desktopLayout ? 72 : 64)
             .padding(.leading, contentInset).padding(.trailing, desktopLayout ? contentInset : 8)
     }
 
@@ -255,7 +256,7 @@ struct NASBrowserView: View {
                     .buttonStyle(.plain).accessibilityLabel("清空搜索").accessibilityIdentifier("clearNASSearch")
             }
         }.font(.subheadline).padding(.horizontal, 10).frame(minHeight: 44)
-            .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 10))
+            .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
     }
 }
 
@@ -370,25 +371,26 @@ struct NASDetailView: View {
 }
 
 
-/// A compact, functional connection heading shared by cloud entry screens.
+/// A compact editorial heading shared by storage connection screens.
 struct StorageConnectionHeading: View {
     let title: String
     let detail: String
     let symbol: String
     var color: Color = NASStyle.accent
-    @ScaledMetric(relativeTo: .title2) private var titleSize = 22
+    @ScaledMetric(relativeTo: .title) private var titleSize = 34
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: symbol).font(.system(size: 21, weight: .medium))
-                .foregroundStyle(color).frame(width: 44, height: 44)
-                .background(color.opacity(0.075), in: RoundedRectangle(cornerRadius: 12))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(title).font(.system(size: titleSize, weight: .semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Text(detail).font(.subheadline).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 16) {
+                Text(title).font(.system(size: titleSize, weight: .bold)).tracking(-1)
+                    .fixedSize(horizontal: false, vertical: true).accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 0)
+                Image(systemName: symbol).font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(color).frame(width: 44, height: 44)
+                    .accessibilityHidden(true)
             }
+            Text(detail).font(.subheadline).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.top, 6)
         }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -404,6 +406,6 @@ struct StoragePrimaryAction: View {
             if busy { ProgressView().tint(.white) }
             else { Image(systemName: symbol).font(.headline) }
         }.foregroundStyle(.white).padding(.horizontal, 16).padding(.vertical, 12).frame(minHeight: 48)
-            .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
+            .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 8))
     }
 }

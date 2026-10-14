@@ -9,7 +9,7 @@ struct CalendarHomeView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var compactDayHeight: CGFloat = 52
     @ScaledMetric(relativeTo: .caption) private var eventTimeWidth: CGFloat = 50
-    @ScaledMetric(relativeTo: .title2) private var monthTitleSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .largeTitle) private var monthTitleSize: CGFloat = 64
     @State private var presentation: CalendarPresentation?
     @State private var showingCalendars = false
     var isActive = true
@@ -32,31 +32,24 @@ struct CalendarHomeView: View {
                             }
                         } else if desktop {
                             ScrollView {
-                                HStack(alignment: .top, spacing: 24) {
+                                HStack(alignment: .top, spacing: 28) {
                                     VStack(spacing: 0) {
                                         primaryContent(desktop: true, availableHeight: geometry.size.height)
-                                            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 18))
-                                            .overlay { RoundedRectangle(cornerRadius: 18).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
-                                        calendarFooter.padding(.horizontal, 8).padding(.vertical, 12)
+                                        calendarFooter.padding(.vertical, 12)
                                     }.frame(maxWidth: .infinity)
                                     agenda(for: store.selectedDate)
-                                        .padding(.top, 12)
                                         .frame(width: min(340, geometry.size.width * 0.33))
                                 }.padding(.horizontal, 20).padding(.bottom, 20)
                             }.phoneMenuScrolling(active: isActive).refreshable { await store.refresh() }
                         } else {
                             ScrollView {
-                                VStack(spacing: 18) {
+                                VStack(spacing: 20) {
                                     primaryContent(desktop: false, availableHeight: geometry.size.height)
-                                        .padding(.vertical, 4)
-                                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-                                        .overlay { RoundedRectangle(cornerRadius: 16).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
                                     if store.displayMode == .month {
                                         agenda(for: store.selectedDate)
-                                            .padding(.horizontal, 4)
                                     }
-                                    calendarFooter.padding(.horizontal, 8).padding(.bottom, 8)
-                                }.padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 12)
+                                    calendarFooter.padding(.bottom, 8)
+                                }.padding(.horizontal, 16).padding(.bottom, 12)
                             }.phoneMenuScrolling(active: isActive).refreshable { await store.refresh() }
                         }
                     }
@@ -130,7 +123,7 @@ struct CalendarHomeView: View {
     }
 
     private func controls(desktop: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             if desktop {
                 HStack(spacing: 16) {
                     monthTitle
@@ -146,7 +139,7 @@ struct CalendarHomeView: View {
                         Spacer(minLength: 8)
                         monthNavigation
                     }
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 0) {
                         monthTitle
                         HStack { Spacer(minLength: 0); monthNavigation }
                     }
@@ -165,7 +158,7 @@ struct CalendarHomeView: View {
             }
         }
         .padding(.horizontal, desktop ? 20 : 16)
-        .padding(.top, desktop ? 16 : 8).padding(.bottom, 8)
+        .padding(.top, desktop ? 16 : 8).padding(.bottom, 12)
     }
 
     private var headerActions: some View {
@@ -194,7 +187,7 @@ struct CalendarHomeView: View {
             Image(systemName: "plus")
                 .font(.body.weight(.semibold))
                 .frame(minWidth: wide ? nil : 44, minHeight: wide ? nil : 44)
-                .background(wide ? .clear : NASStyle.signal, in: Circle())
+                .background(wide ? .clear : NASStyle.signal, in: RoundedRectangle(cornerRadius: 8))
                 .contentShape(Rectangle())
         }.buttonStyle(.plain).foregroundStyle(wide ? NASStyle.accent : Color.white)
             .accessibilityLabel("新建日程").accessibilityIdentifier("calendarNewEvent")
@@ -204,11 +197,18 @@ struct CalendarHomeView: View {
 
     private var monthTitle: some View {
         let parts = store.layout.calendar.dateComponents([.year, .month], from: store.month)
-        return (Text("\(parts.month!)月").font(.system(size: monthTitleSize, weight: .bold, design: .rounded))
-                + Text("  \(String(parts.year!))").font(.subheadline).foregroundColor(.secondary))
-            .fixedSize(horizontal: true, vertical: false)
-            .accessibilityLabel("\(String(parts.year!))年 \(parts.month!)月")
-            .accessibilityIdentifier("calendarMonthTitle")
+        return VStack(alignment: .leading, spacing: -3) {
+            Text(String(parts.year!))
+                .font(.caption.weight(.semibold)).monospacedDigit().tracking(3)
+                .foregroundStyle(.secondary).accessibilityHidden(true)
+            (Text(String(format: "%02d", parts.month!))
+                .font(.system(size: min(monthTitleSize, 88), weight: .black, design: .default))
+                + Text("月").font(.title3.weight(.bold)))
+                .tracking(-2).foregroundStyle(NASStyle.accent)
+                .fixedSize(horizontal: true, vertical: false)
+                .accessibilityLabel("\(String(parts.year!))年 \(parts.month!)月")
+                .accessibilityIdentifier("calendarMonthTitle")
+        }
     }
 
     private var monthNavigation: some View {
@@ -220,9 +220,9 @@ struct CalendarHomeView: View {
             Button { store.today() } label: {
                 Text("今天").font(.subheadline.weight(.medium))
                     .padding(.horizontal, 12).padding(.vertical, 6)
-                    .background(NASStyle.selection, in: Capsule())
+                    .background(NASStyle.lime, in: RoundedRectangle(cornerRadius: 4))
                     .frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
-            }.foregroundStyle(NASStyle.accent)
+            }.foregroundStyle(NASStyle.ink)
                 .accessibilityIdentifier("calendarToday")
             Button { store.moveMonth(1) } label: {
                 Image(systemName: "chevron.right").font(.callout.weight(.medium))
@@ -232,14 +232,15 @@ struct CalendarHomeView: View {
     }
 
     private var displayModes: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 22) {
             ForEach(CalendarDisplayMode.allCases) { mode in
                 Button { store.displayMode = mode } label: {
-                    Text(mode.rawValue).font(.subheadline.weight(store.displayMode == mode ? .semibold : .regular))
-                        .foregroundStyle(store.displayMode == mode ? NASStyle.accent : .secondary)
-                        .padding(.horizontal, 14).frame(minHeight: 32)
-                        .background(store.displayMode == mode ? NASStyle.selection : .clear, in: RoundedRectangle(cornerRadius: 10))
+                    Text(mode.rawValue).font(.subheadline.weight(store.displayMode == mode ? .bold : .medium))
+                        .foregroundStyle(store.displayMode == mode ? Color.primary : Color.secondary)
                         .frame(minWidth: 44, minHeight: 44)
+                        .overlay(alignment: .bottom) {
+                            Rectangle().fill(store.displayMode == mode ? NASStyle.accent : .clear).frame(height: 3)
+                        }
                         .contentShape(Rectangle())
                 }.buttonStyle(.plain)
                     .accessibilityIdentifier("calendarMode_" + mode.rawValue)
@@ -296,7 +297,7 @@ struct CalendarHomeView: View {
 
     @ViewBuilder private func primaryContent(desktop: Bool, availableHeight: CGFloat) -> some View {
         if store.displayMode == .month { monthGrid(desktop: desktop, availableHeight: availableHeight) }
-        else { monthAgenda.padding(.horizontal, 16).padding(.bottom, 8) }
+        else { monthAgenda.padding(.bottom, 8) }
     }
 
     private func monthGrid(desktop: Bool, availableHeight: CGFloat) -> some View {
@@ -305,17 +306,17 @@ struct CalendarHomeView: View {
         return VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(Array(["一", "二", "三", "四", "五", "六", "日"].enumerated()), id: \.offset) { index, day in
-                    Text(day).font(.caption2.weight(.semibold))
-                        .foregroundStyle(index >= 5 ? NASStyle.accent.opacity(0.7) : Color.secondary)
-                        .frame(maxWidth: .infinity).padding(.vertical, 8)
+                    Text(day).font(.caption2.weight(.bold))
+                        .foregroundStyle(index >= 5 ? NASStyle.accent : Color.secondary)
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
                 }
-            }
+            }.overlay(alignment: .top) { Rectangle().fill(Color.primary).frame(height: 2) }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0, alignment: .top), count: 7), spacing: 0) {
                 ForEach(store.layout.days(in: store.month), id: \.self) { date in
                     dayCell(date, desktop: desktop, height: cellHeight)
                 }
             }
-        }.padding(.horizontal, 8).padding(.vertical, 4)
+        }.overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
             .accessibilityIdentifier("calendarMonthGrid")
     }
 
@@ -366,7 +367,7 @@ struct CalendarHomeView: View {
                 .padding(.horizontal, 7).padding(.vertical, 8)
                 .frame(maxWidth: .infinity, minHeight: height, alignment: .top)
                 .background {
-                    RoundedRectangle(cornerRadius: 10).fill(selected ? NASStyle.selection.opacity(0.6) : .clear)
+                    Rectangle().fill(selected ? NASStyle.selection : .clear)
                         .contentShape(Rectangle()).onTapGesture { store.select(date) }
                         .accessibilityHidden(true)
                 }
@@ -383,6 +384,9 @@ struct CalendarHomeView: View {
                         }.frame(maxWidth: .infinity).frame(height: 5)
                     }
                     .padding(.vertical, 3).frame(maxWidth: .infinity, minHeight: height, alignment: .top)
+                    .overlay(alignment: .top) {
+                        Rectangle().fill(NASStyle.outline).frame(height: 0.5)
+                    }
                     .contentShape(Rectangle())
                 }.buttonStyle(.plain)
                     .accessibilityLabel(dayLabel)
@@ -410,7 +414,9 @@ struct CalendarHomeView: View {
                     if store.visibleCalendars.isEmpty {
                         Button("显示全部日历") { store.showAll() }.font(.subheadline).frame(minHeight: 44)
                     }
-                }.padding(.top, 14).padding(.bottom, 6)
+                }.padding(.vertical, 20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
             } else {
                 VStack(spacing: 0) {
                     ForEach(events) { event in eventRow(event, on: date) }
@@ -420,49 +426,44 @@ struct CalendarHomeView: View {
     }
 
     private func selectedDayHeader(_ date: Date, count: Int) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 4) {
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        selectedDayTitle(date)
-                        selectedDayCount(count)
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        selectedDayTitle(date)
-                        selectedDayCount(count)
-                    }
-                }
+        HStack(alignment: .center, spacing: 12) {
+            if !dynamicTypeSize.isAccessibilitySize {
+                Text(String(format: "%02d", store.layout.calendar.component(.day, from: date)))
+                    .font(.system(size: 48, weight: .black)).monospacedDigit().tracking(-3)
+                    .foregroundStyle(NASStyle.lime).accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 5) {
+                selectedDayTitle(date)
                 Text(store.layout.lunarDate(on: date).description)
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(Color.white.opacity(0.8))
                     .accessibilityIdentifier("calendarSelectedLunarDay")
+                selectedDayCount(count)
             }.frame(maxWidth: .infinity, alignment: .leading)
             Button { store.select(date); openNew() } label: {
                 Image(systemName: "plus").font(.subheadline.weight(.semibold))
                     .frame(width: 44, height: 44)
-                    .foregroundStyle(NASStyle.accent)
-                    .background(NASStyle.selection, in: Circle())
+                    .foregroundStyle(Color.white)
+                    .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 6))
                     .contentShape(Rectangle())
             }.buttonStyle(.plain).disabled(!store.canCreate)
                 .opacity(store.canCreate ? 1 : 0.45)
                 .accessibilityLabel("添加日程")
                 .accessibilityIdentifier("calendarDayAdd")
         }
-        .padding(.bottom, 10)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 0.5) }
+        .background(NASStyle.signal)
     }
 
     private func selectedDayTitle(_ date: Date) -> some View {
         Text(date.formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
-            .font(.headline.weight(.semibold)).foregroundStyle(.primary)
+            .font(.subheadline.weight(.bold)).foregroundStyle(Color.white)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityIdentifier("calendarSelectedDay")
     }
 
     private func selectedDayCount(_ count: Int) -> some View {
-        Text("\(count) 项").font(.caption.weight(.medium)).foregroundStyle(NASStyle.accent)
-            .padding(.horizontal, 7).padding(.vertical, 3)
-            .background(NASStyle.selection, in: Capsule())
+        Text("\(count) 项").font(.caption2.weight(.semibold)).foregroundStyle(NASStyle.lime)
             .fixedSize().accessibilityIdentifier("calendarDayCount")
     }
 
@@ -482,9 +483,9 @@ struct CalendarHomeView: View {
             ForEach(dates, id: \.self) { date in
                 HStack(alignment: .center, spacing: 12) {
                     Text(String(store.layout.calendar.component(.day, from: date)))
-                        .font(.title2.weight(.bold)).monospacedDigit()
+                        .font(.system(size: 40, weight: .black)).monospacedDigit().tracking(-2)
                         .foregroundStyle(store.layout.calendar.isDateInToday(date) ? NASStyle.accent : Color.primary)
-                        .frame(minWidth: 38)
+                        .frame(minWidth: 52)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(date.formatted(.dateTime.month().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
                             .font(.subheadline.weight(.medium))
@@ -527,11 +528,14 @@ struct CalendarHomeView: View {
                     if !event.location.isEmpty {
                         Label(event.location, systemImage: "mappin").font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                     }
-                }.padding(.leading, 12).frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(.leading, 18).frame(maxWidth: .infinity, alignment: .leading)
                     .overlay(alignment: .leading) {
-                        Capsule().fill(color(for: event)).frame(width: 3).padding(.vertical, 1)
+                        Rectangle().fill(color(for: event).opacity(0.25)).frame(width: 1)
+                            .overlay(alignment: .top) {
+                                Circle().fill(color(for: event)).frame(width: 7, height: 7).padding(.top, 4)
+                            }
                     }
-                Image(systemName: "chevron.right").font(.caption2.weight(.medium))
+                Image(systemName: "arrow.up.right").font(.caption2.weight(.semibold))
                     .foregroundStyle(.tertiary).padding(.top, 4)
                     .accessibilityHidden(true)
             }.fixedSize(horizontal: false, vertical: true).padding(.vertical, 14)
@@ -612,8 +616,10 @@ private struct CalendarDayHeading: View {
                 .font(.body.weight(selected || today ? .bold : .medium)).monospacedDigit()
                 .foregroundStyle(numberColor).lineLimit(1).minimumScaleFactor(0.65)
                 .frame(width: min(numberDiameter, desktop ? 44 : 38), height: min(numberDiameter, desktop ? 44 : 38))
-                .background(selected ? NASStyle.signal : .clear, in: Circle())
-                .overlay { if today && !selected { Circle().strokeBorder(NASStyle.accent.opacity(0.55), lineWidth: 1) } }
+                .background(selected ? NASStyle.signal : .clear, in: RoundedRectangle(cornerRadius: 5))
+                .overlay(alignment: .bottom) {
+                    if today && !selected { Rectangle().fill(NASStyle.accent).frame(width: 16, height: 2) }
+                }
                 .overlay(alignment: .topTrailing) {
                     if let holiday { HolidayBadge(kind: holiday.kind, fontSize: 8).offset(x: 3, y: -1).opacity(currentMonth ? 1 : 0.5) }
                 }

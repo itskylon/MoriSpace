@@ -11,7 +11,8 @@ struct NASMonitorHomeView: View {
                 NASMonitorView(client: client, isActive: isActive).id(app.monitorConnectionID)
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        StorageConnectionHeading(title: "运行状态", detail: "设备负载、存储与硬盘健康", symbol: "waveform.path.ecg")
                         NASConnectionStatus(service: .monitor)
                         Button { connection = true } label: {
                             NASActionLabel(title: app.hasSavedConnection ? "状态连接设置" : "连接 NAS 状态", subtitle: "CPU、内存与存储", symbol: "waveform.path.ecg")
@@ -112,7 +113,7 @@ struct NASMonitorView: View {
     private var deviceIdentity: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text(snapshot?.system?.model ?? "Synology NAS").font(.system(size: 26, weight: .semibold))
+                Text(snapshot?.system?.model ?? "Synology NAS").font(.system(size: 40, weight: .bold)).tracking(-1.5)
                 connectionStatus
             }
             if let system = snapshot?.system {
@@ -153,11 +154,11 @@ struct NASMonitorView: View {
     }
 
     private var statusHeader: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(snapshot?.system?.model ?? "Synology NAS")
-                        .font(.system(size: 24, weight: .semibold)).accessibilityAddTraits(.isHeader)
+                        .font(.system(size: 34, weight: .bold)).tracking(-1).accessibilityAddTraits(.isHeader)
                     if let version = snapshot?.system?.version {
                         Text(version).font(.caption).foregroundStyle(.secondary)
                             .lineLimit(1).minimumScaleFactor(0.8)
@@ -167,9 +168,8 @@ struct NASMonitorView: View {
                 Button { Task { await store.refresh(client: client) } } label: {
                     Image(systemName: "arrow.clockwise").font(.body.weight(.medium))
                         .frame(width: 44, height: 44)
-                        .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
-                }.buttonStyle(.plain).foregroundStyle(NASStyle.accent).disabled(store.loading)
+                        .background(NASStyle.lime, in: Circle())
+                }.buttonStyle(.plain).foregroundStyle(NASStyle.ink).disabled(store.loading)
                     .accessibilityLabel("刷新运行状态").accessibilityIdentifier("refreshMonitor")
             }
             HStack(spacing: 10) {
@@ -210,25 +210,24 @@ struct NASMonitorView: View {
         return !snapshot.hasData || !snapshot.issues.isEmpty || snapshot.hasAttention ? .orange : NASStyle.accent
     }
     private func resourceCards(_ resources: NASResourceStatus) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
+        VStack(spacing: 16) {
+            HStack(alignment: .top, spacing: 16) {
                 percentageCard("CPU", value: resources.cpu, symbol: "cpu", subtitle: "当前负载", identifier: "monitorCPU")
-                Divider().frame(height: 76)
+                    .foregroundStyle(.white)
+                    .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 8))
                 percentageCard("内存", value: resources.memory, symbol: "memorychip", subtitle: NASMonitorFormat.bytes(resources.memoryBytes), identifier: "monitorMemory")
             }
-            Divider().padding(.horizontal, 16)
             HStack(spacing: 20) {
                 networkRate("接收", symbol: "arrow.down.left", value: resources.receivedBytesPerSecond)
                 networkRate("发送", symbol: "arrow.up.right", value: resources.sentBytesPerSecond)
-            }.padding(16)
-        }.background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-            .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
+            }.padding(.vertical, 4)
+        }
     }
 
     private var mobileTrend: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("负载趋势").font(.headline)
+                Text("负载趋势").font(.title3.weight(.bold))
                 Spacer()
                 Text("本次查看").font(.caption).foregroundStyle(.secondary)
             }
@@ -260,22 +259,22 @@ struct NASMonitorView: View {
 
     private func percentageCard(_ title: String, value: Double?, symbol: String, subtitle: String, identifier: String) -> some View {
         let isCPU = title == "CPU"
-        let accent = isCPU ? NASStyle.accent : NASStyle.violet
+        let accent = isCPU ? NASStyle.lime : NASStyle.violet
         return VStack(alignment: .leading, spacing: 7) {
             HStack(spacing: 5) {
                 Label(title, systemImage: symbol).font(.caption.weight(.medium))
                 Spacer(minLength: 0)
-            }.foregroundStyle(.secondary)
+            }.foregroundStyle(isCPU ? Color.white.opacity(0.8) : Color.secondary)
             HStack(alignment: .firstTextBaseline) {
-                Text(NASMonitorFormat.percent(value)).font(.system(size: 32, weight: .semibold))
+                Text(NASMonitorFormat.percent(value)).font(.system(size: 44, weight: .bold, design: .rounded)).tracking(-1.5)
                     .monospacedDigit().lineLimit(1).minimumScaleFactor(0.7).accessibilityIdentifier(identifier)
                 Spacer(minLength: 0)
             }
-            Text(subtitle).font(.caption2).foregroundStyle(.secondary)
+            Text(subtitle).font(.caption2).foregroundStyle(isCPU ? Color.white.opacity(0.8) : Color.secondary)
             GeometryReader { geometry in
-                RoundedRectangle(cornerRadius: 2).fill(NASStyle.inset)
+                Rectangle().fill(isCPU ? Color.white.opacity(0.2) : NASStyle.inset)
                     .overlay(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2).fill(accent)
+                        Rectangle().fill(accent)
                             .frame(width: geometry.size.width * min(max((value ?? 0) / 100, 0), 1))
                     }
             }.frame(height: 5).opacity(value == nil ? 0 : 1).accessibilityHidden(true)
@@ -287,7 +286,7 @@ struct NASMonitorView: View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Image(systemName: symbol).font(.system(size: 16, weight: .medium)).foregroundStyle(NASStyle.accent).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
-                Text(value == nil ? "—" : NASMonitorFormat.bytes(value) + "/s").font(.subheadline.weight(.semibold)).monospacedDigit()
+                Text(value == nil ? "—" : NASMonitorFormat.bytes(value) + "/s").font(.system(size: 24, weight: .semibold)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.65)
                     .accessibilityIdentifier(title == "接收" ? "monitorReceive" : "monitorSend")
                 Text("NAS " + title).font(.caption2).foregroundStyle(.secondary)
             }
@@ -296,7 +295,7 @@ struct NASMonitorView: View {
     private func storageSection(_ storage: NASStorageStatus) -> some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 14) {
-                Text("存储空间").font(.headline)
+                Text("存储空间").font(.title3.weight(.bold))
                 if storage.volumes.isEmpty {
                     Text(storage.volumesReported ? "未返回存储空间" : "NAS 未提供存储空间数据").font(.caption).foregroundStyle(.secondary)
                 }
@@ -310,12 +309,12 @@ struct NASMonitorView: View {
                         }
                         if let fraction = volume.fraction {
                             GeometryReader { geometry in
-                                RoundedRectangle(cornerRadius: 3).fill(NASStyle.inset)
+                                Rectangle().fill(NASStyle.inset)
                                     .overlay(alignment: .leading) {
-                                        RoundedRectangle(cornerRadius: 3).fill(volume.lowSpace ? NASStyle.coral : NASStyle.accent)
+                                        Rectangle().fill(volume.lowSpace ? NASStyle.coral : NASStyle.accent)
                                             .frame(width: geometry.size.width * min(max(fraction, 0), 1))
                                     }
-                            }.frame(height: 7).accessibilityHidden(true)
+                            }.frame(height: 8).accessibilityHidden(true)
                             HStack {
                                 Text(NASMonitorFormat.bytes(volume.used) + " / " + NASMonitorFormat.bytes(volume.total))
                                 Spacer()
@@ -329,7 +328,7 @@ struct NASMonitorView: View {
             }.monitorSection()
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Text("硬盘健康").font(.headline)
+                    Text("硬盘健康").font(.title3.weight(.bold))
                     Spacer()
                     Text("\(storage.disks.count) 块").font(.caption).foregroundStyle(.secondary)
                 }
@@ -359,7 +358,7 @@ struct NASMonitorView: View {
 
 private extension View {
     func monitorSection() -> some View {
-        padding(18).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
-            .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
+        padding(.top, 18).padding(.bottom, 2)
+            .overlay(alignment: .top) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
     }
 }

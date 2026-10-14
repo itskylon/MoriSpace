@@ -118,11 +118,11 @@ struct DesktopWorkspaceView: View {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
                     Image(systemName: "square.stack.3d.up.fill")
-                        .font(.system(size: 21, weight: .medium)).foregroundStyle(NASStyle.accent)
-                        .frame(width: 40, height: 40).background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 12))
+                        .font(.system(size: 23, weight: .bold)).foregroundStyle(NASStyle.ink)
+                        .frame(width: 44, height: 44).background(NASStyle.lime, in: RoundedRectangle(cornerRadius: 8))
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(AppBrand.name).font(.headline).foregroundStyle(.primary)
+                        Text(AppBrand.name).font(.system(size: 25, weight: .black)).tracking(-1).foregroundStyle(.primary)
                         if AppBrand.name != "Mori Space" {
                             Text("Mori Space").font(.caption).foregroundStyle(.secondary)
                         }
@@ -183,11 +183,11 @@ struct DesktopWorkspaceView: View {
                 Text(page.title).font(.subheadline.weight(navigation.selection == page ? .semibold : .regular))
                     .lineLimit(1)
                 Spacer(minLength: 0)
-            }.foregroundStyle(navigation.selection == page ? NASStyle.accent : Color.primary.opacity(0.8))
+            }.foregroundStyle(navigation.selection == page ? Color.white : Color.primary.opacity(0.8))
                 .padding(.horizontal, 12).frame(minHeight: 44)
-                .background(navigation.selection == page ? NASStyle.selection : hoveredPage == page ? NASStyle.inset : .clear,
-                            in: RoundedRectangle(cornerRadius: 10))
-                .contentShape(RoundedRectangle(cornerRadius: 10))
+                .background(navigation.selection == page ? NASStyle.signal : hoveredPage == page ? NASStyle.inset : .clear,
+                            in: RoundedRectangle(cornerRadius: 7))
+                .contentShape(RoundedRectangle(cornerRadius: 7))
         }.buttonStyle(.plain)
             .onHover { hoveredPage = $0 ? page : nil }
             .focusable()

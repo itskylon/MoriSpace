@@ -15,16 +15,9 @@ struct SettingsView: View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    if !AppPlatform.isMac && sizeClass != .regular {
-                        HStack(spacing: 12) {
-                            Text("设置").font(.title.weight(.semibold))
-                            Spacer()
-                            Image("AppBrand").resizable().scaledToFit().frame(width: 32, height: 32)
-                                .clipShape(RoundedRectangle(cornerRadius: 9)).accessibilityHidden(true)
-                        }.padding(.bottom, 2)
-                    }
+                    settingsHeader
                     if geometry.size.width >= 850 && !dynamicTypeSize.isAccessibilitySize {
-                        HStack(alignment: .top, spacing: 28) {
+                        HStack(alignment: .top, spacing: 44) {
                             VStack(alignment: .leading, spacing: 24) {
                                 connections
                                 backupAndDevices
@@ -54,9 +47,21 @@ struct SettingsView: View {
         .toolbar(AppPlatform.isMac || sizeClass == .regular ? .automatic : .hidden, for: .navigationBar)
     }
 
+    private var settingsHeader: some View {
+        HStack(alignment: .bottom, spacing: 16) {
+            Text("设置")
+                .font(dynamicTypeSize.isAccessibilitySize ? .largeTitle.bold() : .system(size: AppPlatform.isMac ? 46 : 38, weight: .black))
+                .tracking(-1.5)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+            Image("AppBrand").resizable().scaledToFit().frame(width: 34, height: 34)
+                .clipShape(RoundedRectangle(cornerRadius: 8)).accessibilityHidden(true)
+        }.padding(.bottom, 4)
+    }
+
     private var connections: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("存储连接")
+            sectionTitle("存储连接", index: "01")
             VStack(spacing: 0) {
                 NavigationLink { ConnectionView().toolbar(.visible, for: .navigationBar) } label: {
                     SettingsServiceCard(title: "群晖照片", subtitle: "Synology Photos", symbol: "photo.on.rectangle", color: NASStyle.violet, connected: app.client != nil)
@@ -66,12 +71,12 @@ struct SettingsView: View {
                     SettingsServiceCard(title: "群晖文件", subtitle: "File Station", symbol: "folder", color: NASStyle.blue, connected: app.fileClient != nil)
                 }
 
-            }.padding(.horizontal, 16).settingsPanel()
+            }.settingsPanel()
         }
     }
 
     private var backupAndDevices: some View {
-        preferencesSection("备份与工具") {
+        preferencesSection("备份与工具", index: "02") {
             NavigationLink { PhotoBackupView().toolbar(.visible, for: .navigationBar) } label: {
                 SettingsRow(title: "新照片备份", subtitle: "原图保存到群晖", symbol: "arrow.up.doc", color: NASStyle.blue, value: backup.configuration.enabled ? "已开启" : "未开启")
             }.accessibilityIdentifier("newPhotoBackupSettings")
@@ -84,7 +89,7 @@ struct SettingsView: View {
     }
 
     private var localPreferences: some View {
-        preferencesSection("本机偏好") {
+        preferencesSection("本机偏好", index: "03") {
             Button { AppPlatform.openPhotoSettings() } label: {
                 SettingsRow(title: "照片权限", subtitle: AppPlatform.libraryName, symbol: "hand.raised", color: NASStyle.violet, value: library.canRead ? (library.authorization == .limited ? "部分照片" : "全部照片") : "未授权")
             }.accessibilityLabel("打开系统权限设置")
@@ -100,7 +105,7 @@ struct SettingsView: View {
 
     private var about: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("关于")
+            sectionTitle("关于", index: "04")
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 12) {
                     Image("AppBrand").resizable().scaledToFit().frame(width: 36, height: 36)
@@ -118,21 +123,24 @@ struct SettingsView: View {
                     }.font(.footnote).foregroundStyle(.secondary).padding(.top, 8)
                 } label: { Text("版本与使用说明").frame(minHeight: 44) }
                     .font(.subheadline).tint(.secondary)
-            }.padding(.horizontal, 4)
+            }.padding(.top, 16).settingsPanel()
         }
     }
 
-    private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.leading, 52) }
+    private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1) }
 
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-            .padding(.horizontal, 4).accessibilityAddTraits(.isHeader)
+    private func sectionTitle(_ title: String, index: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 9) {
+            Text(index).font(.system(.caption2, design: .monospaced).weight(.medium))
+                .foregroundStyle(NASStyle.accent).accessibilityHidden(true)
+            Text(title).font(.subheadline.weight(.bold)).foregroundStyle(.primary)
+        }.accessibilityAddTraits(.isHeader)
     }
 
-    private func preferencesSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionTitle(title)
-            VStack(spacing: 0, content: content).padding(.horizontal, 16).settingsPanel()
+    private func preferencesSection<Content: View>(_ title: String, index: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(title, index: index)
+            VStack(spacing: 0, content: content).settingsPanel()
         }
     }
 }
@@ -143,27 +151,27 @@ private struct SettingsServiceCard: View {
     let symbol: String
     let color: Color
     let connected: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(color)
-                .frame(width: 38, height: 38)
-                .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 11))
+            Image(systemName: symbol).font(.system(size: 25, weight: .medium)).foregroundStyle(color)
+                .frame(width: 34, height: 38)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
-                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                Text(title).font(.title3.weight(.bold)).foregroundStyle(.primary)
                 HStack(spacing: 6) {
                     Circle().fill(connected ? NASStyle.accent : Color.secondary.opacity(0.45)).frame(width: 5, height: 5)
                         .accessibilityHidden(true)
-                    Text((connected ? "已连接 · " : "未连接 · ") + subtitle)
+                    Text((connected ? "已连接" : "未连接") + (dynamicTypeSize.isAccessibilitySize ? "" : " · " + subtitle))
                         .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }.font(.caption)
             }
             Spacer(minLength: 8)
-            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.tertiary).accessibilityHidden(true)
+            Image(systemName: "arrow.up.right").font(.system(size: 18, weight: .medium))
+                .foregroundStyle(NASStyle.accent).accessibilityHidden(true)
         }
-        .padding(.vertical, 15)
+        .padding(.vertical, 17)
         .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
         .contentShape(Rectangle())
     }
@@ -180,12 +188,11 @@ private struct SettingsRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(color)
-                .frame(width: 38, height: 38)
-                .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 11))
+            Image(systemName: symbol).font(.system(size: 21, weight: .medium)).foregroundStyle(color)
+                .frame(width: 34, height: 38)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 5) {
-                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                Text(title).font(.subheadline.weight(.bold)).foregroundStyle(.primary)
                     .accessibilityLabel(dynamicTypeSize.isAccessibilitySize ? "\(title)，\(subtitle)" : title)
                 if !dynamicTypeSize.isAccessibilitySize {
                     Text(subtitle).font(.caption).foregroundStyle(.secondary)
@@ -211,7 +218,7 @@ private struct SettingsRow: View {
 
 private extension View {
     func settingsPanel() -> some View {
-        moriPanel()
+        overlay(alignment: .top) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
     }
 }
 
@@ -228,13 +235,6 @@ struct ConnectionView: View {
         case .monitor: return "读取 CPU、内存、温度和磁盘状态。DSM 系统监控接口通常需要管理员权限；不具备权限的项目会显示提示。"
         }
     }
-    private var serviceColor: Color {
-        switch service {
-        case .photos: return NASStyle.violet
-        case .files: return NASStyle.blue
-        case .monitor: return NASStyle.coral
-        }
-    }
     private enum Field: Hashable { case address, username, password, otp }
     @FocusState private var focus: Field?
     var body: some View {
@@ -242,11 +242,11 @@ struct ConnectionView: View {
             VStack(alignment: .leading, spacing: 22) {
                 HStack(alignment: .top, spacing: 16) {
                     Image(systemName: service == .photos ? "photo.on.rectangle" : (service == .files ? "folder" : "waveform.path.ecg"))
-                        .font(.system(size: 21, weight: .medium)).foregroundStyle(serviceColor)
-                        .frame(width: 44, height: 44).background(serviceColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                        .font(.system(size: 26, weight: .medium)).foregroundStyle(NASStyle.ink)
+                        .frame(width: 48, height: 48).background(NASStyle.lime, in: RoundedRectangle(cornerRadius: 6))
                     VStack(alignment: .leading, spacing: 7) {
                         Text(service == .photos ? "Synology Photos" : (service == .files ? "File Station" : "NAS 运行状态"))
-                            .font(.title2.weight(.semibold)).foregroundStyle(.primary)
+                            .font(.title2.weight(.heavy)).foregroundStyle(.primary)
                         Text(connectionDescription).font(.subheadline).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
@@ -272,8 +272,8 @@ struct ConnectionView: View {
                         inputRule
                         TextField("验证码（开启双重验证时填写）", text: $otp).textContentType(.oneTimeCode).keyboardType(.numberPad).focused($focus, equals: .otp)
                             .padding(16).frame(minHeight: 50)
-                    }.textFieldStyle(.plain).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
-                        .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
+                    }.textFieldStyle(.plain).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 6))
+                        .overlay { RoundedRectangle(cornerRadius: 6).stroke(NASStyle.outline, lineWidth: 1) }
                     Toggle("在钥匙串中保存登录信息", isOn: $app.remember).font(.subheadline).frame(minHeight: 44)
                     Text("保存后自动恢复照片、文件和状态连接；主动断开后暂停自动连接。")
                         .font(.caption).foregroundStyle(.secondary)
@@ -287,8 +287,10 @@ struct ConnectionView: View {
                         HStack {
                             if app.connecting { ProgressView().tint(.white) }
                             Text(app.connecting ? (app.connectionPhase?.title ?? "正在连接…") : "登录并连接").font(.headline)
-                        }.padding(.horizontal, 20).frame(maxWidth: .infinity, minHeight: 50).foregroundStyle(.white)
-                            .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
+                            Spacer(minLength: 8)
+                            Image(systemName: "arrow.up.right").font(.headline).accessibilityHidden(true)
+                        }.padding(.horizontal, 20).frame(maxWidth: .infinity, minHeight: 54).foregroundStyle(.white)
+                            .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 6))
                     }.buttonStyle(.plain)
                         .disabled(app.connecting || app.credentials.address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || app.credentials.username.isEmpty || app.credentials.password.isEmpty).accessibilityIdentifier("loginNAS")
                     if app.connecting {
@@ -336,7 +338,12 @@ struct ConnectionView: View {
 
     private func connectionSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            HStack {
+                Text(title).font(.subheadline.weight(.bold)).foregroundStyle(.primary)
+                Spacer()
+                Text(title == "服务器" ? "01" : "02")
+                    .font(.system(.caption2, design: .monospaced)).foregroundStyle(NASStyle.accent).accessibilityHidden(true)
+            }
             content()
         }
     }
@@ -346,7 +353,7 @@ struct ConnectionView: View {
 private extension View {
     func connectionInput() -> some View {
         textFieldStyle(.plain).padding(16).frame(minHeight: 50)
-            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
-            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
+            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 6))
+            .overlay { RoundedRectangle(cornerRadius: 6).stroke(NASStyle.outline, lineWidth: 1) }
     }
 }
