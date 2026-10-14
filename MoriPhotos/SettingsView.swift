@@ -14,28 +14,28 @@ struct SettingsView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 24) {
                     if !AppPlatform.isMac && sizeClass != .regular {
                         HStack(spacing: 12) {
-                            Text("设置").font(.title2.weight(.semibold))
+                            Text("设置").font(.title.weight(.semibold))
                             Spacer()
-                            Image("AppBrand").resizable().scaledToFit().frame(width: 36, height: 36)
-                                .clipShape(RoundedRectangle(cornerRadius: 11)).accessibilityHidden(true)
+                            Image("AppBrand").resizable().scaledToFit().frame(width: 32, height: 32)
+                                .clipShape(RoundedRectangle(cornerRadius: 9)).accessibilityHidden(true)
                         }.padding(.bottom, 2)
                     }
                     if geometry.size.width >= 850 && !dynamicTypeSize.isAccessibilitySize {
-                        HStack(alignment: .top, spacing: 24) {
-                            VStack(alignment: .leading, spacing: 18) {
+                        HStack(alignment: .top, spacing: 28) {
+                            VStack(alignment: .leading, spacing: 24) {
                                 connections
                                 backupAndDevices
                             }.frame(maxWidth: .infinity, alignment: .topLeading)
-                            VStack(alignment: .leading, spacing: 18) {
+                            VStack(alignment: .leading, spacing: 24) {
                                 localPreferences
                                 about
                             }.frame(width: 340, alignment: .topLeading)
                         }
                     } else {
-                        VStack(alignment: .leading, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 24) {
                             connections
                             backupAndDevices
                             localPreferences
@@ -44,8 +44,8 @@ struct SettingsView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .padding(AppPlatform.isMac ? 24 : 16)
-                .frame(maxWidth: 1120)
+                .padding(AppPlatform.isMac ? 28 : 20)
+                .frame(maxWidth: 1040)
                 .frame(maxWidth: .infinity, alignment: .top)
             }.phoneMenuScrolling()
             .background(NASStyle.canvas)
@@ -59,11 +59,11 @@ struct SettingsView: View {
             sectionTitle("存储连接")
             VStack(spacing: 0) {
                 NavigationLink { ConnectionView().toolbar(.visible, for: .navigationBar) } label: {
-                    SettingsServiceCard(title: "群晖照片", symbol: "photo.on.rectangle", connected: app.client != nil)
+                    SettingsServiceCard(title: "群晖照片", subtitle: "Synology Photos", symbol: "photo.on.rectangle", color: NASStyle.violet, connected: app.client != nil)
                 }
                 rowDivider
                 NavigationLink { ConnectionView(service: .files).toolbar(.visible, for: .navigationBar) } label: {
-                    SettingsServiceCard(title: "群晖文件", symbol: "folder", connected: app.fileClient != nil)
+                    SettingsServiceCard(title: "群晖文件", subtitle: "File Station", symbol: "folder", color: NASStyle.blue, connected: app.fileClient != nil)
                 }
 
             }.padding(.horizontal, 16).settingsPanel()
@@ -73,11 +73,11 @@ struct SettingsView: View {
     private var backupAndDevices: some View {
         preferencesSection("备份与工具") {
             NavigationLink { PhotoBackupView().toolbar(.visible, for: .navigationBar) } label: {
-                SettingsRow(title: "新照片备份", subtitle: "原图保存到群晖", symbol: "arrow.up.doc", value: backup.configuration.enabled ? "已开启" : "未开启")
+                SettingsRow(title: "新照片备份", subtitle: "原图保存到群晖", symbol: "arrow.up.doc", color: NASStyle.blue, value: backup.configuration.enabled ? "已开启" : "未开启")
             }.accessibilityIdentifier("newPhotoBackupSettings")
             rowDivider
             NavigationLink { NASMonitorHomeView().toolbar(.visible, for: .navigationBar) } label: {
-                SettingsRow(title: "NAS 运行状态", subtitle: "负载、容量与硬盘健康", symbol: "waveform.path.ecg")
+                SettingsRow(title: "NAS 运行状态", subtitle: "负载、容量与硬盘健康", symbol: "waveform.path.ecg", color: NASStyle.coral)
             }
 
         }
@@ -86,14 +86,14 @@ struct SettingsView: View {
     private var localPreferences: some View {
         preferencesSection("本机偏好") {
             Button { AppPlatform.openPhotoSettings() } label: {
-                SettingsRow(title: "照片权限", subtitle: AppPlatform.libraryName, symbol: "hand.raised", value: library.canRead ? (library.authorization == .limited ? "部分照片" : "全部照片") : "未授权")
+                SettingsRow(title: "照片权限", subtitle: AppPlatform.libraryName, symbol: "hand.raised", color: NASStyle.violet, value: library.canRead ? (library.authorization == .limited ? "部分照片" : "全部照片") : "未授权")
             }.accessibilityLabel("打开系统权限设置")
             rowDivider
             Button {
                 library.manager.stopCachingImagesForAllAssets()
                 Task { await app.client?.clearCache(); cleared = true }
             } label: {
-                SettingsRow(title: cleared ? "缩略图缓存已清理" : "清理缩略图缓存", subtitle: "保留原始照片与下载文件", symbol: cleared ? "checkmark.circle" : "arrow.triangle.2.circlepath", chevron: false)
+                SettingsRow(title: cleared ? "缩略图缓存已清理" : "清理缩略图缓存", subtitle: "保留原始照片与下载文件", symbol: cleared ? "checkmark.circle" : "arrow.triangle.2.circlepath", color: NASStyle.accent, chevron: false)
             }
         }
     }
@@ -118,14 +118,15 @@ struct SettingsView: View {
                     }.font(.footnote).foregroundStyle(.secondary).padding(.top, 8)
                 } label: { Text("版本与使用说明").frame(minHeight: 44) }
                     .font(.subheadline).tint(.secondary)
-            }.padding(16).settingsPanel()
+            }.padding(.horizontal, 4)
         }
     }
 
-    private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.leading, 44) }
+    private var rowDivider: some View { Rectangle().fill(NASStyle.outline).frame(height: 1).padding(.leading, 52) }
 
     private func sectionTitle(_ title: String) -> some View {
-        MoriSectionHeading(title).padding(.horizontal, 4)
+        Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+            .padding(.horizontal, 4).accessibilityAddTraits(.isHeader)
     }
 
     private func preferencesSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -138,21 +139,33 @@ struct SettingsView: View {
 
 private struct SettingsServiceCard: View {
     let title: String
+    let subtitle: String
     let symbol: String
+    let color: Color
     let connected: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 19)).foregroundStyle(NASStyle.accent)
-                .frame(width: 36, height: 36).background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 11)).accessibilityHidden(true)
-            Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-            Spacer(minLength: 8)
-            HStack(spacing: 5) {
-                Circle().fill(connected ? NASStyle.accent : Color.secondary.opacity(0.4)).frame(width: 5, height: 5)
-                Text(connected ? "已连接" : "未连接").font(.caption).foregroundStyle(connected ? NASStyle.accent : .secondary)
+        HStack(spacing: 14) {
+            Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(color)
+                .frame(width: 38, height: 38)
+                .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 11))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                HStack(spacing: 6) {
+                    Circle().fill(connected ? NASStyle.accent : Color.secondary.opacity(0.45)).frame(width: 5, height: 5)
+                        .accessibilityHidden(true)
+                    Text((connected ? "已连接 · " : "未连接 · ") + subtitle)
+                        .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }.font(.caption)
             }
-            Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
-        }.frame(maxWidth: .infinity, minHeight: 64).contentShape(Rectangle())
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.tertiary).accessibilityHidden(true)
+        }
+        .padding(.vertical, 15)
+        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
@@ -160,25 +173,39 @@ private struct SettingsRow: View {
     let title: String
     let subtitle: String
     let symbol: String
+    var color: Color = NASStyle.accent
     var value: String? = nil
     var chevron = true
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 16, weight: .medium)).foregroundStyle(NASStyle.accent)
-                .frame(width: 32, height: 32)
-                .background(NASStyle.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 9))
+        HStack(spacing: 14) {
+            Image(systemName: symbol).font(.system(size: 17, weight: .medium)).foregroundStyle(color)
+                .frame(width: 38, height: 38)
+                .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 11))
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 5) {
                 Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                    .accessibilityLabel(dynamicTypeSize.isAccessibilitySize ? "\(title)，\(subtitle)" : title)
+                if !dynamicTypeSize.isAccessibilitySize {
+                    Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                }
+                if dynamicTypeSize.isAccessibilitySize, let value { valueLabel(value) }
             }
             Spacer(minLength: 8)
-            if let value { Text(value).font(.caption.weight(.medium)).foregroundStyle(value == "已连接" || value == "已开启" ? NASStyle.accent : .secondary) }
-            if chevron { Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary).accessibilityHidden(true) }
+            if !dynamicTypeSize.isAccessibilitySize, let value { valueLabel(value) }
+            if chevron {
+                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.tertiary).accessibilityHidden(true)
+            }
         }
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading).contentShape(Rectangle())
+        .padding(.vertical, 15)
+        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading).contentShape(Rectangle())
+    }
+
+    private func valueLabel(_ value: String) -> some View {
+        Text(value).font(.caption.weight(.medium))
+            .foregroundStyle(value == "已开启" ? NASStyle.accent : .secondary)
     }
 }
 
@@ -201,6 +228,13 @@ struct ConnectionView: View {
         case .monitor: return "读取 CPU、内存、温度和磁盘状态。DSM 系统监控接口通常需要管理员权限；不具备权限的项目会显示提示。"
         }
     }
+    private var serviceColor: Color {
+        switch service {
+        case .photos: return NASStyle.violet
+        case .files: return NASStyle.blue
+        case .monitor: return NASStyle.coral
+        }
+    }
     private enum Field: Hashable { case address, username, password, otp }
     @FocusState private var focus: Field?
     var body: some View {
@@ -208,11 +242,11 @@ struct ConnectionView: View {
             VStack(alignment: .leading, spacing: 22) {
                 HStack(alignment: .top, spacing: 16) {
                     Image(systemName: service == .photos ? "photo.on.rectangle" : (service == .files ? "folder" : "waveform.path.ecg"))
-                        .font(.system(size: 22, weight: .regular)).foregroundStyle(NASStyle.accent)
-                        .frame(width: 42, height: 42).background(NASStyle.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                        .font(.system(size: 21, weight: .medium)).foregroundStyle(serviceColor)
+                        .frame(width: 44, height: 44).background(serviceColor.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
                     VStack(alignment: .leading, spacing: 7) {
                         Text(service == .photos ? "Synology Photos" : (service == .files ? "File Station" : "NAS 运行状态"))
-                            .font(.system(size: 24, weight: .semibold)).foregroundStyle(.primary)
+                            .font(.title2.weight(.semibold)).foregroundStyle(.primary)
                         Text(connectionDescription).font(.subheadline).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
@@ -238,8 +272,8 @@ struct ConnectionView: View {
                         inputRule
                         TextField("验证码（开启双重验证时填写）", text: $otp).textContentType(.oneTimeCode).keyboardType(.numberPad).focused($focus, equals: .otp)
                             .padding(16).frame(minHeight: 50)
-                    }.textFieldStyle(.plain).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 12))
-                        .overlay { RoundedRectangle(cornerRadius: 12).stroke(NASStyle.outline, lineWidth: 0.5) }
+                    }.textFieldStyle(.plain).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
+                        .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
                     Toggle("在钥匙串中保存登录信息", isOn: $app.remember).font(.subheadline).frame(minHeight: 44)
                     Text("保存后自动恢复照片、文件和状态连接；主动断开后暂停自动连接。")
                         .font(.caption).foregroundStyle(.secondary)
@@ -312,7 +346,7 @@ struct ConnectionView: View {
 private extension View {
     func connectionInput() -> some View {
         textFieldStyle(.plain).padding(16).frame(minHeight: 50)
-            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 12))
-            .overlay { RoundedRectangle(cornerRadius: 12).stroke(NASStyle.outline, lineWidth: 0.5) }
+            .background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 }

@@ -6,7 +6,7 @@ struct NASMonitorDesktopDashboard: View {
     let snapshot: NASMonitorSnapshot
     let samples: [NASLoadSample]
     let width: CGFloat
-    private let memoryColor = NASStyle.blue
+    private let memoryColor = NASStyle.violet
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -20,7 +20,7 @@ struct NASMonitorDesktopDashboard: View {
                            detail: "NAS 实时接收", percentage: nil, color: NASStyle.accent, identifier: "monitorReceive")
                     metric("发送", symbol: "arrow.up.right", value: rate(resources.sentBytesPerSecond),
                            detail: "NAS 实时发送", percentage: nil, color: NASStyle.accent, identifier: "monitorSend")
-                }
+                }.desktopMonitorPanel()
             }
             if width >= 820, snapshot.resources != nil, let storage = snapshot.storage {
                 HStack(alignment: .top, spacing: 16) {
@@ -36,22 +36,20 @@ struct NASMonitorDesktopDashboard: View {
     }
 
     private func metric(_ title: String, symbol: String, value: String, detail: String, percentage: Double?, color: Color, identifier: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(title).font(.subheadline.weight(.medium))
                 Spacer()
                 Image(systemName: symbol).font(.system(size: 16, weight: .regular)).foregroundStyle(color)
             }.foregroundStyle(.secondary)
-            Text(value).font(.system(size: width >= 1000 ? 36 : 30, weight: .semibold)).monospacedDigit()
+            Text(value).font(.system(size: width >= 1000 ? 34 : 28, weight: .semibold)).monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.55).accessibilityIdentifier(identifier)
             VStack(alignment: .leading, spacing: 10) {
                 if let percentage { MonitorUsageBar(fraction: percentage / 100, color: color, track: NASStyle.inset) }
                 else { Color.clear.frame(height: 6).accessibilityHidden(true) }
                 Text(detail).font(.caption).foregroundStyle(.secondary)
             }
-        }.frame(maxWidth: .infinity, alignment: .leading).padding(18)
-            .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
-            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 8).padding(.vertical, 4)
     }
 
     private var trend: some View {
@@ -81,7 +79,7 @@ struct NASMonitorDesktopDashboard: View {
                     .chartLegend(.hidden)
                     .chartYAxis {
                         AxisMarks(position: .leading, values: [0, 50, 100]) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3, 4])).foregroundStyle(Color.primary.opacity(0.08))
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [3, 4])).foregroundStyle(NASStyle.outline)
                             AxisValueLabel { if let number = value.as(Int.self) { Text("\(number)%").font(.caption2) } }
                         }
                     }
@@ -117,7 +115,7 @@ struct NASMonitorDesktopDashboard: View {
                     }
                     if let fraction = volume.fraction {
                         HStack(alignment: .firstTextBaseline, spacing: 5) {
-                            Text(NASMonitorFormat.bytes(volume.used)).font(.system(size: 24, weight: .semibold)).monospacedDigit()
+                            Text(NASMonitorFormat.bytes(volume.used)).font(.system(size: 22, weight: .semibold)).monospacedDigit()
                             Text("/ " + NASMonitorFormat.bytes(volume.total)).font(.caption).foregroundStyle(.secondary)
                             Spacer(minLength: 4)
                             Text(NASMonitorFormat.percent(fraction * 100)).font(.caption.weight(.medium)).monospacedDigit().foregroundStyle(.secondary)
@@ -158,7 +156,7 @@ struct NASMonitorDesktopDashboard: View {
 
     private func panelTitle(_ title: String, count: Int) -> some View {
         HStack {
-            Text(title).font(.headline)
+            Text(title).font(.subheadline.weight(.semibold)).accessibilityAddTraits(.isHeader)
             Spacer()
             Text(String(count)).font(.caption.monospaced()).foregroundStyle(.secondary)
         }
@@ -190,7 +188,7 @@ private struct MonitorUsageBar: View {
 
 private extension View {
     func desktopMonitorPanel() -> some View {
-        padding(18).background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 14))
-            .overlay { RoundedRectangle(cornerRadius: 14).stroke(NASStyle.outline, lineWidth: 0.5) }
+        padding(20).background(NASStyle.surface, in: RoundedRectangle(cornerRadius: 16))
+            .overlay { RoundedRectangle(cornerRadius: 16).stroke(NASStyle.outline, lineWidth: 0.5) }
     }
 }

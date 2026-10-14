@@ -91,6 +91,7 @@ struct NASFileBrowserView: View {
                 Text(sort.title).font(.subheadline.weight(.medium))
             }.foregroundStyle(.primary).padding(.horizontal, 12).frame(minHeight: 44)
                 .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 14))
+                .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(NASStyle.outline, lineWidth: 0.5) }
         }.accessibilityLabel("排序方式").accessibilityValue("\(sort.title)，\(ascending ? "升序" : "降序")")
             .accessibilityIdentifier("nasFileSort")
     }
@@ -127,7 +128,7 @@ struct NASFileBrowserView: View {
     private var fileControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 5) {
                     if folder != nil {
                         Text(directoryContext).font(.caption).foregroundStyle(.secondary)
                             .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
@@ -150,7 +151,7 @@ struct NASFileBrowserView: View {
             } else {
                 HStack(spacing: 8) { searchControl; sortMenu.fixedSize(horizontal: true, vertical: false) }
             }
-        }.buttonStyle(.plain).padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 12)
+        }.buttonStyle(.plain).padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 16)
     }
     private var mobileBrowser: some View {
         VStack(spacing: 0) {
@@ -161,7 +162,7 @@ struct NASFileBrowserView: View {
                     Section {
                         ErrorBanner(message: error)
                         Button("重试读取") { Task { await refresh() } }
-                    }.listRowBackground(NASStyle.canvas)
+                    }.listRowBackground(NASStyle.surface)
                 }
                 Group {
                     ForEach(filteredItems) { file in
@@ -183,10 +184,11 @@ struct NASFileBrowserView: View {
                     } else if filteredItems.isEmpty && store.error == nil {
                         ContentUnavailableView(query.isEmpty ? (folder == nil ? "没有可访问的共享文件夹" : "这是一个空文件夹") : "没有匹配的文件", systemImage: query.isEmpty ? "folder" : "magnifyingglass", description: Text(query.isEmpty ? (folder == nil ? "请检查账号的共享文件夹权限。" : "可以返回上级继续浏览。") : "搜索范围为当前已载入的文件。"))
                     }
-                }.listRowBackground(NASStyle.canvas)
-                    .listRowInsets(EdgeInsets(top: 11, leading: 16, bottom: 11, trailing: 16))
+                }.listRowBackground(NASStyle.surface)
+                    .listRowInsets(EdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20))
                     .listRowSeparatorTint(NASStyle.outline)
-            }.phoneMenuScrolling(active: isActive).listStyle(.plain).scrollContentBackground(.hidden).contentMargins(.top, 0, for: .scrollContent)
+            }.phoneMenuScrolling(active: isActive).listStyle(.plain).scrollContentBackground(.hidden)
+                .background(NASStyle.surface).contentMargins(.top, 0, for: .scrollContent)
 
         }.background(NASStyle.canvas)
     }
@@ -196,17 +198,18 @@ struct NASFileBrowserView: View {
 struct NASFileRow: View {
     let file: NASFile
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 14) {
             StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(file.name).font(.subheadline.weight(.medium)).foregroundStyle(.primary).lineLimit(2).truncationMode(.middle)
-                HStack(spacing: 8) {
+                HStack(spacing: 7) {
                     if !file.isdir, let size = file.size { Text(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
+                    if !file.isdir && file.size != nil && file.modified != nil { Text("·") }
                     if let date = file.modified { Text(date.formatted(date: .abbreviated, time: .omitted)) }
                     if file.isdir && file.modified == nil { Text("文件夹") }
-                }.font(.caption).foregroundStyle(.secondary)
-            }
-        }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.vertical, 2)
+                }.font(.caption).monospacedDigit().foregroundStyle(.secondary)
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }.frame(maxWidth: .infinity, minHeight: 48, alignment: .leading).padding(.vertical, 2)
     }
 }
 
@@ -392,8 +395,8 @@ struct StorageFileBadge: View {
                     .frame(width: 64, height: 64)
             } else {
                 Image(systemName: symbol).font(.system(size: 20, weight: .regular))
-                    .symbolRenderingMode(.hierarchical).frame(width: 40, height: 42)
-                    .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                    .symbolRenderingMode(.hierarchical).frame(width: 40, height: 44)
+                    .background(color.opacity(0.075), in: RoundedRectangle(cornerRadius: 10))
             }
         }.foregroundStyle(color)
             .accessibilityHidden(true)

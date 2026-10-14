@@ -76,7 +76,7 @@ private struct DesktopFileContents: View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) { pathBar; controls }
             VStack(spacing: 4) { pathBar; controls }
-        }.padding(.horizontal, 16).padding(.vertical, 6).background(NASStyle.surface)
+        }.padding(.horizontal, 20).padding(.vertical, 8).background(NASStyle.surface)
     }
 
     private var pathBar: some View {
@@ -118,8 +118,8 @@ private struct DesktopFileContents: View {
                     Button { directory.query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary).frame(width: 44, height: 44) }
                         .buttonStyle(.plain).accessibilityLabel("清除搜索")
                 }
-            }.font(.subheadline).padding(.horizontal, 10).frame(width: 210, height: 44)
-                .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 12))
+            }.font(.subheadline).padding(.horizontal, 12).frame(width: 230, height: 44)
+                .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 10))
             Menu {
                 Picker("排序", selection: $directory.sort) {
                     ForEach(FileSort.allCases.filter { directory.folder != nil || $0 != .size }) { Text($0.title).tag($0) }
@@ -129,7 +129,7 @@ private struct DesktopFileContents: View {
             HStack(spacing: 2) {
                 viewButton("icons", symbol: "square.grid.2x2", title: "图标视图")
                 viewButton("list", symbol: "list.bullet", title: "列表视图")
-            }
+            }.padding(2).background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 10))
             Button { inspector.toggle() } label: { Image(systemName: "sidebar.right").frame(width: 44, height: 44) }
                 .foregroundStyle(inspector ? NASStyle.accent : Color.secondary).help("显示或隐藏信息")
                 .accessibilityLabel("显示或隐藏信息").accessibilityIdentifier("filesInspector")
@@ -139,7 +139,8 @@ private struct DesktopFileContents: View {
         Button { layout = value } label: {
             Image(systemName: symbol).frame(width: 44, height: 44)
                 .foregroundStyle(layout == value ? NASStyle.accent : Color.secondary)
-                .background(layout == value ? NASStyle.accent.opacity(0.10) : Color.clear, in: RoundedRectangle(cornerRadius: 12))
+                .background(layout == value ? NASStyle.surface : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                .overlay { RoundedRectangle(cornerRadius: 8).strokeBorder(layout == value ? NASStyle.outline : .clear, lineWidth: 0.5) }
         }.buttonStyle(.plain).help(title).accessibilityLabel(title)
             .accessibilityAddTraits(layout == value ? .isSelected : [])
             .accessibilityIdentifier("filesView_" + value)
@@ -147,18 +148,18 @@ private struct DesktopFileContents: View {
 
     private var iconGrid: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 230, maximum: 340), spacing: 12)], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 230, maximum: 340), spacing: 14)], spacing: 14) {
                 ForEach(matchingFiles) { file in
                     HStack(spacing: 12) {
                         StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir)
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: 7) {
                             Text(file.name).font(.subheadline.weight(.medium)).lineLimit(2).truncationMode(.middle)
                             Text(file.isdir ? (directory.folder == nil ? "共享文件夹" : "文件夹") : size(file))
-                                .font(.caption2).monospacedDigit().foregroundStyle(.secondary)
+                                .font(.caption).monospacedDigit().foregroundStyle(.secondary)
                         }.frame(maxWidth: .infinity, alignment: .leading)
-                    }.frame(maxWidth: .infinity, minHeight: 52, alignment: .leading).padding(12)
-                        .background(directory.selection == file.id ? NASStyle.selection : hoveredFile == file.id ? NASStyle.inset : NASStyle.surface, in: RoundedRectangle(cornerRadius: 14))
-                        .overlay { RoundedRectangle(cornerRadius: 14).strokeBorder(directory.selection == file.id ? NASStyle.accent.opacity(0.55) : .clear, lineWidth: 1) }
+                    }.frame(maxWidth: .infinity, minHeight: 60, alignment: .leading).padding(14)
+                        .background(directory.selection == file.id ? NASStyle.selection : hoveredFile == file.id ? NASStyle.inset : NASStyle.surface, in: RoundedRectangle(cornerRadius: 12))
+                        .overlay { RoundedRectangle(cornerRadius: 12).strokeBorder(directory.selection == file.id ? NASStyle.accent.opacity(0.55) : NASStyle.outline, lineWidth: directory.selection == file.id ? 1 : 0.5) }
                         .onHover { hoveredFile = $0 ? file.id : nil }
                         .contentShape(Rectangle())
                         .onTapGesture(count: 2) { directory.selection = file.id; open(file) }
@@ -169,7 +170,7 @@ private struct DesktopFileContents: View {
                         .accessibilityAction { directory.selection = file.id; open(file) }
                         .accessibilityIdentifier((file.isdir ? "nasFolder_" : "nasFile_") + file.name)
                 }
-            }.padding(16)
+            }.padding(20)
         }.accessibilityIdentifier("desktopFileGrid")
     }
     private var fileTable: some View {
@@ -202,7 +203,7 @@ private struct DesktopFileContents: View {
     private var information: some View {
         ScrollView {
             if let file = selected {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 18) {
                     StorageFileBadge(name: file.name, symbol: file.isdir ? "folder.fill" : file.icon, folder: file.isdir, expanded: true).frame(width: 82)
                     Text(file.name).font(.headline).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
                     Text(file.kindLabel).font(.caption).foregroundStyle(.secondary)
@@ -214,7 +215,7 @@ private struct DesktopFileContents: View {
                     Button(openTitle(file), systemImage: file.isdir ? "folder" : file.canPlayNatively ? "play.fill" : "eye") { open(file) }
                         .disabled(!file.isdir && !file.canPlayNatively && !file.canQuickLook)
                     if !file.isdir { Button(AppPlatform.downloadTitle, systemImage: "arrow.down.circle") { download(file) } }
-                }.padding(18).frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(22).frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 ContentUnavailableView("文件信息", systemImage: "info.circle", description: Text("选择文件查看大小、修改时间和位置。"))
             }
@@ -223,7 +224,7 @@ private struct DesktopFileContents: View {
     private func infoRow(_ title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(title).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.system(size: 12)).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
+            Text(value).font(.subheadline).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
         }
     }
     private var statusBar: some View {
@@ -244,8 +245,8 @@ private struct DesktopFileContents: View {
             Button(selected.map(openTitle) ?? "打开") { if let selected { open(selected) } }
                 .disabled(selected == nil || searchFocused).keyboardShortcut("o", modifiers: .command)
                 .help("打开所选项目 ⌘O").accessibilityIdentifier("filesOpen")
-        }.font(.system(size: 11)).foregroundStyle(.secondary).buttonStyle(.borderless).padding(.horizontal, 22).frame(height: 44)
-            .background(NASStyle.canvas)
+        }.font(.caption).foregroundStyle(.secondary).buttonStyle(.borderless).padding(.horizontal, 22).frame(height: 44)
+            .background(NASStyle.surface)
     }
     @ViewBuilder private func fileActions(_ file: NASFile) -> some View {
         Button(openTitle(file)) { directory.selection = file.id; open(file) }

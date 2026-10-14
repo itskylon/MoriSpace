@@ -52,14 +52,14 @@ struct NASHomeView: View {
                 NASSectionTabs(selection: selection)
                 Spacer(minLength: 0)
                 connectionButton
-            }.padding(.horizontal, 12).padding(.vertical, 4).background(NASStyle.canvas)
+            }.padding(.horizontal, 16).padding(.vertical, 4).background(NASStyle.surface)
             Rectangle().fill(NASStyle.outline).frame(height: 0.5)
         }
     }
     private var connectionButton: some View {
         Button { connection = true } label: {
             Image(systemName: "slider.horizontal.3").font(.body.weight(.semibold)).frame(width: 44, height: 44)
-                .background(NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 12))
+                .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 12))
         }.buttonStyle(.plain).foregroundStyle(.secondary)
             .accessibilityLabel(section == "照片" ? "连接设置" : section == "文件" ? "文件连接设置" : "状态连接设置")
     }
@@ -138,7 +138,8 @@ struct NASBrowserView: View {
     var body: some View {
         VStack(spacing: 0) {
             browserControls
-            if showingSearch && !desktopLayout { searchField.padding(.horizontal, contentInset).padding(.bottom, 8) }
+            if showingSearch && !desktopLayout { searchField.padding(.horizontal, contentInset).padding(.bottom, 12) }
+            Rectangle().fill(NASStyle.outline).frame(height: 0.5)
             ScrollView {
                 VStack(alignment: .leading, spacing: 8) {
                     if let error = store.error {
@@ -155,7 +156,7 @@ struct NASBrowserView: View {
                                 }
                             }
                             .padding(.horizontal, contentInset)
-                        }.frame(height: folderRowHeight)
+                        }.frame(height: folderRowHeight).padding(.top, 4).padding(.bottom, 4)
                     }
                     LazyVGrid(columns: columns, spacing: 2) {
                         ForEach(filteredPhotos) { photo in
@@ -217,8 +218,7 @@ struct NASBrowserView: View {
             } else {
                 Text(effectiveSpace.title).font(.subheadline).foregroundStyle(.secondary)
             }
-            Text("\(filteredPhotos.count)").font(.caption.monospacedDigit().weight(.medium)).foregroundStyle(.secondary)
-                .padding(.horizontal, 8).padding(.vertical, 4).background(NASStyle.inset, in: Capsule())
+            Text("\(filteredPhotos.count) 张").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                 .accessibilityLabel("\(filteredPhotos.count) 张照片")
             Spacer(minLength: 8)
             if desktopLayout { searchField.frame(maxWidth: 260) }
@@ -239,7 +239,7 @@ struct NASBrowserView: View {
                     .font(.system(size: 17, weight: .medium)).foregroundStyle(.primary)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityLabel(showingSearch ? "关闭搜索" : "搜索照片和文件夹").accessibilityIdentifier("toggleNASSearch") }
-        }.buttonStyle(.borderless).frame(minHeight: desktopLayout ? 52 : 48)
+        }.buttonStyle(.borderless).frame(minHeight: desktopLayout ? 60 : 52)
             .padding(.leading, contentInset).padding(.trailing, desktopLayout ? contentInset : 8)
     }
 
@@ -255,7 +255,7 @@ struct NASBrowserView: View {
                     .buttonStyle(.plain).accessibilityLabel("清空搜索").accessibilityIdentifier("clearNASSearch")
             }
         }.font(.subheadline).padding(.horizontal, 10).frame(minHeight: 44)
-            .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 12))
+            .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 10))
     }
 }
 
@@ -376,12 +376,12 @@ struct StorageConnectionHeading: View {
     let detail: String
     let symbol: String
     var color: Color = NASStyle.accent
-    @ScaledMetric(relativeTo: .title2) private var titleSize = 24
+    @ScaledMetric(relativeTo: .title2) private var titleSize = 22
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            Image(systemName: symbol).font(.system(size: 22, weight: .medium))
-                .foregroundStyle(color).frame(width: 48, height: 48)
-                .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 14))
+            Image(systemName: symbol).font(.system(size: 21, weight: .medium))
+                .foregroundStyle(color).frame(width: 44, height: 44)
+                .background(color.opacity(0.075), in: RoundedRectangle(cornerRadius: 12))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 6) {
                 Text(title).font(.system(size: titleSize, weight: .semibold))

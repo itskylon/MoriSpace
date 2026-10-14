@@ -123,7 +123,7 @@ struct LocalLibraryView: View {
             .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 0.5) }
     }
     private var libraryTitle: some View {
-        Text("照片").font(.title2.weight(.semibold))
+        Text("照片").font(.title.weight(.bold)).tracking(-0.4)
             .foregroundStyle(.primary).accessibilityIdentifier("localLibraryTitle")
     }
     private var photoCountBadge: some View {

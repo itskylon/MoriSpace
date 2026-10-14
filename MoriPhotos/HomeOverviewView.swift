@@ -18,23 +18,28 @@ struct HomeOverviewView: View {
         GeometryReader { geometry in
             let wide = geometry.size.width >= 820 && !typeSize.isAccessibilitySize
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 24) {
                     header
                     if wide {
-                        HStack(alignment: .top, spacing: 24) {
-                            VStack(alignment: .leading, spacing: 20) {
-                                device
+                        HStack(alignment: .top, spacing: 28) {
+                            VStack(alignment: .leading, spacing: 24) {
                                 storageShortcuts
+                                deviceSection
                             }.frame(maxWidth: .infinity)
-                            dailyTasks.frame(width: 320)
+                            dailyTasks.frame(width: 310)
                         }
                     } else {
-                        device
-                        storageShortcuts
+                        if typeSize.isAccessibilitySize {
+                            deviceSection
+                            storageShortcuts
+                        } else {
+                            storageShortcuts
+                            deviceSection
+                        }
                         dailyTasks
                     }
                 }
-                .padding(.horizontal, wide ? 24 : 16).padding(.top, 12).padding(.bottom, 24)
+                .padding(.horizontal, wide ? 28 : 20).padding(.top, 14).padding(.bottom, 24)
                 .frame(maxWidth: 1120).frame(maxWidth: .infinity, alignment: .top)
             }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
         }
@@ -53,7 +58,7 @@ struct HomeOverviewView: View {
     private var header: some View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 5) {
-                Text(AppBrand.name).font(.title2.weight(.semibold)).accessibilityIdentifier("homeTitle")
+                Text(AppBrand.name).font(.largeTitle.weight(.bold)).tracking(-0.7).accessibilityIdentifier("homeTitle")
                 Text(Date().formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_Hans_CN"))))
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -68,39 +73,41 @@ struct HomeOverviewView: View {
 
     private var storageShortcuts: some View {
         VStack(alignment: .leading, spacing: 12) {
-            MoriSectionHeading("你的存储")
+            MoriSectionHeading("资料库")
             shortcuts
         }
     }
     private var shortcuts: some View {
-        VStack(spacing: 0) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: typeSize.isAccessibilitySize ? 1 : 3), spacing: 10) {
             shortcut("本机照片", subtitle: library.canRead ? "\(library.assets.count) 张照片" : "浏览照片图库", icon: "photo.on.rectangle", page: .local, id: "homeLocalPhotos")
-            Divider().padding(.leading, 60)
-            shortcut("群晖照片", subtitle: "个人与共享空间", icon: "photo.stack", page: .photos, id: "homeNASPhotos")
-            Divider().padding(.leading, 60)
-            shortcut("群晖文件", subtitle: "文件夹与文档", icon: "folder", page: .files, id: "homeNASFiles")
-        }.moriPanel(radius: 18)
+            shortcut("群晖照片", subtitle: "个人与共享", icon: "photo.stack", page: .photos, id: "homeNASPhotos")
+            shortcut("群晖文件", subtitle: "文件与文档", icon: "folder", page: .files, id: "homeNASFiles")
+        }
     }
 
     private func shortcut(_ title: String, subtitle: String, icon: String, page: WorkspacePage, id: String) -> some View {
         Button { open(page) } label: {
-            HStack(spacing: 12) {
-                Image(systemName: icon).font(.system(size: 20, weight: .regular)).foregroundStyle(NASStyle.accent)
-                    .frame(width: 34, height: 34).background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 9))
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
-                    Text(subtitle).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Image(systemName: icon).font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(page == .photos ? NASStyle.violet : NASStyle.accent)
+                        .frame(width: 42, height: 42)
+                        .background((page == .photos ? NASStyle.violet : NASStyle.accent).opacity(0.10), in: RoundedRectangle(cornerRadius: 13))
+                    Spacer(minLength: 0)
+                    Image(systemName: "arrow.up.right").font(.system(size: 10, weight: .semibold)).foregroundStyle(.tertiary)
                 }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(.tertiary)
-            }.padding(.horizontal, 14).padding(.vertical, 11).frame(maxWidth: .infinity, minHeight: 62, alignment: .leading)
-                .contentShape(Rectangle())
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(subtitle).font(.caption2).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+                }
+            }.padding(14).frame(maxWidth: .infinity, minHeight: 128, alignment: .leading)
+                .moriPanel(radius: 20).contentShape(RoundedRectangle(cornerRadius: 20))
         }.buttonStyle(.plain).accessibilityIdentifier(id)
     }
 
     private var dailyTasks: some View {
         VStack(alignment: .leading, spacing: 12) {
-            MoriSectionHeading("日常")
+            MoriSectionHeading("日常工具")
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: typeSize.isAccessibilitySize ? 1 : 2), spacing: 12) {
                 calendarCard
                 backupCard
@@ -110,6 +117,12 @@ struct HomeOverviewView: View {
     }
     private var device: some View {
         HomeDeviceCard(isActive: isActive && detail == nil) { open(.monitor) }.id(app.monitorConnectionID)
+    }
+    private var deviceSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            MoriSectionHeading("设备状态")
+            device
+        }
     }
     private var calendarCard: some View {
         HomeSummaryCard(title: "今日日程", value: Date().formatted(.dateTime.day().locale(Locale(identifier: "zh_Hans_CN"))),
@@ -160,45 +173,45 @@ private struct HomeDeviceCard: View {
         VStack(alignment: .leading, spacing: 12) {
             Button(action: open) {
                 HStack(spacing: 12) {
-                    Image(systemName: "externaldrive").font(.system(size: 26)).foregroundStyle(.white)
-                        .frame(width: 46, height: 46).background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                    Image(systemName: "externaldrive").font(.system(size: 26)).foregroundStyle(.primary)
+                        .frame(width: 46, height: 46).background(NASStyle.selection, in: RoundedRectangle(cornerRadius: 12))
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(snapshot?.system?.model ?? "群晖 NAS").font(.headline).foregroundStyle(.white)
-                        Text(snapshot?.system?.version ?? "设备运行状态").font(.caption).foregroundStyle(NASStyle.heroText)
+                        Text(snapshot?.system?.model ?? "群晖 NAS").font(.headline).foregroundStyle(.primary)
+                        Text(snapshot?.system?.version ?? "设备运行状态").font(.caption).foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 4)
-                    Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(NASStyle.heroText)
+                    Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 }.contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityIdentifier("homeDevice")
             HStack(spacing: 6) {
-                Circle().fill(snapshot?.hasData == true && snapshot?.hasAttention == false && snapshot?.issues.isEmpty == true ? .white : NASStyle.heroText).frame(width: 6, height: 6)
-                Text(status).font(.caption).foregroundStyle(NASStyle.heroText).accessibilityIdentifier("homeNASStatus")
+                Circle().fill(snapshot?.hasData == true && snapshot?.hasAttention == false && snapshot?.issues.isEmpty == true ? NASStyle.accent : Color.secondary).frame(width: 6, height: 6)
+                Text(status).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("homeNASStatus")
                 Spacer(minLength: 0)
                 Text(snapshot.map { $0.updatedAt.formatted(date: .omitted, time: .shortened) + " 更新" } ?? "等待读取")
-                    .font(.caption2).foregroundStyle(NASStyle.heroText).accessibilityIdentifier("homeUpdated")
+                    .font(.caption2).foregroundStyle(.secondary).accessibilityIdentifier("homeUpdated")
             }
             HStack(spacing: 0) {
                 metric("CPU", value: NASMonitorFormat.percent(snapshot?.resources?.cpu), id: "homeCPU")
-                Rectangle().fill(.white.opacity(0.16)).frame(width: 1, height: 38)
+                Rectangle().fill(NASStyle.outline).frame(width: 1, height: 38)
                 metric("内存", value: NASMonitorFormat.percent(snapshot?.resources?.memory), id: "homeMemory")
-                Rectangle().fill(.white.opacity(0.16)).frame(width: 1, height: 38)
+                Rectangle().fill(NASStyle.outline).frame(width: 1, height: 38)
                 metric("温度", value: snapshot?.system?.temperature.map { String(format: "%.0f°", $0) } ?? "—", id: "homeTemperature")
             }.padding(.vertical, 3)
             if let volumes = snapshot?.storage?.volumes, !volumes.isEmpty {
-                Rectangle().fill(.white.opacity(0.16)).frame(height: 0.5)
+                Rectangle().fill(NASStyle.outline).frame(height: 0.5)
                 ForEach(volumes.prefix(2)) { volume in
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
-                            Text(volume.id.replacingOccurrences(of: "volume_", with: "存储空间 ")).foregroundStyle(NASStyle.heroText)
+                            Text(volume.id.replacingOccurrences(of: "volume_", with: "存储空间 ")).foregroundStyle(.secondary)
                             Spacer()
                             Text(NASMonitorFormat.bytes(volume.used) + " / " + NASMonitorFormat.bytes(volume.total))
-                                .monospacedDigit().foregroundStyle(NASStyle.heroText)
+                                .monospacedDigit().foregroundStyle(.secondary)
                         }.font(.caption2)
                         if let fraction = volume.fraction {
                             GeometryReader { geometry in
-                                Capsule().fill(.white.opacity(0.16))
+                                Capsule().fill(NASStyle.inset)
                                     .overlay(alignment: .leading) {
-                                        Capsule().fill(volume.lowSpace || volume.health == .critical ? Color.orange : .white.opacity(0.8))
+                                        Capsule().fill(volume.lowSpace || volume.health == .critical ? Color.orange : NASStyle.accent)
                                             .frame(width: geometry.size.width * min(max(fraction, 0), 1))
                                     }
                             }.frame(height: 3).accessibilityHidden(true)
@@ -207,9 +220,9 @@ private struct HomeDeviceCard: View {
                 }
             } else {
                 Text(snapshot?.hasData == true ? "存储容量暂不可用" : "连接后查看负载、温度与存储容量")
-                    .font(.caption).foregroundStyle(NASStyle.heroText)
+                    .font(.caption).foregroundStyle(.secondary)
             }
-        }.padding(16).moriHeroPanel()
+        }.padding(18).moriPanel(radius: 22)
         .task(id: "\(isActive)-\(scenePhase)") {
             guard isActive && scenePhase == .active else { store.stop(); return }
             await app.restoreConnection(service: .monitor)
@@ -220,8 +233,8 @@ private struct HomeDeviceCard: View {
     }
     private func metric(_ title: String, value: String, id: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(title).font(.caption).foregroundStyle(NASStyle.heroText)
-            Text(value).font(.system(size: 27, weight: .semibold, design: .rounded)).monospacedDigit().foregroundStyle(.white).accessibilityIdentifier(id)
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(value).font(.system(size: 26, weight: .medium, design: .rounded)).monospacedDigit().foregroundStyle(.primary).accessibilityIdentifier(id)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 8)
     }
 }
@@ -259,11 +272,11 @@ private struct HomeSummaryCard: View {
                 } else {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack(spacing: 7) {
-                            Image(systemName: icon).foregroundStyle(NASStyle.accent)
+                            Image(systemName: icon).foregroundStyle(id == "homeCalendar" ? NASStyle.coral : NASStyle.accent)
                             Text(title).font(.caption.weight(.medium)).foregroundStyle(.secondary)
                             Spacer(minLength: 0)
                         }
-                        Text(value).font(.title3.weight(.semibold)).foregroundStyle(.primary)
+                        Text(value).font(.title2.weight(.semibold)).foregroundStyle(.primary)
                         Text(subtitle).font(.caption2).foregroundStyle(.secondary).lineLimit(2)
                     }.padding(14).frame(maxWidth: .infinity, minHeight: 104, alignment: .leading).moriPanel(radius: 18)
                         .contentShape(RoundedRectangle(cornerRadius: 18))
