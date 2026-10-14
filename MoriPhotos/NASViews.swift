@@ -60,7 +60,7 @@ struct NASHomeView: View {
         Button { connection = true } label: {
             Image(systemName: "slider.horizontal.3").font(.body.weight(.semibold)).frame(width: 44, height: 44)
                 .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
-        }.buttonStyle(.plain).foregroundStyle(.secondary)
+        }.buttonStyle(MoriPressStyle()).foregroundStyle(.secondary)
             .accessibilityLabel(section == "照片" ? "连接设置" : section == "文件" ? "文件连接设置" : "状态连接设置")
     }
 }
@@ -86,7 +86,7 @@ struct NASPhotosHomeView: View {
                         NASConnectionStatus(service: .photos)
                         Button { connect = true } label: {
                             NASActionLabel(title: app.hasSavedConnection ? "连接设置" : "连接群晖照片", subtitle: "Synology Photos", symbol: "photo.stack")
-                        }.buttonStyle(.plain).accessibilityIdentifier("connectNAS")
+                        }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("connectNAS")
                     }.padding(20).frame(maxWidth: 520, alignment: .leading)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
@@ -152,7 +152,7 @@ struct NASBrowserView: View {
                                 ForEach(filteredFolders) { child in
                                     NavigationLink { NASBrowserView(client: client, folder: child, initialSpace: effectiveSpace).toolbar(.visible, for: .navigationBar) } label: {
                                         NASFolderChip(title: child.title)
-                                    }.buttonStyle(.plain).accessibilityIdentifier("nasPhotoFolder_\(child.id)")
+                                    }.buttonStyle(MoriPressStyle()).accessibilityIdentifier("nasPhotoFolder_\(child.id)")
                                 }
                             }
                             .padding(.horizontal, contentInset)
@@ -169,7 +169,7 @@ struct NASBrowserView: View {
                                         }
                                 }.aspectRatio(1, contentMode: .fit).clipped()
                                     .clipShape(RoundedRectangle(cornerRadius: desktopLayout ? 2 : 0))
-                            }.buttonStyle(.plain).accessibilityLabel(photo.filename).accessibilityIdentifier("nasPhotoCell")
+                            }.buttonStyle(MoriPressStyle(scale: 0.97)).accessibilityLabel(photo.filename).accessibilityIdentifier("nasPhotoCell")
                         }
                     }.padding(.horizontal, desktopLayout ? contentInset : 0)
                     if store.loading { ProgressView("正在读取 NAS…").frame(maxWidth: .infinity).padding(30) }
@@ -227,7 +227,7 @@ struct NASBrowserView: View {
                 Image(systemName: "square.grid.3x3").font(.caption).foregroundStyle(.secondary)
                 Slider(value: $thumbnailSize, in: 110...280).frame(width: 88).accessibilityLabel("缩略图大小")
                 Button { Task { await store.reset(client: client, space: effectiveSpace, folder: folder?.id) } } label: { Image(systemName: "arrow.clockwise").frame(width: 44, height: 44) }
-                    .keyboardShortcut("r").help("刷新照片 ⌘R").disabled(store.loading)
+                    .buttonStyle(MoriPressStyle()).keyboardShortcut("r").help("刷新照片 ⌘R").disabled(store.loading)
             }
             if !desktopLayout { Button {
                 withAnimation(.easeOut(duration: 0.18)) {
@@ -239,7 +239,7 @@ struct NASBrowserView: View {
                 Image(systemName: showingSearch ? "xmark" : "magnifyingglass")
                     .font(.system(size: 17, weight: .medium)).foregroundStyle(.primary)
                     .frame(width: 44, height: 44).contentShape(Rectangle())
-            }.buttonStyle(.plain).accessibilityLabel(showingSearch ? "关闭搜索" : "搜索照片和文件夹").accessibilityIdentifier("toggleNASSearch") }
+            }.buttonStyle(MoriPressStyle()).accessibilityLabel(showingSearch ? "关闭搜索" : "搜索照片和文件夹").accessibilityIdentifier("toggleNASSearch") }
         }.buttonStyle(.borderless).frame(minHeight: desktopLayout ? 72 : 64)
             .padding(.leading, contentInset).padding(.trailing, desktopLayout ? contentInset : 8)
     }
@@ -253,7 +253,7 @@ struct NASBrowserView: View {
                 .accessibilityIdentifier("nasPhotoSearch")
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary).frame(width: 44, height: 44) }
-                    .buttonStyle(.plain).accessibilityLabel("清空搜索").accessibilityIdentifier("clearNASSearch")
+                    .buttonStyle(MoriPressStyle()).accessibilityLabel("清空搜索").accessibilityIdentifier("clearNASSearch")
             }
         }.font(.subheadline).padding(.horizontal, 10).frame(minHeight: 44)
             .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))

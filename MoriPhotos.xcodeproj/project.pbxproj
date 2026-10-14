@@ -32,6 +32,7 @@
 		4ED69224BB730E926F4C60AD /* PhotoLibraryIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB1BF04404A8493BAB60509 /* PhotoLibraryIntegrationTests.swift */; };
 		52F9A82A65B2FDB500D80552 /* PhotoBackupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F655D12154C8ED18EDAC56C /* PhotoBackupView.swift */; };
 		55808695785740BAA34D0987 /* HolidayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80134465C65DC9628290845 /* HolidayBadge.swift */; };
+		55E28DD127465B906574A5D3 /* MoriMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514FF9B5D1EFC283464A71DA /* MoriMotion.swift */; };
 		5CA37363F0FB0C8607E5300F /* ChinaHolidaySchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */; };
 		6078839951AAE4FD8A3A1739 /* VideoPlaybackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7274409BBE484F52990098A9 /* VideoPlaybackView.swift */; };
 		607A32D07B12C231ECE25D5A /* CalendarViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C828459D1927A41E6C971A1 /* CalendarViews.swift */; };
@@ -177,6 +178,7 @@
 		4A9C3809C2E657705DD021AF /* FileDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileDownloads.swift; sourceTree = "<group>"; };
 		4CD05A9EBD5067F6C666B4BD /* NASConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASConnection.swift; sourceTree = "<group>"; };
 		4CD612473CD1F61239A468C5 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		514FF9B5D1EFC283464A71DA /* MoriMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoriMotion.swift; sourceTree = "<group>"; };
 		568004985FCD4A42241CDA01 /* NASViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASViews.swift; sourceTree = "<group>"; };
 		5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChinaHolidaySchedule.swift; sourceTree = "<group>"; };
 		5C828459D1927A41E6C971A1 /* CalendarViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarViews.swift; sourceTree = "<group>"; };
@@ -349,6 +351,7 @@
 				FE0EDF0862AA31083F8E62F5 /* LocalViews.swift */,
 				9750E24D423F2DD94FFFE52A /* Mac.entitlements */,
 				DEBB81A6B76ABF29C4956AC2 /* Models.swift */,
+				514FF9B5D1EFC283464A71DA /* MoriMotion.swift */,
 				483DD6F941B710B8476B7848 /* MoriPhotosApp.swift */,
 				4CD05A9EBD5067F6C666B4BD /* NASConnection.swift */,
 				B73940EA3C290AECCDF32A1C /* NASConnectionFixture.swift */,
@@ -691,6 +694,7 @@
 				B127734EFB40556FB34997E2 /* LocalViews.swift in Sources */,
 				25C7FF466302B7547A3FC875 /* LunarMonthWidgetContent.swift in Sources */,
 				0FE27DA83A27D87C9150B5B2 /* Models.swift in Sources */,
+				55E28DD127465B906574A5D3 /* MoriMotion.swift in Sources */,
 				878E62DE610508A9A9D5D4C8 /* MoriPhotosApp.swift in Sources */,
 				CDE81E541A242EF8D61DD8D2 /* NASConnection.swift in Sources */,
 				AEC9C09147F2FED47BAE66A8 /* NASConnectionFixture.swift in Sources */,
@@ -869,7 +873,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 47;
+				CURRENT_PROJECT_VERSION = 48;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -889,7 +893,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.30.0;
+				MARKETING_VERSION = 0.30.1;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -1134,7 +1138,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 47;
+				CURRENT_PROJECT_VERSION = 48;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1148,7 +1152,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.30.0;
+				MARKETING_VERSION = 0.30.1;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MTL_ENABLE_DEBUG_INFO = NO;

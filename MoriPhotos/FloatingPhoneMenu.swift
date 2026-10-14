@@ -48,7 +48,7 @@ struct FloatingPhoneMenu: View {
                             }
                             .contentShape(Capsule())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(MoriPressStyle())
                         .accessibilityRepresentation {
                             Button(title(page)) { state.expand(); selection = page }
                                 .accessibilityAddTraits(selection == page ? .isSelected : [])
@@ -70,7 +70,7 @@ struct FloatingPhoneMenu: View {
                 .frame(maxWidth: .infinity)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 .animation(reduceMotion ? nil : .snappy(duration: 0.24), value: compact)
-                .animation(reduceMotion ? nil : .snappy(duration: 0.24), value: selection)
+                .animation(reduceMotion ? nil : MoriMotion.selection, value: selection)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
@@ -81,11 +81,13 @@ struct FloatingPhoneMenu: View {
         if fullLabels {
             VStack(spacing: 3) {
                 Image(systemName: symbol(page)).font(.system(size: 21, weight: .regular))
+                    .moriSelectionBounce(selection == page)
                 Text(title(page)).font(.caption2.weight(.medium)).lineLimit(1)
             }.accessibilityHidden(true)
         } else {
             HStack(spacing: selection == page && !compact ? 7 : 0) {
                 Image(systemName: symbol(page)).font(.system(size: compact ? 19 : 21, weight: .regular))
+                    .moriSelectionBounce(selection == page)
                 Text(title(page)).font(.system(size: 12, weight: .semibold)).lineLimit(1)
                     .fixedSize().frame(width: selection == page && !compact ? nil : 0)
                     .opacity(selection == page && !compact ? 1 : 0).clipped()

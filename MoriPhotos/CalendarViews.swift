@@ -7,6 +7,7 @@ struct CalendarHomeView: View {
     @Environment(\.wideWorkspace) private var wide
     @Environment(\.scenePhase) private var phase
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric(relativeTo: .body) private var compactDayHeight: CGFloat = 52
     @ScaledMetric(relativeTo: .caption) private var eventTimeWidth: CGFloat = 50
     @ScaledMetric(relativeTo: .largeTitle) private var monthTitleSize: CGFloat = 64
@@ -108,7 +109,7 @@ struct CalendarHomeView: View {
                     }.padding(.horizontal, 16).frame(minHeight: 48)
                         .foregroundStyle(NASStyle.accent)
                         .background(NASStyle.accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
-                }.buttonStyle(.plain)
+                }.buttonStyle(MoriPressStyle())
                     .disabled(store.isRequestingAccess).accessibilityIdentifier("calendarRequestAccess")
             } else if store.access == .denied {
                 Button("打开系统设置", action: openSettings).buttonStyle(.borderedProminent).tint(NASStyle.accent)
@@ -177,7 +178,7 @@ struct CalendarHomeView: View {
                 .font(.body)
                 .frame(minWidth: wide ? nil : 44, minHeight: wide ? nil : 44)
                 .contentShape(Rectangle())
-        }.buttonStyle(.plain).foregroundStyle(NASStyle.accent)
+        }.buttonStyle(MoriPressStyle()).foregroundStyle(NASStyle.accent)
             .accessibilityLabel("选择显示的日历").accessibilityIdentifier("calendarSources")
             .disabled(store.access != .full)
     }
@@ -189,7 +190,7 @@ struct CalendarHomeView: View {
                 .frame(minWidth: wide ? nil : 44, minHeight: wide ? nil : 44)
                 .background(wide ? .clear : NASStyle.signal, in: RoundedRectangle(cornerRadius: 8))
                 .contentShape(Rectangle())
-        }.buttonStyle(.plain).foregroundStyle(wide ? NASStyle.accent : Color.white)
+        }.buttonStyle(MoriPressStyle()).foregroundStyle(wide ? NASStyle.accent : Color.white)
             .accessibilityLabel("新建日程").accessibilityIdentifier("calendarNewEvent")
             .keyboardShortcut("n", modifiers: .command).disabled(!store.canCreate)
             .opacity(store.canCreate ? 1 : 0.45)
@@ -206,6 +207,8 @@ struct CalendarHomeView: View {
                 + Text("月").font(.title3.weight(.bold)))
                 .tracking(-2).foregroundStyle(NASStyle.accent)
                 .fixedSize(horizontal: true, vertical: false)
+                .contentTransition(reduceMotion ? .identity : .numericText())
+                .animation(reduceMotion ? nil : MoriMotion.selection, value: store.month)
                 .accessibilityLabel("\(String(parts.year!))年 \(parts.month!)月")
                 .accessibilityIdentifier("calendarMonthTitle")
         }
@@ -228,7 +231,7 @@ struct CalendarHomeView: View {
                 Image(systemName: "chevron.right").font(.callout.weight(.medium))
                     .frame(width: 44, height: 44).contentShape(Rectangle())
             }.accessibilityLabel("下个月").accessibilityIdentifier("calendarNextMonth")
-        }.buttonStyle(.plain)
+        }.buttonStyle(MoriPressStyle())
     }
 
     private var displayModes: some View {
@@ -239,10 +242,13 @@ struct CalendarHomeView: View {
                         .foregroundStyle(store.displayMode == mode ? Color.primary : Color.secondary)
                         .frame(minWidth: 44, minHeight: 44)
                         .overlay(alignment: .bottom) {
-                            Rectangle().fill(store.displayMode == mode ? NASStyle.accent : .clear).frame(height: 3)
+                            Rectangle().fill(NASStyle.accent).frame(height: 3)
+                                .scaleEffect(x: store.displayMode == mode ? 1 : 0, y: 1)
+                                .opacity(store.displayMode == mode ? 1 : 0)
+                                .animation(reduceMotion ? nil : MoriMotion.selection, value: store.displayMode)
                         }
                         .contentShape(Rectangle())
-                }.buttonStyle(.plain)
+                }.buttonStyle(MoriPressStyle())
                     .accessibilityIdentifier("calendarMode_" + mode.rawValue)
                     .accessibilityAddTraits(store.displayMode == mode ? .isSelected : [])
             }
@@ -254,7 +260,7 @@ struct CalendarHomeView: View {
         Button { Task { await store.refresh() } } label: {
             Image(systemName: "arrow.clockwise").font(.subheadline)
                 .frame(width: 44, height: 44).contentShape(Rectangle())
-        }.buttonStyle(.plain).foregroundStyle(.secondary).disabled(store.isLoading)
+        }.buttonStyle(MoriPressStyle()).foregroundStyle(.secondary).disabled(store.isLoading)
             .accessibilityLabel("刷新日历").accessibilityIdentifier("calendarRefresh")
     }
 
@@ -337,7 +343,7 @@ struct CalendarHomeView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Button { store.select(date) } label: {
                         heading.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).contentShape(Rectangle())
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(MoriPressStyle())
                         .accessibilityLabel(dayLabel)
                         .accessibilityIdentifier("calendarDay_" + store.layout.dayID(date))
                         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -350,7 +356,7 @@ struct CalendarHomeView: View {
                             }
                             .frame(maxWidth: .infinity, minHeight: AppPlatform.isMac ? 24 : 44, alignment: .leading)
                             .contentShape(Rectangle())
-                        }.buttonStyle(.plain)
+                        }.buttonStyle(MoriPressStyle())
                             .accessibilityLabel(event.title + "，" + timeLabel(event, on: date))
                             .accessibilityHint("打开日程")
                             .accessibilityIdentifier("calendarGridEvent")
@@ -360,7 +366,7 @@ struct CalendarHomeView: View {
                             Text("+\(events.count - 2)").font(.caption2).foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, minHeight: AppPlatform.isMac ? 24 : 44, alignment: .leading)
                                 .contentShape(Rectangle())
-                        }.buttonStyle(.plain).accessibilityLabel("查看这一天的全部 \(events.count) 项日程")
+                        }.buttonStyle(MoriPressStyle()).accessibilityLabel("查看这一天的全部 \(events.count) 项日程")
                     }
                     Spacer(minLength: 0)
                 }
@@ -368,6 +374,7 @@ struct CalendarHomeView: View {
                 .frame(maxWidth: .infinity, minHeight: height, alignment: .top)
                 .background {
                     Rectangle().fill(selected ? NASStyle.selection : .clear)
+                        .animation(reduceMotion ? nil : MoriMotion.fade, value: selected)
                         .contentShape(Rectangle()).onTapGesture { store.select(date) }
                         .accessibilityHidden(true)
                 }
@@ -388,7 +395,7 @@ struct CalendarHomeView: View {
                         Rectangle().fill(NASStyle.outline).frame(height: 0.5)
                     }
                     .contentShape(Rectangle())
-                }.buttonStyle(.plain)
+                }.buttonStyle(MoriPressStyle())
                     .accessibilityLabel(dayLabel)
                     .accessibilityIdentifier("calendarDay_" + store.layout.dayID(date))
                     .accessibilityAddTraits(selected ? .isSelected : [])
@@ -430,7 +437,10 @@ struct CalendarHomeView: View {
             if !dynamicTypeSize.isAccessibilitySize {
                 Text(String(format: "%02d", store.layout.calendar.component(.day, from: date)))
                     .font(.system(size: 48, weight: .black)).monospacedDigit().tracking(-3)
-                    .foregroundStyle(NASStyle.lime).accessibilityHidden(true)
+                    .foregroundStyle(NASStyle.lime)
+                    .contentTransition(reduceMotion ? .identity : .numericText())
+                    .animation(reduceMotion ? nil : MoriMotion.selection, value: date)
+                    .accessibilityHidden(true)
             }
             VStack(alignment: .leading, spacing: 5) {
                 selectedDayTitle(date)
@@ -445,7 +455,7 @@ struct CalendarHomeView: View {
                     .foregroundStyle(Color.white)
                     .background(Color.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 6))
                     .contentShape(Rectangle())
-            }.buttonStyle(.plain).disabled(!store.canCreate)
+            }.buttonStyle(MoriPressStyle()).disabled(!store.canCreate)
                 .opacity(store.canCreate ? 1 : 0.45)
                 .accessibilityLabel("添加日程")
                 .accessibilityIdentifier("calendarDayAdd")
@@ -541,7 +551,7 @@ struct CalendarHomeView: View {
             }.fixedSize(horizontal: false, vertical: true).padding(.vertical, 14)
                 .frame(minHeight: 58).contentShape(Rectangle())
                 .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline.opacity(0.7)).frame(height: 0.5) }
-        }.buttonStyle(.plain).accessibilityIdentifier("calendarEventRow")
+        }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("calendarEventRow")
             .accessibilityLabel(event.title + "，" + timeLabel(event, on: date))
     }
     private func timeLabel(_ event: CalendarOccurrence, on date: Date) -> String {
@@ -599,6 +609,7 @@ private extension CalendarTint {
 }
 
 private struct CalendarDayHeading: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let number: Int
     let lunar: LunarCalendarDate
     let holiday: ChinaHolidayDay?
@@ -616,7 +627,12 @@ private struct CalendarDayHeading: View {
                 .font(.body.weight(selected || today ? .bold : .medium)).monospacedDigit()
                 .foregroundStyle(numberColor).lineLimit(1).minimumScaleFactor(0.65)
                 .frame(width: min(numberDiameter, desktop ? 44 : 38), height: min(numberDiameter, desktop ? 44 : 38))
-                .background(selected ? NASStyle.signal : .clear, in: RoundedRectangle(cornerRadius: 5))
+                .background {
+                    RoundedRectangle(cornerRadius: 5).fill(NASStyle.signal)
+                        .scaleEffect(selected ? 1 : 0.82)
+                        .opacity(selected ? 1 : 0)
+                        .animation(reduceMotion ? nil : MoriMotion.selection, value: selected)
+                }
                 .overlay(alignment: .bottom) {
                     if today && !selected { Rectangle().fill(NASStyle.accent).frame(width: 16, height: 2) }
                 }

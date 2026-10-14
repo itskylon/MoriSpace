@@ -65,7 +65,7 @@ struct LocalLibraryView: View {
                                                     }
                                                 }
                                         }.aspectRatio(1, contentMode: .fit).clipped()
-                                    }.buttonStyle(.plain).accessibilityLabel("照片 \(asset.creationDate?.formatted(date: .abbreviated, time: .omitted) ?? "")")
+                                    }.buttonStyle(MoriPressStyle(scale: 0.97)).accessibilityLabel("照片 \(asset.creationDate?.formatted(date: .abbreviated, time: .omitted) ?? "")")
                                         .accessibilityIdentifier("localPhotoCell")
                                 }
                             }.padding(.horizontal, AppPlatform.isMac ? 16 : 0)
@@ -142,7 +142,7 @@ struct LocalLibraryView: View {
             }.font(.subheadline.weight(.bold)).padding(.horizontal, 13).frame(minHeight: 44)
                 .foregroundStyle(selecting ? NASStyle.ink : NASStyle.accent)
                 .background(selecting ? NASStyle.lime : NASStyle.selection, in: RoundedRectangle(cornerRadius: 5))
-        }.buttonStyle(.plain).accessibilityIdentifier("localPhotoSelection")
+        }.buttonStyle(MoriPressStyle()).accessibilityIdentifier("localPhotoSelection")
     }
     private var libraryToolbar: some View {
         ViewThatFits(in: .horizontal) {
@@ -199,7 +199,7 @@ struct LocalLibraryView: View {
                         photoAccessLabel("前往系统设置")
                     }
                 }
-            }.buttonStyle(.plain)
+            }.buttonStyle(MoriPressStyle(scale: 0.985))
         }.padding(.vertical, 24).frame(maxWidth: .infinity, alignment: .leading)
             .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
     }
@@ -316,7 +316,7 @@ struct LocalDetailView: View {
                         Image(systemName: "chevron.right").frame(width: 44, height: 44)
                     }.accessibilityLabel("下一张").disabled(index == assets.count - 1 || busy)
                         .keyboardShortcut(.rightArrow, modifiers: []).accessibilityIdentifier("nextPhoto")
-                }.buttonStyle(.plain)
+                }.buttonStyle(MoriPressStyle())
                 if AppPlatform.isMac {
                     Divider()
                     photoActions(current)
@@ -329,7 +329,7 @@ struct LocalDetailView: View {
         HStack(spacing: 8) {
             Button { busy = true; Task { await library.favorite([current], value: !current.isFavorite); busy = false } } label: {
                 Image(systemName: current.isFavorite ? "heart.fill" : "heart").frame(width: 44, height: 44)
-            }.accessibilityLabel("收藏照片")
+            }.buttonStyle(MoriPressStyle()).accessibilityLabel("收藏照片")
             Button(role: .destructive) { showDelete = true } label: {
                 Image(systemName: "trash").frame(width: 44, height: 44)
             }.accessibilityLabel("删除照片")

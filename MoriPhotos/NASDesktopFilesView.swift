@@ -120,7 +120,7 @@ private struct DesktopFileContents: View {
             }.scrollIndicators(.hidden).frame(minWidth: 90)
             Button { Task { await refresh() } } label: { Image(systemName: "arrow.clockwise").frame(width: 44, height: 44) }
                 .disabled(store.loading).keyboardShortcut("r").help("刷新目录 ⌘R").accessibilityLabel("刷新目录")
-        }.buttonStyle(.plain).font(.subheadline).frame(minHeight: 44)
+        }.buttonStyle(MoriPressStyle()).font(.subheadline).frame(minHeight: 44)
     }
 
     private var controls: some View {
@@ -131,7 +131,7 @@ private struct DesktopFileContents: View {
                     .focused($searchFocused).accessibilityIdentifier("desktopFileSearch")
                 if !directory.query.isEmpty {
                     Button { directory.query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary).frame(width: 44, height: 44) }
-                        .buttonStyle(.plain).accessibilityLabel("清除搜索")
+                        .buttonStyle(MoriPressStyle()).accessibilityLabel("清除搜索")
                 }
             }.font(.subheadline).padding(.horizontal, 12).frame(width: 230, height: 44)
                 .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
@@ -146,7 +146,7 @@ private struct DesktopFileContents: View {
                 viewButton("list", symbol: "list.bullet", title: "列表视图")
             }.padding(2).background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
             Button { inspector.toggle() } label: { Image(systemName: "sidebar.right").frame(width: 44, height: 44) }
-                .foregroundStyle(inspector ? NASStyle.accent : Color.secondary).help("显示或隐藏信息")
+                .buttonStyle(MoriPressStyle()).foregroundStyle(inspector ? NASStyle.accent : Color.secondary).help("显示或隐藏信息")
                 .accessibilityLabel("显示或隐藏信息").accessibilityIdentifier("filesInspector")
         }.buttonStyle(.plain).frame(minHeight: 44)
     }
@@ -156,7 +156,7 @@ private struct DesktopFileContents: View {
                 .foregroundStyle(layout == value ? NASStyle.accent : Color.secondary)
                 .background(layout == value ? NASStyle.surface : Color.clear, in: RoundedRectangle(cornerRadius: 4))
                 .overlay { RoundedRectangle(cornerRadius: 4).strokeBorder(layout == value ? NASStyle.outline : .clear, lineWidth: 0.5) }
-        }.buttonStyle(.plain).help(title).accessibilityLabel(title)
+        }.buttonStyle(MoriPressStyle()).help(title).accessibilityLabel(title)
             .accessibilityAddTraits(layout == value ? .isSelected : [])
             .accessibilityIdentifier("filesView_" + value)
     }

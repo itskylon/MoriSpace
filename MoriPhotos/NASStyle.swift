@@ -66,7 +66,7 @@ struct NASSectionTabs: View {
         HStack(spacing: 4) {
             ForEach(["照片", "文件", "状态"], id: \.self) { title in
                 Button {
-                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.22)) { selection = title }
+                    selection = title
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: title == "照片" ? "photo.stack" : title == "文件" ? "folder" : "waveform.path.ecg")
@@ -76,8 +76,9 @@ struct NASSectionTabs: View {
                     .foregroundStyle(selection == title ? Color.white : Color.secondary)
                     .padding(.horizontal, 16).frame(minHeight: 44)
                     .background(selection == title ? NASStyle.signal : .clear, in: RoundedRectangle(cornerRadius: 8))
+                    .animation(reduceMotion ? nil : MoriMotion.fade, value: selection)
                     .contentShape(Rectangle())
-                }.buttonStyle(.plain)
+                }.buttonStyle(MoriPressStyle())
                     .accessibilityAddTraits(selection == title ? .isSelected : [])
                     .accessibilityIdentifier(title == "照片" ? "nasSectionPhotos" : (title == "文件" ? "nasSectionFiles" : "nasSectionMonitor"))
             }
@@ -122,6 +123,7 @@ struct NASFolderChip: View {
 }
 
 struct MoriFilterBar: View {
+    @Namespace private var filterIndicator
     let titles: [String]
     @Binding var selection: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -135,16 +137,20 @@ struct MoriFilterBar: View {
         HStack(spacing: 6) {
             ForEach(titles, id: \.self) { title in
                 Button {
-                    withAnimation(reduceMotion ? nil : .snappy(duration: 0.2)) { selection = title }
+                    selection = title
                 } label: {
                     Text(title).font(.subheadline.weight(selection == title ? .bold : .medium))
                         .foregroundStyle(selection == title ? Color.primary : Color.secondary)
                         .padding(.horizontal, 12).frame(minWidth: 44, minHeight: 44)
                         .overlay(alignment: .bottom) {
-                            if selection == title { Rectangle().fill(NASStyle.accent).frame(height: 3).padding(.horizontal, 12) }
+                            if selection == title {
+                                Rectangle().fill(NASStyle.accent).frame(height: 3).padding(.horizontal, 12)
+                                    .matchedGeometryEffect(id: "filterSelection", in: filterIndicator)
+                            }
                         }
                         .contentShape(Rectangle())
-                }.buttonStyle(.plain)
+                        .animation(reduceMotion ? nil : MoriMotion.selection, value: selection)
+                }.buttonStyle(MoriPressStyle())
                     .accessibilityAddTraits(selection == title ? .isSelected : [])
                     .accessibilityIdentifier("photoFilter_" + title)
             }

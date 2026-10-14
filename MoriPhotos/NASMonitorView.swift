@@ -16,7 +16,7 @@ struct NASMonitorHomeView: View {
                         NASConnectionStatus(service: .monitor)
                         Button { connection = true } label: {
                             NASActionLabel(title: app.hasSavedConnection ? "状态连接设置" : "连接 NAS 状态", subtitle: "CPU、内存与存储", symbol: "waveform.path.ecg")
-                        }.buttonStyle(.plain).accessibilityIdentifier("connectMonitor")
+                        }.buttonStyle(MoriPressStyle()).accessibilityIdentifier("connectMonitor")
                         Text("使用已保存账号读取运行状态。部分 DSM 系统监控项目需要管理员权限。")
                             .font(.footnote).foregroundStyle(.secondary)
                     }.padding(16).frame(maxWidth: 520).frame(maxWidth: .infinity, alignment: .top)
@@ -143,10 +143,10 @@ struct NASMonitorView: View {
                 Button { automatic.toggle() } label: {
                     Label(automatic && !store.halted ? "每 15 秒刷新" : "手动刷新", systemImage: automatic && !store.halted ? "arrow.triangle.2.circlepath" : "pause.circle")
                         .font(.caption.weight(.medium)).padding(.horizontal, 12).frame(minHeight: 44).contentShape(Rectangle())
-                }.buttonStyle(.plain).foregroundStyle(.secondary).accessibilityIdentifier("monitorAutoRefresh")
+                }.buttonStyle(MoriPressStyle()).foregroundStyle(.secondary).accessibilityIdentifier("monitorAutoRefresh")
                 Button { Task { await store.refresh(client: client) } } label: {
                     Image(systemName: "arrow.clockwise").font(.system(size: 13, weight: .medium)).frame(width: 44, height: 44).contentShape(Rectangle())
-                }.buttonStyle(.plain).disabled(store.loading).accessibilityLabel("刷新运行状态").accessibilityIdentifier("refreshMonitor")
+                }.buttonStyle(MoriPressStyle()).disabled(store.loading).accessibilityLabel("刷新运行状态").accessibilityIdentifier("refreshMonitor")
             }
             Text(snapshot.map { "更新于 " + $0.updatedAt.formatted(date: .omitted, time: .standard) } ?? "等待读取")
                 .font(.caption2).foregroundStyle(.secondary).accessibilityIdentifier("monitorUpdated")
@@ -169,7 +169,7 @@ struct NASMonitorView: View {
                     Image(systemName: "arrow.clockwise").font(.body.weight(.medium))
                         .frame(width: 44, height: 44)
                         .background(NASStyle.lime, in: Circle())
-                }.buttonStyle(.plain).foregroundStyle(NASStyle.ink).disabled(store.loading)
+                }.buttonStyle(MoriPressStyle()).foregroundStyle(NASStyle.ink).disabled(store.loading)
                     .accessibilityLabel("刷新运行状态").accessibilityIdentifier("refreshMonitor")
             }
             HStack(spacing: 10) {
@@ -178,7 +178,7 @@ struct NASMonitorView: View {
                 Button { automatic.toggle() } label: {
                     Label(automatic && !store.halted ? "15 秒刷新" : "手动刷新", systemImage: automatic && !store.halted ? "arrow.triangle.2.circlepath" : "pause.circle")
                         .font(.caption.weight(.medium)).frame(minHeight: 44).contentShape(Rectangle())
-                }.buttonStyle(.plain).foregroundStyle(.secondary)
+                }.buttonStyle(MoriPressStyle()).foregroundStyle(.secondary)
                     .accessibilityLabel(automatic && !store.halted ? "每 15 秒刷新" : "手动刷新").accessibilityIdentifier("monitorAutoRefresh")
             }
             HStack(alignment: .firstTextBaseline, spacing: 10) {

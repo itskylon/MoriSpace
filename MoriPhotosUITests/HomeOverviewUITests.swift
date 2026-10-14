@@ -105,6 +105,16 @@ final class HomeOverviewUITests: XCTestCase {
         XCTAssertTrue(cpu.waitForExistence(timeout: 10), "Device details must replace the files section even when it has a nested path")
         XCTAssertEqual(cpu.label, "18%")
         XCTAssertTrue(cpu.isHittable)
+        XCTAssertGreaterThan(cpu.frame.height, 0)
+        XCTAssertGreaterThanOrEqual(cpu.frame.minY, app.frame.minY)
+        XCTAssertLessThan(cpu.frame.maxY, app.phoneMenus.firstMatch.frame.minY)
+        // Also exercise a real control so a visible page cannot mask an interaction-blocking overlay.
+        let automatic = app.buttons["monitorAutoRefresh"]
+        XCTAssertTrue(automatic.isHittable)
+        automatic.tap()
+        XCTAssertTrue(wait(for: NSPredicate(format: "label == %@", "手动刷新"), on: automatic))
+        automatic.tap()
+        XCTAssertTrue(wait(for: NSPredicate(format: "label == %@", "每 15 秒刷新"), on: automatic))
 
         returnToPhoneHome(app)
         app.buttons["homeNASFiles"].tap()

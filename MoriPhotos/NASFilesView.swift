@@ -25,10 +25,10 @@ struct NASFilesHomeView: View {
                         NASConnectionStatus(service: .files)
                         Button { connect = true } label: {
                             NASActionLabel(title: app.hasSavedConnection ? "文件连接设置" : "连接群晖文件", subtitle: "File Station", symbol: "folder")
-                        }.buttonStyle(.plain).accessibilityIdentifier("connectFiles")
+                        }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("connectFiles")
                         NavigationLink { NASDownloadsView(manager: app.downloads, owner: app.fileAccountID).toolbar(.visible, for: .navigationBar) } label: {
                             NASActionLabel(title: "下载", subtitle: "任务与离线文件", symbol: "arrow.down.circle")
-                        }.buttonStyle(.plain).accessibilityIdentifier("openDownloads")
+                        }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("openDownloads")
                     }.padding(20).frame(maxWidth: 520, alignment: .leading)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
@@ -106,7 +106,7 @@ struct NASFileBrowserView: View {
                 .frame(minWidth: 44, minHeight: 44)
                 .padding(.horizontal, showingSearch ? 0 : 12)
                 .background(showingSearch ? Color.clear : NASStyle.inset, in: RoundedRectangle(cornerRadius: 6))
-        }.buttonStyle(.plain).foregroundStyle(.secondary)
+        }.buttonStyle(MoriPressStyle(scale: 0.985)).foregroundStyle(.secondary)
             .accessibilityLabel(showingSearch ? "关闭搜索" : "搜索文件")
             .accessibilityIdentifier("toggleNASFileSearch")
     }
@@ -143,7 +143,7 @@ struct NASFileBrowserView: View {
                 NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner).toolbar(.visible, for: .navigationBar) } label: {
                     Image(systemName: "arrow.down").font(.system(size: 18, weight: .semibold)).frame(width: 44, height: 44)
                         .foregroundStyle(NASStyle.ink).background(NASStyle.lime, in: Circle())
-                }.foregroundStyle(NASStyle.accent).accessibilityLabel("下载任务与已下载").accessibilityIdentifier("openDownloadsShortcut")
+                }.buttonStyle(MoriPressStyle()).foregroundStyle(NASStyle.accent).accessibilityLabel("下载任务与已下载").accessibilityIdentifier("openDownloadsShortcut")
                 optionsMenu
             }
             if dynamicTypeSize.isAccessibilitySize {
@@ -175,7 +175,7 @@ struct NASFileBrowserView: View {
                             }
                         } else {
                             Button { searchFocused = false; selected = file } label: { NASFileRow(file: file) }
-                                .buttonStyle(.plain).accessibilityIdentifier("nasFile_" + file.name)
+                                .buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("nasFile_" + file.name)
                         }
                     }
                     if store.loading { HStack { Spacer(); ProgressView("正在读取文件…"); Spacer() }.padding() }
@@ -246,7 +246,7 @@ struct NASFileDetailView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Button { video = VideoSelection(file: file, owner: owner) } label: {
                             StoragePrimaryAction(title: "直接播放视频", symbol: "play.fill")
-                        }.buttonStyle(.plain).accessibilityIdentifier("playVideo")
+                        }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("playVideo")
                         Text("支持本机可解码的 MP4、MOV 等视频。在线播放需要 NAS 支持分段读取。")
                             .font(.caption).foregroundStyle(.secondary)
                     }
@@ -256,7 +256,7 @@ struct NASFileDetailView: View {
                         app.downloads.enqueue(file, owner: owner, client: client); added = true
                     } label: {
                         StoragePrimaryAction(title: added ? "已加入下载队列" : AppPlatform.downloadTitle, symbol: added ? "checkmark" : "arrow.down")
-                    }.buttonStyle(.plain).disabled(added).opacity(added ? 0.65 : 1).accessibilityIdentifier("downloadFile")
+                    }.buttonStyle(MoriPressStyle(scale: 0.985)).disabled(added).opacity(added ? 0.65 : 1).accessibilityIdentifier("downloadFile")
                     NavigationLink { NASDownloadsView(manager: app.downloads, owner: owner) } label: {
                         HStack { Text("查看下载任务"); Spacer(); Image(systemName: "arrow.right") }
                             .font(.subheadline.weight(.semibold)).frame(minHeight: 44)

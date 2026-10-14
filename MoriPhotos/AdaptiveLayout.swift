@@ -85,11 +85,8 @@ private struct PhoneWorkspaceView: View {
                     .environment(\.phoneMenuScroll, { old, new in
                         if navigation.phoneSelection == page { menu.scrolled(from: old, to: new) }
                     })
-                    .opacity(navigation.phoneSelection == page ? 1 : 0)
-                    .allowsHitTesting(navigation.phoneSelection == page)
+                    .moriPageActivation(navigation.phoneSelection == page)
                     .disabled(navigation.phoneSelection != page)
-                    .accessibilityHidden(navigation.phoneSelection != page)
-                    .zIndex(navigation.phoneSelection == page ? 1 : 0)
             }
         }
         .onChange(of: navigation.phoneSelection) { old, next in visited.insert(old); visited.insert(next) }
@@ -113,6 +110,8 @@ struct DesktopWorkspaceView: View {
     @State private var visibility: NavigationSplitViewVisibility = .all
     @FocusState private var sidebarFocus: WorkspacePage?
     @State private var hoveredPage: WorkspacePage?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var sidebarSelection
     var body: some View {
         NavigationSplitView(columnVisibility: $visibility) {
             VStack(spacing: 0) {
@@ -146,11 +145,8 @@ struct DesktopWorkspaceView: View {
                 ZStack {
                     ForEach(WorkspacePage.allCases.filter { visited.contains($0) || $0 == navigation.selection }) { page in
                         content(page)
-                            .opacity(navigation.selection == page ? 1 : 0)
-                            .allowsHitTesting(navigation.selection == page)
+                            .moriPageActivation(navigation.selection == page)
                             .disabled(navigation.selection != page)
-                            .accessibilityHidden(navigation.selection != page)
-                            .zIndex(navigation.selection == page ? 1 : 0)
                     }
                 }
                 .navigationTitle(navigation.selection.title).navigationBarTitleDisplayMode(.inline)
@@ -179,16 +175,23 @@ struct DesktopWorkspaceView: View {
         Button { navigation.selection = page; sidebarFocus = page } label: {
             HStack(spacing: 12) {
                 Image(systemName: page.symbol).font(.system(size: 17, weight: .medium))
-                    .frame(width: 24)
+                    .frame(width: 24).moriSelectionBounce(navigation.selection == page)
                 Text(page.title).font(.subheadline.weight(navigation.selection == page ? .semibold : .regular))
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }.foregroundStyle(navigation.selection == page ? Color.white : Color.primary.opacity(0.8))
                 .padding(.horizontal, 12).frame(minHeight: 44)
-                .background(navigation.selection == page ? NASStyle.signal : hoveredPage == page ? NASStyle.inset : .clear,
-                            in: RoundedRectangle(cornerRadius: 7))
+                .background {
+                    if navigation.selection == page {
+                        RoundedRectangle(cornerRadius: 7).fill(NASStyle.signal)
+                            .matchedGeometryEffect(id: "sidebarSelection", in: sidebarSelection)
+                    } else if hoveredPage == page {
+                        RoundedRectangle(cornerRadius: 7).fill(NASStyle.inset)
+                    }
+                }
+                .animation(reduceMotion ? nil : MoriMotion.selection, value: navigation.selection)
                 .contentShape(RoundedRectangle(cornerRadius: 7))
-        }.buttonStyle(.plain)
+        }.buttonStyle(MoriPressStyle(scale: 0.985))
             .onHover { hoveredPage = $0 ? page : nil }
             .focusable()
             .focused($sidebarFocus, equals: page)

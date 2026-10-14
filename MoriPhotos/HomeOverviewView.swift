@@ -70,7 +70,7 @@ struct HomeOverviewView: View {
                     Image(systemName: "slider.horizontal.3").font(.system(size: 20, weight: .medium))
                         .foregroundStyle(NASStyle.ink).frame(width: 48, height: 48)
                         .background(NASStyle.lime, in: RoundedRectangle(cornerRadius: 12))
-                }.buttonStyle(.plain).accessibilityLabel("设置")
+                }.buttonStyle(MoriPressStyle(scale: 0.975)).accessibilityLabel("设置")
             }
             Rectangle().fill(Color.primary).frame(height: 2)
         }
@@ -133,7 +133,7 @@ struct HomeOverviewView: View {
                 .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 12))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .contentShape(RoundedRectangle(cornerRadius: 12))
-        }.buttonStyle(.plain)
+        }.buttonStyle(MoriPressStyle(scale: 0.975))
             .accessibilityLabel("本机照片，" + (library.canRead ? "\(library.assets.count) 张照片" : "打开照片图库"))
             .accessibilityIdentifier("homeLocalPhotos")
     }
@@ -155,7 +155,7 @@ struct HomeOverviewView: View {
                 .foregroundStyle(lime ? NASStyle.ink : Color.primary)
                 .background(lime ? NASStyle.lime : NASStyle.surfaceRaised, in: RoundedRectangle(cornerRadius: 12))
                 .contentShape(RoundedRectangle(cornerRadius: 12))
-        }.buttonStyle(.plain).accessibilityIdentifier(id)
+        }.buttonStyle(MoriPressStyle(scale: 0.975)).accessibilityIdentifier(id)
     }
 
     private var dailyTasks: some View {
@@ -235,7 +235,7 @@ private struct HomeDeviceCard: View {
                     Spacer(minLength: 4)
                     Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                 }.contentShape(Rectangle())
-            }.buttonStyle(.plain).accessibilityIdentifier("homeDevice")
+            }.buttonStyle(MoriPressStyle(scale: 0.975)).accessibilityIdentifier("homeDevice")
             HStack(spacing: 6) {
                 Circle().fill(snapshot?.hasData == true && snapshot?.hasAttention == false && snapshot?.issues.isEmpty == true ? NASStyle.accent : Color.secondary).frame(width: 6, height: 6)
                 Text(status).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("homeNASStatus")
@@ -339,7 +339,7 @@ private struct HomeSummaryCard: View {
                     .overlay(alignment: .top) { Rectangle().fill(id == "homeCalendar" ? NASStyle.accent : Color.primary).frame(height: 3) }
                     .contentShape(Rectangle())
             }
-        }.buttonStyle(.plain).accessibilityIdentifier(id)
+        }.buttonStyle(MoriPressStyle(scale: 0.975)).accessibilityIdentifier(id)
     }
 }
 
