@@ -65,11 +65,11 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 NavigationLink { ConnectionView().toolbar(.visible, for: .navigationBar) } label: {
                     SettingsServiceCard(title: "群晖照片", subtitle: "Synology Photos", symbol: "photo.on.rectangle", color: NASStyle.violet, connected: app.client != nil)
-                }.buttonStyle(MoriPressStyle(scale: 0.985))
+                }.buttonStyle(MoriPressStyle(scale: 0.965))
                 rowDivider
                 NavigationLink { ConnectionView(service: .files).toolbar(.visible, for: .navigationBar) } label: {
                     SettingsServiceCard(title: "群晖文件", subtitle: "File Station", symbol: "folder", color: NASStyle.blue, connected: app.fileClient != nil)
-                }.buttonStyle(MoriPressStyle(scale: 0.985))
+                }.buttonStyle(MoriPressStyle(scale: 0.965))
 
             }.settingsPanel()
         }
@@ -79,11 +79,11 @@ struct SettingsView: View {
         preferencesSection("备份与工具", index: "02") {
             NavigationLink { PhotoBackupView().toolbar(.visible, for: .navigationBar) } label: {
                 SettingsRow(title: "新照片备份", subtitle: "原图保存到群晖", symbol: "arrow.up.doc", color: NASStyle.blue, value: backup.configuration.enabled ? "已开启" : "未开启")
-            }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("newPhotoBackupSettings")
+            }.buttonStyle(MoriPressStyle(scale: 0.965)).accessibilityIdentifier("newPhotoBackupSettings")
             rowDivider
             NavigationLink { NASMonitorHomeView().toolbar(.visible, for: .navigationBar) } label: {
                 SettingsRow(title: "NAS 运行状态", subtitle: "负载、容量与硬盘健康", symbol: "waveform.path.ecg", color: NASStyle.coral)
-            }.buttonStyle(MoriPressStyle(scale: 0.985))
+            }.buttonStyle(MoriPressStyle(scale: 0.965))
 
         }
     }
@@ -92,14 +92,14 @@ struct SettingsView: View {
         preferencesSection("本机偏好", index: "03") {
             Button { AppPlatform.openPhotoSettings() } label: {
                 SettingsRow(title: "照片权限", subtitle: AppPlatform.libraryName, symbol: "hand.raised", color: NASStyle.violet, value: library.canRead ? (library.authorization == .limited ? "部分照片" : "全部照片") : "未授权")
-            }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityLabel("打开系统权限设置")
+            }.buttonStyle(MoriPressStyle(scale: 0.965)).accessibilityLabel("打开系统权限设置")
             rowDivider
             Button {
                 library.manager.stopCachingImagesForAllAssets()
                 Task { await app.client?.clearCache(); cleared = true }
             } label: {
                 SettingsRow(title: cleared ? "缩略图缓存已清理" : "清理缩略图缓存", subtitle: "保留原始照片与下载文件", symbol: cleared ? "checkmark.circle" : "arrow.triangle.2.circlepath", color: NASStyle.accent, chevron: false)
-            }.buttonStyle(MoriPressStyle(scale: 0.985))
+            }.buttonStyle(MoriPressStyle(scale: 0.965))
         }
     }
 
@@ -291,7 +291,7 @@ struct ConnectionView: View {
                             Image(systemName: "arrow.up.right").font(.headline).accessibilityHidden(true)
                         }.padding(.horizontal, 20).frame(maxWidth: .infinity, minHeight: 54).foregroundStyle(.white)
                             .background(NASStyle.signal, in: RoundedRectangle(cornerRadius: 6))
-                    }.buttonStyle(MoriPressStyle(scale: 0.985))
+                    }.buttonStyle(MoriPressStyle(scale: 0.965))
                         .disabled(app.connecting || app.credentials.address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || app.credentials.username.isEmpty || app.credentials.password.isEmpty).accessibilityIdentifier("loginNAS")
                     if app.connecting {
                         VStack(alignment: .leading, spacing: 8) {

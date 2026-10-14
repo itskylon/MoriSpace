@@ -51,6 +51,25 @@ final class HomeOverviewUITests: XCTestCase {
         XCTAssertTrue(wait(for: NSPredicate { _, _ in (bar.value as? String) == "展开" }, on: bar))
     }
 
+    func testPressedCardKeepsEdgeHitTargetAndCancelsDrag() {
+        continueAfterFailure = false
+        let app = launch(arguments: fixtureArguments)
+        let cover = app.buttons["homeLocalPhotos"]
+        XCTAssertTrue(cover.isHittable)
+        let center = cover.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let outside = cover.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: -0.35))
+        center.press(forDuration: 0.4, thenDragTo: outside)
+        XCTAssertTrue(app.phoneMenus.buttons["首页"].isSelected, "Dragging off a pressed card must cancel navigation")
+        app.swipeDown()
+        XCTAssertTrue(cover.isHittable)
+        // The visible card compresses and tilts, but its original edge must still accept release.
+        cover.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)).press(forDuration: 0.35)
+        XCTAssertTrue(app.phoneMenus.buttons["照片"].isSelected)
+        returnToPhoneHome(app)
+        XCTAssertTrue(cover.isHittable)
+        capture("motion-card-after-release")
+    }
+
     private func assertMenuLayout(_ app: XCUIApplication, selected: String, expanded: Bool) {
         let buttons = app.phoneMenus.buttons.allElementsBoundByIndex
         let activeWidth = app.phoneMenus.buttons[selected].frame.width

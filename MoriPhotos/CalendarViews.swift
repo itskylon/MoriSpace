@@ -13,6 +13,7 @@ struct CalendarHomeView: View {
     @ScaledMetric(relativeTo: .largeTitle) private var monthTitleSize: CGFloat = 64
     @State private var presentation: CalendarPresentation?
     @State private var showingCalendars = false
+    @State private var refreshTurns = 0
     var isActive = true
 
     var body: some View {
@@ -235,30 +236,17 @@ struct CalendarHomeView: View {
     }
 
     private var displayModes: some View {
-        HStack(spacing: 22) {
-            ForEach(CalendarDisplayMode.allCases) { mode in
-                Button { store.displayMode = mode } label: {
-                    Text(mode.rawValue).font(.subheadline.weight(store.displayMode == mode ? .bold : .medium))
-                        .foregroundStyle(store.displayMode == mode ? Color.primary : Color.secondary)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .overlay(alignment: .bottom) {
-                            Rectangle().fill(NASStyle.accent).frame(height: 3)
-                                .scaleEffect(x: store.displayMode == mode ? 1 : 0, y: 1)
-                                .opacity(store.displayMode == mode ? 1 : 0)
-                                .animation(reduceMotion ? nil : MoriMotion.selection, value: store.displayMode)
-                        }
-                        .contentShape(Rectangle())
-                }.buttonStyle(MoriPressStyle())
-                    .accessibilityIdentifier("calendarMode_" + mode.rawValue)
-                    .accessibilityAddTraits(store.displayMode == mode ? .isSelected : [])
-            }
-        }.accessibilityElement(children: .contain).accessibilityLabel("日历视图")
-            .accessibilityIdentifier("calendarDisplayMode")
+        CalendarDisplayModeSelector(selection: $store.displayMode)
     }
 
     private var refreshButton: some View {
-        Button { Task { await store.refresh() } } label: {
+        Button {
+            refreshTurns += 1
+            Task { await store.refresh() }
+        } label: {
             Image(systemName: "arrow.clockwise").font(.subheadline)
+                .rotationEffect(.degrees(reduceMotion ? 0 : Double(refreshTurns) * 360))
+                .animation(reduceMotion ? nil : MoriMotion.page, value: refreshTurns)
                 .frame(width: 44, height: 44).contentShape(Rectangle())
         }.buttonStyle(MoriPressStyle()).foregroundStyle(.secondary).disabled(store.isLoading)
             .accessibilityLabel("刷新日历").accessibilityIdentifier("calendarRefresh")
@@ -551,7 +539,7 @@ struct CalendarHomeView: View {
             }.fixedSize(horizontal: false, vertical: true).padding(.vertical, 14)
                 .frame(minHeight: 58).contentShape(Rectangle())
                 .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline.opacity(0.7)).frame(height: 0.5) }
-        }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("calendarEventRow")
+        }.buttonStyle(MoriPressStyle(scale: 0.965)).accessibilityIdentifier("calendarEventRow")
             .accessibilityLabel(event.title + "，" + timeLabel(event, on: date))
     }
     private func timeLabel(_ event: CalendarOccurrence, on date: Date) -> String {
@@ -608,6 +596,40 @@ private extension CalendarTint {
     var color: Color { Color(red: red, green: green, blue: blue) }
 }
 
+private struct CalendarDisplayModeSelector: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var selectionMotion
+    @Binding var selection: CalendarDisplayMode
+
+    var body: some View {
+        HStack(spacing: 22) {
+            ForEach(CalendarDisplayMode.allCases) { mode in
+                let selected = selection == mode
+                Button { selection = mode } label: {
+                    Text(mode.rawValue).font(.subheadline.weight(selected ? .bold : .medium))
+                        .foregroundStyle(selected ? Color.primary : Color.secondary)
+                        .scaleEffect(reduceMotion || !selected ? 1 : 1.08)
+                        .offset(y: reduceMotion || !selected ? 0 : -2)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .overlay(alignment: .bottom) {
+                            if selected {
+                                Rectangle().fill(NASStyle.accent).frame(height: 5)
+                                    .matchedGeometryEffect(id: "calendarModeSelection", in: selectionMotion)
+                                    .transition(.identity)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                }.buttonStyle(MoriPressStyle())
+                    .accessibilityIdentifier("calendarMode_" + mode.rawValue)
+                    .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+        .animation(reduceMotion ? nil : MoriMotion.selection, value: selection)
+        .accessibilityElement(children: .contain).accessibilityLabel("日历视图")
+        .accessibilityIdentifier("calendarDisplayMode")
+    }
+}
+
 private struct CalendarDayHeading: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let number: Int
@@ -627,9 +649,12 @@ private struct CalendarDayHeading: View {
                 .font(.body.weight(selected || today ? .bold : .medium)).monospacedDigit()
                 .foregroundStyle(numberColor).lineLimit(1).minimumScaleFactor(0.65)
                 .frame(width: min(numberDiameter, desktop ? 44 : 38), height: min(numberDiameter, desktop ? 44 : 38))
+                .scaleEffect(reduceMotion || !selected ? 1 : 1.08)
+                .animation(reduceMotion ? nil : MoriMotion.selection, value: selected)
                 .background {
                     RoundedRectangle(cornerRadius: 5).fill(NASStyle.signal)
-                        .scaleEffect(selected ? 1 : 0.82)
+                        .scaleEffect(reduceMotion || selected ? 1 : 0.45)
+                        .rotationEffect(.degrees(reduceMotion || selected ? 0 : -12))
                         .opacity(selected ? 1 : 0)
                         .animation(reduceMotion ? nil : MoriMotion.selection, value: selected)
                 }

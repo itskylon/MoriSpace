@@ -69,7 +69,7 @@ struct FloatingPhoneMenu: View {
                 .padding(.vertical, 6)
                 .frame(maxWidth: .infinity)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                .animation(reduceMotion ? nil : .snappy(duration: 0.24), value: compact)
+                .animation(reduceMotion ? nil : .spring(response: 0.40, dampingFraction: 0.72), value: compact)
                 .animation(reduceMotion ? nil : MoriMotion.selection, value: selection)
             }
         }

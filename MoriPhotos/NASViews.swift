@@ -86,7 +86,7 @@ struct NASPhotosHomeView: View {
                         NASConnectionStatus(service: .photos)
                         Button { connect = true } label: {
                             NASActionLabel(title: app.hasSavedConnection ? "连接设置" : "连接群晖照片", subtitle: "Synology Photos", symbol: "photo.stack")
-                        }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("connectNAS")
+                        }.buttonStyle(MoriPressStyle(scale: 0.965)).accessibilityIdentifier("connectNAS")
                     }.padding(20).frame(maxWidth: 520, alignment: .leading)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }.phoneMenuScrolling(active: isActive).background(NASStyle.canvas)
@@ -169,7 +169,7 @@ struct NASBrowserView: View {
                                         }
                                 }.aspectRatio(1, contentMode: .fit).clipped()
                                     .clipShape(RoundedRectangle(cornerRadius: desktopLayout ? 2 : 0))
-                            }.buttonStyle(MoriPressStyle(scale: 0.97)).accessibilityLabel(photo.filename).accessibilityIdentifier("nasPhotoCell")
+                            }.buttonStyle(MoriPressStyle(scale: 0.94)).accessibilityLabel(photo.filename).accessibilityIdentifier("nasPhotoCell")
                         }
                     }.padding(.horizontal, desktopLayout ? contentInset : 0)
                     if store.loading { ProgressView("正在读取 NAS…").frame(maxWidth: .infinity).padding(30) }

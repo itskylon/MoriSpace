@@ -191,7 +191,7 @@ struct DesktopWorkspaceView: View {
                 }
                 .animation(reduceMotion ? nil : MoriMotion.selection, value: navigation.selection)
                 .contentShape(RoundedRectangle(cornerRadius: 7))
-        }.buttonStyle(MoriPressStyle(scale: 0.985))
+        }.buttonStyle(MoriPressStyle(scale: 0.965))
             .onHover { hoveredPage = $0 ? page : nil }
             .focusable()
             .focused($sidebarFocus, equals: page)

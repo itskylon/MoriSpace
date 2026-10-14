@@ -65,7 +65,7 @@ struct LocalLibraryView: View {
                                                     }
                                                 }
                                         }.aspectRatio(1, contentMode: .fit).clipped()
-                                    }.buttonStyle(MoriPressStyle(scale: 0.97)).accessibilityLabel("照片 \(asset.creationDate?.formatted(date: .abbreviated, time: .omitted) ?? "")")
+                                    }.buttonStyle(MoriPressStyle(scale: 0.94)).accessibilityLabel("照片 \(asset.creationDate?.formatted(date: .abbreviated, time: .omitted) ?? "")")
                                         .accessibilityIdentifier("localPhotoCell")
                                 }
                             }.padding(.horizontal, AppPlatform.isMac ? 16 : 0)
@@ -199,7 +199,7 @@ struct LocalLibraryView: View {
                         photoAccessLabel("前往系统设置")
                     }
                 }
-            }.buttonStyle(MoriPressStyle(scale: 0.985))
+            }.buttonStyle(MoriPressStyle(scale: 0.965))
         }.padding(.vertical, 24).frame(maxWidth: .infinity, alignment: .leading)
             .overlay(alignment: .bottom) { Rectangle().fill(NASStyle.outline).frame(height: 1) }
     }

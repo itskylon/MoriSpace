@@ -120,7 +120,7 @@ struct PhotoBackupView: View {
             }.padding(.horizontal, 16).frame(maxWidth: .infinity, minHeight: 48)
                 .foregroundStyle(NASStyle.ink)
                 .background(NASStyle.lime, in: RoundedRectangle(cornerRadius: 5))
-        }.buttonStyle(MoriPressStyle(scale: 0.985)).disabled(backup.running).accessibilityIdentifier("checkNewPhotoBackup")
+        }.buttonStyle(MoriPressStyle(scale: 0.965)).disabled(backup.running).accessibilityIdentifier("checkNewPhotoBackup")
     }
 
     @ViewBuilder private var lastBackupTime: some View {
@@ -158,7 +158,7 @@ struct PhotoBackupView: View {
                             .foregroundStyle(NASStyle.accent).accessibilityHidden(true)
                     }.frame(maxWidth: .infinity, minHeight: 54, alignment: .leading)
                         .padding(.vertical, 16).contentShape(Rectangle())
-                }.buttonStyle(MoriPressStyle(scale: 0.985)).accessibilityIdentifier("chooseBackupFolder").disabled(backup.preparing)
+                }.buttonStyle(MoriPressStyle(scale: 0.965)).accessibilityIdentifier("chooseBackupFolder").disabled(backup.preparing)
                 panelRule
                 NavigationLink { ConnectionView(service: .files) } label: {
                     HStack(spacing: 12) {
@@ -168,7 +168,7 @@ struct PhotoBackupView: View {
                         Spacer(minLength: 4)
                         Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(.tertiary)
                     }.frame(minHeight: 52).contentShape(Rectangle())
-                }.buttonStyle(MoriPressStyle(scale: 0.985))
+                }.buttonStyle(MoriPressStyle(scale: 0.965))
             }.overlay(alignment: .top) { panelRule }
                 .overlay(alignment: .bottom) { panelRule }
             Text("按年 / 月归档，点选文件夹即可更换位置。")
