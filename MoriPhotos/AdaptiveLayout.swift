@@ -116,9 +116,9 @@ struct DesktopWorkspaceView: View {
         NavigationSplitView(columnVisibility: $visibility) {
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
-                    Image(systemName: "square.stack.3d.up.fill")
-                        .font(.system(size: 23, weight: .bold)).foregroundStyle(NASStyle.ink)
-                        .frame(width: 44, height: 44).background(NASStyle.lime, in: RoundedRectangle(cornerRadius: 8))
+                    Image("AppBrand")
+                        .resizable().scaledToFit().frame(width: 44, height: 44)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(AppBrand.name).font(.system(size: 25, weight: .black)).tracking(-1).foregroundStyle(.primary)
