@@ -43,7 +43,7 @@ struct PhotoBackupView: View {
         }
         .tint(NASStyle.accent)
         .workspaceNavigationTitle("新照片备份").navigationBarTitleDisplayMode(.inline)
-        .onAppear { wifiOnly = backup.configuration.wifiOnly }
+        .onAppear { wifiOnly = backup.configuration.wifiOnly; library.reload() }
         .sheet(isPresented: $choosingFolder) {
             NavigationStack {
                 BackupFolderPicker(path: nil, onSelect: { selected, owner in
@@ -99,6 +99,11 @@ struct PhotoBackupView: View {
                         }
                     }.padding(.vertical, 2)
                     checkButton
+                    if let checked = backup.lastCheckedAt {
+                        Text("最近检查 \(checked.formatted(date: .abbreviated, time: .standard))")
+                            .font(.caption).foregroundStyle(.white.opacity(0.78))
+                            .accessibilityIdentifier("photoBackupLastChecked")
+                    }
                     lastBackupTime
                 }
             }.frame(maxWidth: .infinity, alignment: .leading)
@@ -183,6 +188,8 @@ struct PhotoBackupView: View {
                 Toggle(isOn: $wifiOnly) {
                     Label("仅 Wi-Fi 备份", systemImage: "wifi").font(.subheadline)
                 }.frame(minHeight: 44).disabled(backup.configuration.enabled || backup.preparing)
+                Text(backup.networkStatus).font(.caption).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("photoBackupNetworkStatus")
                 if backup.configuration.enabled {
                     Text("关闭自动备份后可修改网络偏好。").font(.caption).foregroundStyle(.secondary)
                 }

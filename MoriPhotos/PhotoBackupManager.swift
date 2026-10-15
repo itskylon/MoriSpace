@@ -3,6 +3,63 @@ import Photos
 import Network
 import BackgroundTasks
 
+enum PhotoBackupNetworkRestriction {
+    case wifiDenied, cellularDenied, localNetworkDenied
+    var message: String {
+        switch self {
+        case .wifiDenied: return "等待允许 App 使用 Wi-Fi"
+        case .cellularDenied: return "等待允许 App 使用移动数据或连接 Wi-Fi"
+        case .localNetworkDenied: return "等待允许 App 访问本地网络"
+        }
+    }
+}
+
+struct PhotoBackupNetworkPolicy: Equatable {
+    var ready = false
+    var usesWiFiOrEthernet = false
+    var usesCellular = false
+    var expensive = false
+    var constrained = false
+    var wifiAvailable = false
+    var ethernetAvailable = false
+    var restriction: PhotoBackupNetworkRestriction?
+
+    func permitsUpload(wifiOnly: Bool) -> Bool {
+        guard ready else { return false }
+        guard wifiOnly else { return true }
+        return !usesCellular && !expensive && !constrained
+            && (usesWiFiOrEthernet || wifiAvailable || ethernetAvailable)
+    }
+    func waitingReason(wifiOnly: Bool) -> String? {
+        if !ready { return restriction?.message ?? "等待网络连接" }
+        if wifiOnly && constrained { return "等待关闭低数据模式" }
+        if !permitsUpload(wifiOnly: wifiOnly) { return "等待 Wi-Fi" }
+        return nil
+    }
+    var description: String {
+        if !ready { return restriction?.message ?? "当前网络不可用" }
+        if constrained { return "当前网络开启了低数据模式" }
+        if usesCellular || expensive { return "当前为移动网络或计费网络" }
+        if usesWiFiOrEthernet { return "Wi-Fi 或有线网络已连接" }
+        if wifiAvailable || ethernetAvailable { return "已检测到可用的 Wi-Fi 或有线网络" }
+        return "当前路由尚未确认 Wi-Fi，可能受 VPN 影响"
+    }
+}
+
+// The default operations use PhotoKit and the authenticated File Station client.
+// Tests replace these boundaries without reading a real library or contacting a NAS.
+@MainActor
+struct PhotoBackupOperations {
+    var authorization: () -> PHAuthorizationStatus = { PHPhotoLibrary.authorizationStatus(for: .readWrite) }
+    var candidates: (Date) -> [BackupCandidate] = { BackupPhotoLibrary.candidates(since: $0) }
+    var originals: (BackupCandidate, URL) async throws -> [BackupOriginal] = {
+        try await BackupPhotoLibrary.originals(for: $0, directory: $1, allowCloud: true)
+    }
+    var upload: (SynologyClient, BackupOriginal, String, Bool) async throws -> Void = {
+        try await $0.uploadBackupOriginal($1, folder: $2, wifiOnly: $3)
+    }
+}
+
 @MainActor
 final class PhotoBackupManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
     static let taskIdentifier = "dev.kylon.MoriPhotos.new-photo-backup"
@@ -11,13 +68,19 @@ final class PhotoBackupManager: NSObject, ObservableObject, PHPhotoLibraryChange
     @Published private(set) var error: String?
     @Published private(set) var folderError: String?
     @Published private(set) var pendingCount = 0
+    @Published private(set) var lastCheckedAt: Date?
+    @Published private(set) var networkStatus = "正在检查网络"
     @Published private(set) var running = false
     @Published private(set) var preparing = false
     private let file: BackupLedgerFile
+    private let operations: PhotoBackupOperations
+    private let observesSystemChanges: Bool
     private weak var app: AppState?
     private let monitor = NWPathMonitor()
-    private var networkReady = false
-    private var unmetered = false
+    private let wifiMonitor = NWPathMonitor(requiredInterfaceType: .wifi)
+    private let ethernetMonitor = NWPathMonitor(requiredInterfaceType: .wiredEthernet)
+    private var network = PhotoBackupNetworkPolicy()
+    private var networkReady: Bool { network.ready }
     private var foreground = false
     private var backgroundRun = false
     private var backgroundExpired = false
@@ -30,24 +93,60 @@ final class PhotoBackupManager: NSObject, ObservableObject, PHPhotoLibraryChange
     private var failures = 0
     private var lease: UIBackgroundTaskIdentifier = .invalid
 
-    init(app: AppState, file: BackupLedgerFile? = nil) {
+    init(app: AppState, file: BackupLedgerFile? = nil, operations: PhotoBackupOperations? = nil, observesSystemChanges: Bool = true) {
         self.app = app
         self.file = file ?? Self.defaultFile()
+        self.operations = operations ?? PhotoBackupOperations()
+        self.observesSystemChanges = observesSystemChanges
         super.init()
         reloadLedger()
-        monitor.pathUpdateHandler = { [weak self] path in
-            let ready = path.status == .satisfied
-            let wifi = (path.usesInterfaceType(.wifi) || path.usesInterfaceType(.wiredEthernet)) && !path.isExpensive && !path.isConstrained
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                let changed = self.networkReady != ready || self.unmetered != wifi
-                self.networkReady = ready; self.unmetered = wifi
-                if !self.canUseNetwork { self.runTask?.cancel() }
-                else if changed { self.nextAttempt = .distantPast; self.requestRun() }
+        if observesSystemChanges {
+            monitor.pathUpdateHandler = { [weak self] path in
+                let ready = path.status == .satisfied
+                let wifi = path.usesInterfaceType(.wifi) || path.usesInterfaceType(.wiredEthernet)
+                let expensive = path.isExpensive, constrained = path.isConstrained
+                let restriction: PhotoBackupNetworkRestriction?
+                if !ready {
+                    switch path.unsatisfiedReason {
+                    case .wifiDenied: restriction = .wifiDenied
+                    case .cellularDenied: restriction = .cellularDenied
+                    case .localNetworkDenied: restriction = .localNetworkDenied
+                    default: restriction = nil
+                    }
+                } else { restriction = nil }
+                Task { @MainActor [weak self] in
+                    self?.networkChanged(ready: ready, wifi: wifi, expensive: expensive, constrained: constrained, cellular: path.usesInterfaceType(.cellular), restriction: restriction)
+                }
             }
+            let queue = DispatchQueue(label: "dev.kylon.MoriPhotos.backup-network")
+            for (interfaceMonitor, isWiFi) in [(wifiMonitor, true), (ethernetMonitor, false)] {
+                interfaceMonitor.pathUpdateHandler = { [weak self] path in
+                    let available = path.status == .satisfied && !path.isExpensive && !path.isConstrained
+                    Task { @MainActor [weak self] in self?.localInterfaceChanged(wifi: isWiFi, available: available) }
+                }
+                interfaceMonitor.start(queue: queue)
+            }
+            monitor.start(queue: queue)
         }
-        monitor.start(queue: DispatchQueue(label: "dev.kylon.MoriPhotos.backup-network"))
     }
+    func networkChanged(ready: Bool, wifi: Bool, expensive: Bool, constrained: Bool, cellular: Bool = false, restriction: PhotoBackupNetworkRestriction? = nil) {
+        var next = network
+        next.ready = ready; next.usesWiFiOrEthernet = wifi; next.usesCellular = cellular
+        next.expensive = expensive; next.constrained = constrained; next.restriction = ready ? nil : restriction
+        updateNetwork(next)
+    }
+    private func localInterfaceChanged(wifi: Bool, available: Bool) {
+        var next = network
+        if wifi { next.wifiAvailable = available } else { next.ethernetAvailable = available }
+        updateNetwork(next)
+    }
+    private func updateNetwork(_ next: PhotoBackupNetworkPolicy) {
+        let changed = network != next
+        network = next; networkStatus = next.description
+        if !canUseNetwork { runTask?.cancel() }
+        if changed { nextAttempt = .distantPast; requestRun() }
+    }
+
     private static func defaultFile() -> BackupLedgerFile {
         #if DEBUG && (targetEnvironment(simulator) || MORI_DESKTOP_QA)
         if NASConnectionFixture.enabled || FileStationFixture.enabled {
@@ -62,11 +161,12 @@ final class PhotoBackupManager: NSObject, ObservableObject, PHPhotoLibraryChange
         return BackupLedgerFile(url: FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("PhotoBackup/ledger.json"))
     }
     deinit {
-        monitor.cancel(); retryTask?.cancel(); runTask?.cancel()
+        monitor.cancel(); wifiMonitor.cancel(); ethernetMonitor.cancel(); retryTask?.cancel(); runTask?.cancel()
         if observing { PHPhotoLibrary.shared().unregisterChangeObserver(self) }
     }
     var configuration: BackupConfiguration { ledger.configuration }
-    var canUseNetwork: Bool { networkReady && (!configuration.wifiOnly || unmetered) }
+    var canUseNetwork: Bool { network.permitsUpload(wifiOnly: configuration.wifiOnly) }
+    private var networkWaitingStatus: String? { network.waitingReason(wifiOnly: configuration.wifiOnly) }
     nonisolated func photoLibraryDidChange(_ changeInstance: PHChange) {
         Task { @MainActor [weak self] in self?.requestRun() }
     }
@@ -102,7 +202,7 @@ final class PhotoBackupManager: NSObject, ObservableObject, PHPhotoLibraryChange
         defer { preparing = false; requestRun() }
         do {
             guard readable else { throw PhotoBackupError.ledger }
-            guard PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized else { throw PhotoBackupError.fullAccess }
+            guard operations.authorization() == .authorized else { throw PhotoBackupError.fullAccess }
             guard let app, app.hasSavedConnection else { throw PhotoBackupError.connection }
             let path = folder.trimmingCharacters(in: .whitespacesAndNewlines)
             try NASFile.validatePath(path)
@@ -157,73 +257,133 @@ final class PhotoBackupManager: NSObject, ObservableObject, PHPhotoLibraryChange
         }
     }
     func clearFolderError() { folderError = nil }
-    func checkNow() { nextAttempt = .distantPast; requestRun() }
+    func checkNow() {
+        if !readable { reloadLedger() }
+        nextAttempt = .distantPast
+        requestRun()
+    }
     func requestRun() {
-        guard configuration.enabled, readable, !preparing, foreground || (backgroundRun && !backgroundExpired) else { return }
-        guard PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized else {
+        guard readable else { error = PhotoBackupError.ledger.localizedDescription; status = "备份记录暂不可用"; return }
+        guard configuration.enabled else { status = "未开启自动备份"; return }
+        guard !preparing else { status = "正在检查备份位置…"; return }
+        guard foreground || (backgroundRun && !backgroundExpired) else { status = "等待打开 App 继续检查"; return }
+        guard operations.authorization() == .authorized else {
             error = PhotoBackupError.fullAccess.localizedDescription; status = "等待全部照片权限"; return
         }
-        if !observing { PHPhotoLibrary.shared().register(self); observing = true }
+        if observesSystemChanges && !observing { PHPhotoLibrary.shared().register(self); observing = true }
         guard runTask == nil else { rescanRequested = true; return }
-        guard Date() >= nextAttempt else { return }
-        guard canUseNetwork else { status = networkReady ? "等待 Wi-Fi" : "等待网络连接"; return }
+        // Scan locally even if the upload must wait for an eligible network.
         runTask = Task { [weak self] in await self?.run() }
     }
     private func run() async {
-        running = true; error = nil
+        running = true
         defer {
             running = false; runTask = nil; endLease()
             if rescanRequested { rescanRequested = false; requestRun() }
         }
         let owner = configuration.owner, folder = configuration.folder
         do {
+            try Task.checkCancellation()
             guard let start = configuration.startedAt, let app else { throw PhotoBackupError.connection }
+            let items = ledger.pending(operations.candidates(start))
+            pendingCount = items.count; lastCheckedAt = Date()
             guard owner == app.fileAccountID else { throw PhotoBackupError.targetChanged }
-            let items = ledger.pending(BackupPhotoLibrary.candidates(since: start))
-            pendingCount = items.count
-            guard !items.isEmpty else { status = ledger.completed.isEmpty ? "等待新照片" : "新照片已全部备份"; failures = 0; return }
-            status = "正在连接 NAS"
+            guard !items.isEmpty else {
+                error = nil; status = ledger.completed.isEmpty ? "等待新照片" : "新照片已全部备份"
+                failures = 0; nextAttempt = .distantPast; retryTask?.cancel()
+                return
+            }
+            if let waiting = networkWaitingStatus { error = nil; status = waiting; return }
+            guard Date() >= nextAttempt else { status = "等待重试 · 剩余 \(pendingCount) 张"; return }
+            error = nil; status = "正在连接 NAS"
             await app.restoreConnection(service: .files, retry: true)
             try Task.checkCancellation()
             guard let client = app.fileClient else {
                 error = app.restoreErrors[.files]
                 throw PhotoBackupError.connection
             }
+            var failedCount = 0
+            var firstItemError: String?
             for candidate in items {
                 try Task.checkCancellation()
                 guard canUseNetwork, configuration.enabled else { throw CancellationError() }
                 guard owner == app.fileAccountID, folder == configuration.folder, client === app.fileClient else { throw PhotoBackupError.targetChanged }
-                guard PHPhotoLibrary.authorizationStatus(for: .readWrite) == .authorized else { throw PhotoBackupError.fullAccess }
+                guard operations.authorization() == .authorized else { throw PhotoBackupError.fullAccess }
                 status = "正在备份 · 剩余 \(pendingCount) 张"
                 let directory = FileManager.default.temporaryDirectory.appendingPathComponent("MoriBackup-" + UUID().uuidString)
                 try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication])
                 defer { try? FileManager.default.removeItem(at: directory) }
-                let resources = try await BackupPhotoLibrary.originals(for: candidate, directory: directory, allowCloud: true)
-                let target = folder + "/" + BackupPhotoLibrary.monthFolder(for: candidate.created)
-                for original in resources {
+                do {
+                    let resources = try await operations.originals(candidate, directory)
+                    guard !resources.isEmpty else { throw PhotoBackupError.original }
+                    let target = folder + "/" + BackupPhotoLibrary.monthFolder(for: candidate.created)
+                    for original in resources {
+                        try Task.checkCancellation()
+                        guard canUseNetwork, configuration.enabled else { throw CancellationError() }
+                        guard owner == app.fileAccountID, folder == configuration.folder, client === app.fileClient else { throw PhotoBackupError.targetChanged }
+                        guard operations.authorization() == .authorized else { throw PhotoBackupError.fullAccess }
+                        try await operations.upload(client, original, target, configuration.wifiOnly)
+                    }
+                } catch {
                     try Task.checkCancellation()
-                    guard canUseNetwork, configuration.enabled, owner == app.fileAccountID, client === app.fileClient else { throw CancellationError() }
-                    try await client.uploadBackupOriginal(original, folder: target, wifiOnly: configuration.wifiOnly)
+                    guard operations.authorization() == .authorized else { throw PhotoBackupError.fullAccess }
+                    guard Self.isRecoverableItemError(error) else { throw error }
+                    failedCount += 1
+                    if firstItemError == nil { firstItemError = Self.itemErrorMessage(error) }
+                    continue
                 }
                 try Task.checkCancellation()
+                // Never issue a receipt after an account, destination or permission change.
+                guard owner == app.fileAccountID, folder == configuration.folder, client === app.fileClient else { throw PhotoBackupError.targetChanged }
+                guard operations.authorization() == .authorized else { throw PhotoBackupError.fullAccess }
                 var next = ledger; next.completed.insert(candidate.id); next.lastCompletedAt = Date()
                 try save(next)
                 pendingCount -= 1
             }
-            failures = 0; nextAttempt = .distantPast; status = "新照片已全部备份"
+            if let firstItemError {
+                error = "\(failedCount) 张照片未完成：" + firstItemError
+                status = "已检查 · \(failedCount) 张待重试"
+                scheduleRetry()
+            } else {
+                error = nil; failures = 0; nextAttempt = .distantPast; status = "新照片已全部备份"
+            }
         } catch is CancellationError {
-            status = configuration.enabled ? "等待继续备份" : "已关闭"
+            status = configuration.enabled ? networkWaitingStatus ?? "等待继续备份" : "已关闭"
         } catch {
+            if Task.isCancelled || (error as? URLError)?.code == .cancelled {
+                status = configuration.enabled ? networkWaitingStatus ?? "等待继续备份" : "已关闭"
+                return
+            }
             if self.error == nil { self.error = friendlyError(error) }
             status = "备份未完成"
-            failures += 1
-            nextAttempt = Date().addingTimeInterval(min(3600, 60 * pow(2, Double(min(failures - 1, 6)))))
-            retryTask?.cancel()
-            retryTask = Task { [weak self] in
-                guard let self else { return }
-                try? await Task.sleep(for: .seconds(max(1, nextAttempt.timeIntervalSinceNow)))
-                guard !Task.isCancelled else { return }; requestRun()
+            scheduleRetry()
+        }
+    }
+    private static func isRecoverableItemError(_ error: Error) -> Bool {
+        if let backupError = error as? PhotoBackupError {
+            switch backupError {
+            case .original, .conflict, .verification: return true
+            default: return false
             }
+        }
+        // Only resource-specific PhotoKit errors may be skipped. Network, access,
+        // library availability and local-disk failures must still pause the batch.
+        let ns = error as NSError
+        guard ns.domain == PHPhotosErrorDomain else { return false }
+        return [PHPhotosError.identifierNotFound.rawValue, PHPhotosError.invalidResource.rawValue,
+                PHPhotosError.missingResource.rawValue, PHPhotosError.requestNotSupportedForAsset.rawValue].contains(ns.code)
+    }
+    private static func itemErrorMessage(_ error: Error) -> String {
+        (error as NSError).domain == PHPhotosErrorDomain ? PhotoBackupError.original.localizedDescription : friendlyError(error)
+    }
+    private func scheduleRetry() {
+        failures += 1
+        nextAttempt = Date().addingTimeInterval(min(3600, 60 * pow(2, Double(min(failures - 1, 6)))))
+        retryTask?.cancel()
+        retryTask = Task { [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(for: .seconds(max(1, nextAttempt.timeIntervalSinceNow)))
+            guard !Task.isCancelled else { return }; requestRun()
         }
     }
     func scheduleBackground() {

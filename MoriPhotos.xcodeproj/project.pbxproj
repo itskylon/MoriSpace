@@ -39,6 +39,7 @@
 		6130287985B9EDBC252FF23F /* ChinaHolidaySchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */; };
 		63AFD47A23EEE3F1A994D138 /* PhotoFileSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6AAE08CD014153BE38DBC4F /* PhotoFileSize.swift */; };
 		65343B3E224BADB3461CA4EF /* NASViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568004985FCD4A42241CDA01 /* NASViews.swift */; };
+		68C99BA98BA942C1B9CFB1FB /* PhotoBackupManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE69A88C634F2C7A88867C8D /* PhotoBackupManagerTests.swift */; };
 		68F4FEB2663AC62ACD692CE9 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F74D34ABDD56B706E6BF9285 /* InfoPlist.strings */; };
 		69956B7049FA386D28244A88 /* SynologyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC28FA93EF083BB87500F14F /* SynologyClient.swift */; };
 		6AD8C5F9FB606921DD4E57DF /* CalendarSystemEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8A319899D2D330C7DCA94F /* CalendarSystemEditor.swift */; };
@@ -216,6 +217,7 @@
 		B73940EA3C290AECCDF32A1C /* NASConnectionFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASConnectionFixture.swift; sourceTree = "<group>"; };
 		BA2845221AB5B98D95E6E981 /* FileStation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStation.swift; sourceTree = "<group>"; };
 		BD5E5E83E9C3F9679C07600A /* CalendarWidgetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarWidgetData.swift; sourceTree = "<group>"; };
+		CE69A88C634F2C7A88867C8D /* PhotoBackupManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoBackupManagerTests.swift; sourceTree = "<group>"; };
 		CE8A319899D2D330C7DCA94F /* CalendarSystemEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarSystemEditor.swift; sourceTree = "<group>"; };
 		D2F2BC8D57738D4B0E5E24D8 /* MoriPhotosTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MoriPhotosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D9DEECBA400F316804D48C42 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
@@ -293,6 +295,7 @@
 				86C58A2AF460B6CFA02BBF2A /* MacPersistenceTests.swift */,
 				A81AA60334F5863526553FA1 /* NASMonitorTests.swift */,
 				0E26CC2B549D6834735DF386 /* NASNetworkErrorTests.swift */,
+				CE69A88C634F2C7A88867C8D /* PhotoBackupManagerTests.swift */,
 				60725D6A69C7EE9D6387682B /* PhotoBackupTests.swift */,
 				0BB1BF04404A8493BAB60509 /* PhotoLibraryIntegrationTests.swift */,
 				97B08BD589ED37C03652F362 /* PhotoViewingTests.swift */,
@@ -733,6 +736,7 @@
 				B7792639069A06926EF65AE9 /* MacPersistenceTests.swift in Sources */,
 				D1637BF24C52326D16C0849F /* NASMonitorTests.swift in Sources */,
 				F4EF618DC11A25395F72A413 /* NASNetworkErrorTests.swift in Sources */,
+				68C99BA98BA942C1B9CFB1FB /* PhotoBackupManagerTests.swift in Sources */,
 				8D8CC2531D5CB8E95BCA7DD9 /* PhotoBackupTests.swift in Sources */,
 				4ED69224BB730E926F4C60AD /* PhotoLibraryIntegrationTests.swift in Sources */,
 				07465D6FF61EDC1A4EAA13A8 /* PhotoViewingTests.swift in Sources */,
@@ -873,7 +877,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 49;
+				CURRENT_PROJECT_VERSION = 50;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -893,7 +897,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.30.2;
+				MARKETING_VERSION = 0.30.3;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -1138,7 +1142,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 49;
+				CURRENT_PROJECT_VERSION = 50;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1152,7 +1156,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.30.2;
+				MARKETING_VERSION = 0.30.3;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MTL_ENABLE_DEBUG_INFO = NO;
