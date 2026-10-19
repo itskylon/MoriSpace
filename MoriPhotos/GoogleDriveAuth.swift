@@ -61,6 +61,16 @@ final class GoogleDriveAuth: ObservableObject {
     private var generation = 0
     private var allowsAutomaticRestore = true
 
+    init() {
+        #if DEBUG && targetEnvironment(simulator)
+        if GoogleDriveFixture.enabled {
+            accountID = GoogleDriveFixture.owner
+            accountName = "Simulator Drive"
+            email = "fixture@example.invalid"
+        }
+        #endif
+    }
+
     func signIn() async {
         if let restoreTask { await restoreTask.value }
         guard !isAuthorizing else { return }
@@ -94,6 +104,9 @@ final class GoogleDriveAuth: ObservableObject {
     }
 
     func restore() async {
+        #if DEBUG && targetEnvironment(simulator)
+        if GoogleDriveFixture.enabled { return }
+        #endif
         if let restoreTask { await restoreTask.value; return }
         guard allowsAutomaticRestore, !isAuthorizing, let configuration else { return }
         GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: configuration.clientID)
@@ -147,6 +160,12 @@ final class GoogleDriveAuth: ObservableObject {
     }
 
     func accessToken() async throws -> String {
+        #if DEBUG && targetEnvironment(simulator)
+        if GoogleDriveFixture.enabled {
+            guard allowsAutomaticRestore, accountID == GoogleDriveFixture.owner else { throw GoogleDriveAuthError.signInRequired }
+            return GoogleDriveFixture.token
+        }
+        #endif
         guard isConfigured else { throw GoogleDriveAuthError.notConfigured }
         guard !isAuthorizing else { throw GoogleDriveAuthError.authorizationInProgress }
         if accountID == nil { await restore() }

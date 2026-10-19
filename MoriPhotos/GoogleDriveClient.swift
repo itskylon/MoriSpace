@@ -115,12 +115,20 @@ final class GoogleDriveClient: @unchecked Sendable {
 
     @MainActor convenience init(auth: GoogleDriveAuth) {
         let owner = auth.accountID ?? ""
-        self.init(accountID: owner, tokenProvider: {
+        let provider: @Sendable () async throws -> String = {
             guard await auth.accountID == owner, !owner.isEmpty else { throw GoogleDriveError.signInRequired }
             let token = try await auth.accessToken()
             guard await auth.accountID == owner else { throw GoogleDriveError.signInRequired }
             return token
-        })
+        }
+        #if DEBUG && targetEnvironment(simulator)
+        if GoogleDriveFixture.enabled {
+            self.init(accountID: owner, tokenProvider: provider, configuration: GoogleDriveFixture.configuration(),
+                      transferConfiguration: { GoogleDriveFixture.configuration() })
+            return
+        }
+        #endif
+        self.init(accountID: owner, tokenProvider: provider)
     }
     init(accountID: String, tokenProvider: @escaping @Sendable () async throws -> String,
          configuration: URLSessionConfiguration = .ephemeral,

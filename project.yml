@@ -14,8 +14,8 @@ settings:
     TARGETED_DEVICE_FAMILY: '1,2'
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ''
-    MARKETING_VERSION: '0.31.0'
-    CURRENT_PROJECT_VERSION: '52'
+    MARKETING_VERSION: '0.31.1'
+    CURRENT_PROJECT_VERSION: '53'
     MORI_GOOGLE_CLIENT_ID: 990778572026-aq17j14j75062mffi2ilqj3tstqc7mb9.apps.googleusercontent.com
     MORI_GOOGLE_REVERSED_CLIENT_ID: com.googleusercontent.apps.990778572026-aq17j14j75062mffi2ilqj3tstqc7mb9
     MORI_CALENDAR_APP_GROUP: group.dev.kylon.MoriPhotos.calendar

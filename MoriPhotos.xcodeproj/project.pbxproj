@@ -18,9 +18,11 @@
 		143DC639E577F3547704ECA7 /* ChinaHolidaySchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */; };
 		14B92DE9FB74875327CD76F1 /* CalendarWidgetContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFCD5FB5673ABAFCBECB565F /* CalendarWidgetContent.swift */; };
 		2062DD9D3667FF4A95913E0E /* FloatingPhoneMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CF8BC95E8208452FBA20CC9 /* FloatingPhoneMenu.swift */; };
+		22E7A8BFFE71BB23EAA04E26 /* DriveBackGesture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0948FF5733B3617BDF13DCEB /* DriveBackGesture.swift */; };
 		25C7FF466302B7547A3FC875 /* LunarMonthWidgetContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE47DC8FEB7E8200EB69BFD /* LunarMonthWidgetContent.swift */; };
 		25FA002A4AD4181C13C4CD39 /* NASStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E332AB46CF90F1AB08AF5A19 /* NASStyle.swift */; };
 		281DCED3C89065C0E3DCF431 /* CalendarDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B270F3F68AB9065ABEB5BCD0 /* CalendarDomain.swift */; };
+		29D979DD2AA83D1266DE1C28 /* DriveBackGestureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2609A4169C8936EA7223698A /* DriveBackGestureTests.swift */; };
 		2E1FFC3A9E386863F9E7DC1D /* MoriCalendarWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A14CEA414FC091037665EB9 /* MoriCalendarWidget.swift */; };
 		365813A24363266BA26306F5 /* VideoStreaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B47CCB00012B3B2F979190 /* VideoStreaming.swift */; };
 		390D78D38E85D02E4FEE9F90 /* LunarMonthWidgetContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFE47DC8FEB7E8200EB69BFD /* LunarMonthWidgetContent.swift */; };
@@ -32,6 +34,7 @@
 		4CDF759C93458A225C3999CF /* DesktopFileNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93FF82F94D2AAAC85106169E /* DesktopFileNavigation.swift */; };
 		4D60745BBBAA3F5A994B71B6 /* CalendarDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B270F3F68AB9065ABEB5BCD0 /* CalendarDomain.swift */; };
 		4ED69224BB730E926F4C60AD /* PhotoLibraryIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB1BF04404A8493BAB60509 /* PhotoLibraryIntegrationTests.swift */; };
+		506D7B953EE24187169C5A11 /* GoogleDriveFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7C0D72A80A833E861D06B2 /* GoogleDriveFixture.swift */; };
 		52F9A82A65B2FDB500D80552 /* PhotoBackupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F655D12154C8ED18EDAC56C /* PhotoBackupView.swift */; };
 		53C6CF6F567A2CD8744DF4C7 /* GoogleDriveViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B0CE585241BD6B0EA2FF78C /* GoogleDriveViews.swift */; };
 		55808695785740BAA34D0987 /* HolidayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80134465C65DC9628290845 /* HolidayBadge.swift */; };
@@ -162,6 +165,7 @@
 /* Begin PBXFileReference section */
 		0097D1CB1BDAFCBB5174506D /* iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iOS.entitlements; sourceTree = "<group>"; };
 		0131B666EF696762306AE937 /* NASDesktopFilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASDesktopFilesView.swift; sourceTree = "<group>"; };
+		0948FF5733B3617BDF13DCEB /* DriveBackGesture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriveBackGesture.swift; sourceTree = "<group>"; };
 		0BB1BF04404A8493BAB60509 /* PhotoLibraryIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryIntegrationTests.swift; sourceTree = "<group>"; };
 		0DA055DC4D355E9547364B35 /* PhotoViewing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoViewing.swift; sourceTree = "<group>"; };
 		0E26CC2B549D6834735DF386 /* NASNetworkErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASNetworkErrorTests.swift; sourceTree = "<group>"; };
@@ -170,6 +174,7 @@
 		14F0E17FF563AC0977F333D0 /* GoogleDriveAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveAuth.swift; sourceTree = "<group>"; };
 		1ABD06E000A87BA5297A30FA /* PhotoLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryStore.swift; sourceTree = "<group>"; };
 		1B3A5C328D48818A288954BE /* HomeOverviewUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeOverviewUITests.swift; sourceTree = "<group>"; };
+		2609A4169C8936EA7223698A /* DriveBackGestureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DriveBackGestureTests.swift; sourceTree = "<group>"; };
 		2702B3F3BC8C9E21167E48E3 /* VideoPlaybackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlaybackTests.swift; sourceTree = "<group>"; };
 		27B6095DB92ABE7E4C63C227 /* ConnectionRestoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionRestoreTests.swift; sourceTree = "<group>"; };
 		2AC1B599AD5C9B6A04746FA8 /* VideoProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoProgressTests.swift; sourceTree = "<group>"; };
@@ -202,6 +207,7 @@
 		7274409BBE484F52990098A9 /* VideoPlaybackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlaybackView.swift; sourceTree = "<group>"; };
 		735EE07A0DF6F4701B719F31 /* NASMonitoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASMonitoring.swift; sourceTree = "<group>"; };
 		7B0CE585241BD6B0EA2FF78C /* GoogleDriveViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveViews.swift; sourceTree = "<group>"; };
+		7B7C0D72A80A833E861D06B2 /* GoogleDriveFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveFixture.swift; sourceTree = "<group>"; };
 		7CF8BC95E8208452FBA20CC9 /* FloatingPhoneMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPhoneMenu.swift; sourceTree = "<group>"; };
 		810A4544553B5ABF82A5248A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		819A8B3810DD6AC3F92E4331 /* MoriPhotosMacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoriPhotosMacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -317,6 +323,7 @@
 				4921EB848336495B6525E6BE /* ChinaHolidayTests.swift */,
 				27B6095DB92ABE7E4C63C227 /* ConnectionRestoreTests.swift */,
 				2C0D5E2EB15294CD604F4A8C /* DesktopFileNavigationTests.swift */,
+				2609A4169C8936EA7223698A /* DriveBackGestureTests.swift */,
 				93E94C98B05D182056236E85 /* FileStationTests.swift */,
 				E9A4F2728F85F821C87CE204 /* GoogleDriveAuthTests.swift */,
 				43D6BBEDDE35089CE06638B7 /* GoogleDriveTests.swift */,
@@ -372,6 +379,7 @@
 				CE8A319899D2D330C7DCA94F /* CalendarSystemEditor.swift */,
 				5C828459D1927A41E6C971A1 /* CalendarViews.swift */,
 				93FF82F94D2AAAC85106169E /* DesktopFileNavigation.swift */,
+				0948FF5733B3617BDF13DCEB /* DriveBackGesture.swift */,
 				4A9C3809C2E657705DD021AF /* FileDownloads.swift */,
 				BA2845221AB5B98D95E6E981 /* FileStation.swift */,
 				98911A0516F65F508D6BABDA /* FileStationFixture.swift */,
@@ -379,6 +387,7 @@
 				14F0E17FF563AC0977F333D0 /* GoogleDriveAuth.swift */,
 				85F4A054313DDF09C55591E5 /* GoogleDriveClient.swift */,
 				42E9C7876D0B9F79080D6CCD /* GoogleDriveDownloads.swift */,
+				7B7C0D72A80A833E861D06B2 /* GoogleDriveFixture.swift */,
 				7B0CE585241BD6B0EA2FF78C /* GoogleDriveViews.swift */,
 				688DD787FD430F05659B5C2B /* HomeOverviewView.swift */,
 				2B2818C3918344163122E78B /* Info.plist */,
@@ -726,6 +735,7 @@
 				79AB32B2DA7F271F6DB796C4 /* CalendarWidgetData.swift in Sources */,
 				6130287985B9EDBC252FF23F /* ChinaHolidaySchedule.swift in Sources */,
 				4CDF759C93458A225C3999CF /* DesktopFileNavigation.swift in Sources */,
+				22E7A8BFFE71BB23EAA04E26 /* DriveBackGesture.swift in Sources */,
 				A2863E0E341027B0CA44ABCD /* FileDownloads.swift in Sources */,
 				CC4152AD62FA102AD4A78619 /* FileStation.swift in Sources */,
 				70490F1EA001F189CD4B3C0E /* FileStationFixture.swift in Sources */,
@@ -733,6 +743,7 @@
 				092C32FE9B53ED79B5086D4D /* GoogleDriveAuth.swift in Sources */,
 				7A63BB0107B70635364D29D0 /* GoogleDriveClient.swift in Sources */,
 				F8F9D844A746C572CE804327 /* GoogleDriveDownloads.swift in Sources */,
+				506D7B953EE24187169C5A11 /* GoogleDriveFixture.swift in Sources */,
 				53C6CF6F567A2CD8744DF4C7 /* GoogleDriveViews.swift in Sources */,
 				DB38273008D0FDBC37E0AB9F /* HolidayBadge.swift in Sources */,
 				821664DCCB36195474E464BB /* HomeOverviewView.swift in Sources */,
@@ -775,6 +786,7 @@
 				96EE64BBB2FD2F52332AF1E6 /* ChinaHolidayTests.swift in Sources */,
 				EF60DABD68EADF76690948E2 /* ConnectionRestoreTests.swift in Sources */,
 				BCDE0C36C5013B574456F340 /* DesktopFileNavigationTests.swift in Sources */,
+				29D979DD2AA83D1266DE1C28 /* DriveBackGestureTests.swift in Sources */,
 				9BCFA8C3A4B5ADA30CB807C3 /* FileStationTests.swift in Sources */,
 				F7B15F94C594BE5FF250099F /* GoogleDriveAuthTests.swift in Sources */,
 				784DDC344CB7926E67541E43 /* GoogleDriveTests.swift in Sources */,
@@ -922,7 +934,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -942,7 +954,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.31.0;
+				MARKETING_VERSION = 0.31.1;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MORI_GOOGLE_CLIENT_ID = "990778572026-aq17j14j75062mffi2ilqj3tstqc7mb9.apps.googleusercontent.com";
@@ -1189,7 +1201,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 52;
+				CURRENT_PROJECT_VERSION = 53;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1203,7 +1215,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.31.0;
+				MARKETING_VERSION = 0.31.1;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
 				MORI_GOOGLE_CLIENT_ID = "990778572026-aq17j14j75062mffi2ilqj3tstqc7mb9.apps.googleusercontent.com";

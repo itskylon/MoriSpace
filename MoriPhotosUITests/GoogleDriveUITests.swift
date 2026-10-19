@@ -1,8 +1,8 @@
 import XCTest
 import UIKit
 
-/// These checks cover entry points and local navigation only. Reaching the Google
-/// sign-in button does not establish that a real Google account was authorized.
+/// Entry-point checks do not establish real Google account authorization. The
+/// folder-gesture cases use a simulator-only protocol with no real OAuth or API.
 final class GoogleDriveUITests: XCTestCase {
     private let fixtureArguments = ["--nas-connection-fixture", "--reset-nas-connection-fixture"]
 
@@ -51,6 +51,129 @@ final class GoogleDriveUITests: XCTestCase {
         capture("google-drive-phone-large-text")
     }
 
+    func testPhoneDriveEdgeSwipeReturnsExactlyOneFolderAndUpButtonReachesRoot() throws {
+        try requirePhone()
+        let app = openGestureFixture()
+        enterNestedFixtureFolder(in: app)
+
+        edgeDrag(in: app, distance: app.frame.width * 0.72)
+        let child = app.buttons["googleDriveFile_fixture-child"]
+        XCTAssertTrue(child.waitForExistence(timeout: 8), "A completed edge swipe must return to the immediate parent")
+        XCTAssertTrue(app.buttons["googleDriveBreadcrumb_fixture-folder"].exists)
+        XCTAssertFalse(app.buttons["googleDriveBreadcrumb_fixture-child"].exists, "One swipe must remove exactly one folder")
+        XCTAssertFalse(app.buttons["googleDriveFile_fixture-root-file"].exists)
+        capture("google-drive-phone-edge-swipe-parent")
+
+        let up = app.buttons["googleDriveUp"]
+        XCTAssertTrue(up.isHittable)
+        up.tap()
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-root-file"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["googleDriveBreadcrumb_fixture-folder"].exists)
+        capture("google-drive-phone-up-button-root")
+    }
+
+    func testPhoneDriveShortEdgeDragAndVerticalScrollingKeepCurrentFolder() throws {
+        try requirePhone()
+        let app = openGestureFixture()
+        enterNestedFixtureFolder(in: app)
+
+        // Releasing a short, slow drag below the commit threshold must cancel.
+        edgeDrag(in: app, distance: 28, hold: 0.5)
+        XCTAssertTrue(app.buttons["googleDriveBreadcrumb_fixture-child"].exists)
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-child-file-1"].isHittable)
+        XCTAssertFalse(app.buttons["googleDriveFile_fixture-root-file"].exists)
+
+        app.swipeUp()
+        XCTAssertTrue(app.buttons["googleDriveBreadcrumb_fixture-child"].exists,
+                      "Vertical file scrolling must not navigate to the parent")
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "hittable == false"),
+            object: app.buttons["googleDriveFile_fixture-child-file-1"])], timeout: 5), .completed,
+                       "The list must actually scroll while the edge gesture is installed")
+        capture("google-drive-phone-scroll-does-not-pop")
+    }
+
+    func testPhoneDriveRootEdgeSwipeDoesNotLeaveCloudProvider() throws {
+        try requirePhone()
+        let app = openGestureFixture()
+        edgeDrag(in: app, distance: app.frame.width * 0.72)
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-root-file"].isHittable)
+        XCTAssertTrue(app.buttons["storageProviderMenu"].label.contains("Google Drive"))
+        XCTAssertFalse(app.buttons["googleDriveBreadcrumb_fixture-folder"].exists)
+        XCTAssertFalse(app.buttons["googleDriveUp"].exists)
+        capture("google-drive-phone-root-edge-stays-root")
+    }
+
+    func testPhoneSettingsDriveEdgeSwipeReturnsFolderBeforePoppingSettings() throws {
+        try requirePhone()
+        let app = openSettingsGestureFixture()
+        enterNestedFixtureFolder(in: app)
+
+        edgeDrag(in: app, distance: app.frame.width * 0.72)
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-child"].waitForExistence(timeout: 8),
+                      "The Drive folder gesture must win over the Settings navigation pop")
+        XCTAssertTrue(app.buttons["googleDriveBreadcrumb_fixture-folder"].exists)
+        XCTAssertFalse(app.buttons["googleDriveBreadcrumb_fixture-child"].exists)
+        XCTAssertFalse(app.buttons["googleDriveSettings"].isHittable)
+        capture("google-drive-settings-edge-returns-folder")
+    }
+
+    func testPhoneHiddenSettingsDriveDoesNotInterceptNASBackSwipe() throws {
+        try requirePhone()
+        let app = openSettingsGestureFixture()
+        enterNestedFixtureFolder(in: app)
+
+        app.buttons["phoneMenu_home"].tap()
+        reveal("homeNASFiles", in: app).tap()
+        let share = app.buttons["nasFolder_测试共享"]
+        XCTAssertTrue(share.waitForExistence(timeout: 10))
+        share.tap()
+        let nasFile = app.buttons["nasFile_说明 + 中文.txt"]
+        XCTAssertTrue(nasFile.waitForExistence(timeout: 10))
+        edgeDrag(in: app, distance: app.frame.width * 0.72)
+        XCTAssertTrue(share.waitForExistence(timeout: 8),
+                      "The inactive Settings Drive must not steal the active NAS navigation gesture")
+        XCTAssertTrue(share.isHittable)
+        XCTAssertFalse(nasFile.isHittable)
+
+        app.buttons["phoneMenu_settings"].tap()
+        XCTAssertTrue(app.buttons["googleDriveBreadcrumb_fixture-child"].waitForExistence(timeout: 8),
+                      "The hidden Drive folder must retain its previous depth")
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-child-file-1"].isHittable)
+        capture("google-drive-hidden-settings-keeps-depth")
+    }
+
+    func testPhoneDriveReturningToVisitedFolderRestoresListAnchor() throws {
+        try requirePhone()
+        let app = openGestureFixture()
+        app.buttons["googleDriveFile_fixture-folder"].tap()
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-child"].waitForExistence(timeout: 8))
+        app.swipeUp()
+        app.swipeUp()
+        XCTAssertFalse(app.buttons["googleDriveFile_fixture-travel-1"].isHittable)
+        let listTop = app.buttons["googleDriveUp"].frame.maxY + 12
+        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "googleDriveFile_fixture-travel-"))
+            .allElementsBoundByIndex
+            .filter { $0.isHittable && $0.frame.minY >= listTop }
+            .sorted { $0.frame.minY < $1.frame.minY }
+        let anchor = try XCTUnwrap(rows.first, "Scrolling must reveal a later travel row")
+        let identifier = anchor.identifier
+        let originalY = anchor.frame.minY
+        capture("google-drive-folder-scroll-before-return")
+
+        app.buttons["googleDriveUp"].tap()
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-root-file"].waitForExistence(timeout: 8))
+        app.buttons["googleDriveFile_fixture-folder"].tap()
+        let restored = app.buttons[identifier]
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "hittable == true"), object: restored)], timeout: 8), .completed,
+                       "Re-entering the cached folder must restore the previously visible rows")
+        XCTAssertLessThan(abs(restored.frame.minY - originalY), 120,
+                          "Restored scrolling may align the row to the top but must remain near the saved position")
+        XCTAssertFalse(app.buttons["googleDriveFile_fixture-travel-1"].isHittable)
+        capture("google-drive-folder-scroll-restored")
+    }
+
     func testIPadSidebarOpensGoogleDriveAndReturnsToNASFolder() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "This case verifies the iPad sidebar")
         XCUIDevice.shared.orientation = .landscapeLeft
@@ -84,6 +207,41 @@ final class GoogleDriveUITests: XCTestCase {
     private func requirePhone() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, "This case verifies the compact iPhone layout")
         XCUIDevice.shared.orientation = .portrait
+    }
+
+    private func openGestureFixture() -> XCUIApplication {
+        let app = launch(extra: ["--google-drive-fixture"])
+        reveal("homeGoogleDrive", in: app).tap()
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-folder"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-root-file"].isHittable)
+        XCTAssertFalse(app.buttons["connectGoogleDrive"].exists)
+        return app
+    }
+
+    private func openSettingsGestureFixture() -> XCUIApplication {
+        let app = launch(extra: ["--google-drive-fixture"])
+        app.buttons["phoneMenu_settings"].tap()
+        reveal("googleDriveSettings", in: app).tap()
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-folder"].waitForExistence(timeout: 10))
+        return app
+    }
+
+    private func enterNestedFixtureFolder(in app: XCUIApplication) {
+        app.buttons["googleDriveFile_fixture-folder"].tap()
+        let child = app.buttons["googleDriveFile_fixture-child"]
+        XCTAssertTrue(child.waitForExistence(timeout: 8))
+        child.tap()
+        XCTAssertTrue(app.buttons["googleDriveFile_fixture-child-file-1"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["googleDriveBreadcrumb_fixture-child"].exists)
+    }
+
+    private func edgeDrag(in app: XCUIApplication, distance: CGFloat, hold: TimeInterval = 0) {
+        // Start inside the screen edge and below the horizontally scrolling
+        // breadcrumbs, using real touch coordinates rather than calling goUp.
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        let start = origin.withOffset(CGVector(dx: 2, dy: app.frame.height * 0.6))
+        let end = origin.withOffset(CGVector(dx: 2 + distance, dy: app.frame.height * 0.6))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: hold)
     }
 
     private func launch(extra: [String] = []) -> XCUIApplication {

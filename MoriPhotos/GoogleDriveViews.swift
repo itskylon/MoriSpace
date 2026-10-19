@@ -10,6 +10,10 @@ struct GoogleDriveHomeView: View {
     @EnvironmentObject private var downloads: GoogleDriveDownloads
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.layoutDirection) private var layoutDirection
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var interactionEnabled
+    @Environment(\.scenePhase) private var scenePhase
     @State private var folders: [GoogleDriveFile] = []
     @State private var query = ""
     @State private var items: [GoogleDriveFile] = []
@@ -25,6 +29,12 @@ struct GoogleDriveHomeView: View {
     @State private var showingDownloads = false
     @State private var disconnecting = false
     @State private var downloadNotice: String?
+    @State private var folderCache: [String: FolderSnapshot] = [:]
+    @State private var visibleRow: String?
+    @State private var scrollRestore: String?
+    @State private var scrollRestoreID = UUID()
+    @State private var listSpace = UUID()
+    @State private var backDistance: CGFloat = 0
     @FocusState private var searchFocused: Bool
 
     private struct RequestKey: Hashable {
@@ -33,6 +43,17 @@ struct GoogleDriveHomeView: View {
         let search: String
         let active: Bool
         let refresh: UUID
+    }
+    private struct FolderSnapshot {
+        let files: [GoogleDriveFile]
+        let nextPage: String?
+        let firstVisible: String?
+        let refresh: UUID
+    }
+    private var canGoUp: Bool { auth.accountID != nil && !folders.isEmpty && search.isEmpty }
+    private var edgeBackEnabled: Bool {
+        isActive && interactionEnabled && scenePhase == .active && !wide && canGoUp
+            && selected == nil && !showingDownloads && !disconnecting
     }
     private var search: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var currentFolder: String { folders.last?.id ?? "root" }
@@ -57,9 +78,10 @@ struct GoogleDriveHomeView: View {
         .task(id: requestKey) { await reset(requestKey) }
         .onChange(of: auth.accountID) { _, _ in
             folders = []; query = ""; selected = nil; downloadNotice = nil
+            folderCache = [:]; visibleRow = nil; backDistance = 0
             moreTask?.cancel(); moreTask = nil
         }
-        .onChange(of: isActive) { _, active in if !active { searchFocused = false } }
+        .onChange(of: isActive) { _, active in if !active { searchFocused = false; backDistance = 0 } }
         .onDisappear { moreTask?.cancel(); moreTask = nil; searchFocused = false }
         .sheet(isPresented: $showingDownloads) {
             NavigationStack { GoogleDriveDownloadsView(owner: auth.accountID ?? "") }
@@ -165,7 +187,19 @@ struct GoogleDriveHomeView: View {
                     }
                 }.font(.subheadline).padding(.horizontal, 12).frame(minHeight: 44)
                     .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 8))
-                if search.isEmpty { breadcrumbs }
+                if search.isEmpty {
+                    HStack(spacing: 8) {
+                        if canGoUp {
+                            Button { goUp() } label: {
+                                Image(systemName: "chevron.backward").font(.body.weight(.semibold)).frame(width: 44, height: 36)
+                                    .background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 8))
+                            }.buttonStyle(MoriPressStyle()).accessibilityLabel("上一级")
+                                .accessibilityIdentifier("googleDriveUp")
+                                .keyboardShortcut("[", modifiers: .command)
+                        }
+                        breadcrumbs
+                    }
+                }
                 else {
                     HStack {
                         Text("全部云端文件中的搜索结果").font(.caption).foregroundStyle(.secondary)
@@ -183,7 +217,8 @@ struct GoogleDriveHomeView: View {
                 }
             }.padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 12)
             Rectangle().fill(NASStyle.outline).frame(height: 0.5)
-            List {
+            ScrollViewReader { scroll in
+              List {
                 if let error, loadedKey == requestKey {
                     VStack(alignment: .leading, spacing: 12) {
                         ErrorBanner(message: error)
@@ -198,6 +233,13 @@ struct GoogleDriveHomeView: View {
                     Button { open(file) } label: { GoogleDriveFileRow(file: file, wide: wide, accessible: typeSize.isAccessibilitySize) }
                         .buttonStyle(MoriPressStyle(scale: 0.98))
                         .accessibilityIdentifier("googleDriveFile_" + file.id)
+                        .id(file.id)
+                        .background {
+                            GeometryReader { geometry in
+                                Color.clear.preference(key: DriveVisibleRows.self,
+                                                       value: [file.id: geometry.frame(in: .named(listSpace)).minY])
+                            }
+                        }
                 }
                 if loading || loadingMore {
                     HStack { Spacer(); ProgressView(loadingMore ? "正在载入更多…" : "正在读取 Google Drive…"); Spacer() }
@@ -212,8 +254,37 @@ struct GoogleDriveHomeView: View {
                         .listRowSeparator(.hidden).accessibilityIdentifier("googleDriveEmpty")
                 }
             }.listStyle(.plain).scrollContentBackground(.hidden)
+                .coordinateSpace(name: listSpace)
                 .listRowSpacing(0).phoneMenuScrolling(active: isActive)
-                .refreshable { await reset(requestKey, debounce: false) }
+                .refreshable { await reset(requestKey, debounce: false, useCache: false) }
+                .onPreferenceChange(DriveVisibleRows.self) { positions in
+                    guard loadedKey == requestKey, !loading, scrollRestore == nil else { return }
+                    visibleRow = positions.filter { $0.value >= -1 }.min { $0.value < $1.value }?.key
+                }
+                .task(id: scrollRestoreID) {
+                    guard let target = scrollRestore else { return }
+                    await Task.yield()
+                    guard !Task.isCancelled, loadedKey == requestKey, visibleItems.contains(where: { $0.id == target }) else { return }
+                    scroll.scrollTo(target, anchor: .top)
+                    scrollRestore = nil
+                }
+                .background {
+                    DriveBackGesture(enabled: edgeBackEnabled, rightToLeft: layoutDirection == .rightToLeft,
+                                     progress: { backDistance = $0 }, finish: { completed in
+                        withAnimation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.85)) { backDistance = 0 }
+                        if completed && edgeBackEnabled { goUp() }
+                    })
+                }
+                .offset(x: reduceMotion ? 0 : min(54, backDistance * 0.18) * (layoutDirection == .rightToLeft ? -1 : 1))
+                .overlay(alignment: layoutDirection == .rightToLeft ? .trailing : .leading) {
+                    if backDistance > 0 {
+                        Image(systemName: "chevron.backward").font(.body.weight(.bold)).foregroundStyle(.white)
+                            .frame(width: 38, height: 38).background(NASStyle.signal, in: Circle())
+                            .scaleEffect(reduceMotion ? 1 : min(1.15, 0.8 + backDistance / 400))
+                            .opacity(min(1, backDistance / 45)).padding(8).allowsHitTesting(false).accessibilityHidden(true)
+                    }
+                }
+            }
         }
     }
 
@@ -244,6 +315,10 @@ struct GoogleDriveHomeView: View {
         searchFocused = false; query = ""; downloadNotice = nil
         folders = index < 0 ? [] : Array(folders.prefix(index + 1))
     }
+    private func goUp() {
+        guard canGoUp else { return }
+        navigate(to: folders.count - 2)
+    }
     private func enqueue(_ file: GoogleDriveFile) {
         guard let owner = auth.accountID, loadedKey?.owner == owner else { return }
         downloads.enqueue(file, owner: owner, client: GoogleDriveClient(auth: auth))
@@ -255,11 +330,24 @@ struct GoogleDriveHomeView: View {
             error = downloads.error ?? "暂时无法创建下载任务，请重试。"
         }
     }
-    private func reset(_ key: RequestKey, debounce: Bool = true) async {
+    private func reset(_ key: RequestKey, debounce: Bool = true, useCache: Bool = true) async {
         moreTask?.cancel(); moreTask = nil
+        if let previous = loadedKey, previous.owner == auth.accountID, previous.search.isEmpty,
+           !loading, error == nil, previous.active {
+            folderCache[previous.folder] = FolderSnapshot(files: items, nextPage: nextPage, firstVisible: visibleRow, refresh: previous.refresh)
+            if folderCache.count > 20, let oldest = folderCache.keys.first(where: { $0 != previous.folder && $0 != key.folder }) {
+                folderCache[oldest] = nil
+            }
+        }
         let ticket = UUID(); generation = ticket; loadedKey = key
         items = []; nextPage = nil; error = nil; loadingMore = false; loading = false
+        visibleRow = nil; scrollRestore = nil
         guard key.active, let owner = key.owner, owner == auth.accountID else { return }
+        if useCache, key.search.isEmpty, let snapshot = folderCache[key.folder], snapshot.refresh == key.refresh {
+            items = snapshot.files; nextPage = snapshot.nextPage
+            visibleRow = snapshot.firstVisible; scrollRestore = snapshot.firstVisible; scrollRestoreID = UUID()
+            return
+        }
         loading = true
         defer { if generation == ticket { loading = false } }
         do {
@@ -293,6 +381,13 @@ struct GoogleDriveHomeView: View {
             guard generation == ticket, auth.accountID == owner, !Task.isCancelled else { return }
             self.error = googleDriveErrorMessage(error)
         }
+    }
+}
+
+private struct DriveVisibleRows: PreferenceKey {
+    static let defaultValue: [String: CGFloat] = [:]
+    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: { _, latest in latest })
     }
 }
 
