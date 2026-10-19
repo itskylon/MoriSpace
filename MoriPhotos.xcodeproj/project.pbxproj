@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		06733BFDC8F7483F6DF407FB /* AdaptiveLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8DF96457B91E94841EDD11 /* AdaptiveLayout.swift */; };
 		07465D6FF61EDC1A4EAA13A8 /* PhotoViewingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97B08BD589ED37C03652F362 /* PhotoViewingTests.swift */; };
+		092C32FE9B53ED79B5086D4D /* GoogleDriveAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F0E17FF563AC0977F333D0 /* GoogleDriveAuth.swift */; };
+		0BE5CDECED852CC6A86B0085 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 255C21B01C3E4633302E2B86 /* GoogleSignIn */; };
 		0CF6AA1D6E995A2BA9DBF9D9 /* CalendarWidgetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE4AD4B855D54D55D50486FA /* CalendarWidgetTests.swift */; };
 		0FE27DA83A27D87C9150B5B2 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEBB81A6B76ABF29C4956AC2 /* Models.swift */; };
 		12F03212B69B221F66B6EA7B /* NASMonitoring.swift in Sources */ = {isa = PBXBuildFile; fileRef = 735EE07A0DF6F4701B719F31 /* NASMonitoring.swift */; };
@@ -31,6 +33,7 @@
 		4D60745BBBAA3F5A994B71B6 /* CalendarDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B270F3F68AB9065ABEB5BCD0 /* CalendarDomain.swift */; };
 		4ED69224BB730E926F4C60AD /* PhotoLibraryIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BB1BF04404A8493BAB60509 /* PhotoLibraryIntegrationTests.swift */; };
 		52F9A82A65B2FDB500D80552 /* PhotoBackupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F655D12154C8ED18EDAC56C /* PhotoBackupView.swift */; };
+		53C6CF6F567A2CD8744DF4C7 /* GoogleDriveViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B0CE585241BD6B0EA2FF78C /* GoogleDriveViews.swift */; };
 		55808695785740BAA34D0987 /* HolidayBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F80134465C65DC9628290845 /* HolidayBadge.swift */; };
 		55E28DD127465B906574A5D3 /* MoriMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514FF9B5D1EFC283464A71DA /* MoriMotion.swift */; };
 		5CA37363F0FB0C8607E5300F /* ChinaHolidaySchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */; };
@@ -39,6 +42,7 @@
 		6130287985B9EDBC252FF23F /* ChinaHolidaySchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5810848CD11D4C2B8390D397 /* ChinaHolidaySchedule.swift */; };
 		63AFD47A23EEE3F1A994D138 /* PhotoFileSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6AAE08CD014153BE38DBC4F /* PhotoFileSize.swift */; };
 		65343B3E224BADB3461CA4EF /* NASViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568004985FCD4A42241CDA01 /* NASViews.swift */; };
+		67CFE70FB73D570E8EBB0B40 /* GoogleDriveUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF25A39107C6C909FC31DD3 /* GoogleDriveUITests.swift */; };
 		68C99BA98BA942C1B9CFB1FB /* PhotoBackupManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE69A88C634F2C7A88867C8D /* PhotoBackupManagerTests.swift */; };
 		68F4FEB2663AC62ACD692CE9 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = F74D34ABDD56B706E6BF9285 /* InfoPlist.strings */; };
 		69956B7049FA386D28244A88 /* SynologyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC28FA93EF083BB87500F14F /* SynologyClient.swift */; };
@@ -48,7 +52,9 @@
 		70490F1EA001F189CD4B3C0E /* FileStationFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98911A0516F65F508D6BABDA /* FileStationFixture.swift */; };
 		70737A8EF06B93589C58E440 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A420780A4BF2D0354CC77951 /* AppState.swift */; };
 		761CA6B47C6E857127B8C361 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6649B9616DC335622F581BB7 /* Assets.xcassets */; };
+		784DDC344CB7926E67541E43 /* GoogleDriveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D6BBEDDE35089CE06638B7 /* GoogleDriveTests.swift */; };
 		79AB32B2DA7F271F6DB796C4 /* CalendarWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5E5E83E9C3F9679C07600A /* CalendarWidgetData.swift */; };
+		7A63BB0107B70635364D29D0 /* GoogleDriveClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85F4A054313DDF09C55591E5 /* GoogleDriveClient.swift */; };
 		7DE34BFD1FB8B22AA7AC8E2F /* VideoProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AC1B599AD5C9B6A04746FA8 /* VideoProgressTests.swift */; };
 		7E01845EB4C5E4D4D6652099 /* CalendarWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD5E5E83E9C3F9679C07600A /* CalendarWidgetData.swift */; };
 		7E856CB3774E421C82219C60 /* MoriCalendarWidgetsMac.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E49E09B094419DFCED922A25 /* MoriCalendarWidgetsMac.appex */; platformFilter = maccatalyst; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -93,8 +99,10 @@
 		EFD33D8E30B2330F972FC8A6 /* PhotoBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE43CD8EEE908AED79A973D /* PhotoBackup.swift */; };
 		F3425B8E20269ABEEE78615E /* NASFilePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E83339E4DD5D67A754343A /* NASFilePreview.swift */; };
 		F4EF618DC11A25395F72A413 /* NASNetworkErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E26CC2B549D6834735DF386 /* NASNetworkErrorTests.swift */; };
+		F7B15F94C594BE5FF250099F /* GoogleDriveAuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9A4F2728F85F821C87CE204 /* GoogleDriveAuthTests.swift */; };
 		F839CEE6D3ADB04F1DD62E1D /* NASMonitorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB9D811487C68D877A22351C /* NASMonitorView.swift */; };
 		F8D8A4EC57CA4D03AB3D960C /* NASFilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BEAE8CD01A113E6B2DAE523 /* NASFilesView.swift */; };
+		F8F9D844A746C572CE804327 /* GoogleDriveDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E9C7876D0B9F79080D6CCD /* GoogleDriveDownloads.swift */; };
 		FB07999D72FD0573EAF43C2F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 810A4544553B5ABF82A5248A /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
@@ -159,6 +167,7 @@
 		0E26CC2B549D6834735DF386 /* NASNetworkErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASNetworkErrorTests.swift; sourceTree = "<group>"; };
 		11792FF853066FE298B264EE /* CalendarStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarStore.swift; sourceTree = "<group>"; };
 		1420924898078F2EDA927690 /* CalendarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarTests.swift; sourceTree = "<group>"; };
+		14F0E17FF563AC0977F333D0 /* GoogleDriveAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveAuth.swift; sourceTree = "<group>"; };
 		1ABD06E000A87BA5297A30FA /* PhotoLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoLibraryStore.swift; sourceTree = "<group>"; };
 		1B3A5C328D48818A288954BE /* HomeOverviewUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeOverviewUITests.swift; sourceTree = "<group>"; };
 		2702B3F3BC8C9E21167E48E3 /* VideoPlaybackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlaybackTests.swift; sourceTree = "<group>"; };
@@ -170,10 +179,13 @@
 		2C0D5E2EB15294CD604F4A8C /* DesktopFileNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopFileNavigationTests.swift; sourceTree = "<group>"; };
 		32774894637A038FBB5D5464 /* CalendarFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarFixture.swift; sourceTree = "<group>"; };
 		3A14CEA414FC091037665EB9 /* MoriCalendarWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoriCalendarWidget.swift; sourceTree = "<group>"; };
+		3AF25A39107C6C909FC31DD3 /* GoogleDriveUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveUITests.swift; sourceTree = "<group>"; };
 		3CD4C95075F3003D3ADFBF25 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		3DEAA07D904B30537BD52A21 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		3EFBD487A4E5DCB5CAF659AB /* MoriPhotosUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MoriPhotosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		42E9C7876D0B9F79080D6CCD /* GoogleDriveDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveDownloads.swift; sourceTree = "<group>"; };
 		4384ED8AC25418D63D492A78 /* CalendarWidgetUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarWidgetUITests.swift; sourceTree = "<group>"; };
+		43D6BBEDDE35089CE06638B7 /* GoogleDriveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveTests.swift; sourceTree = "<group>"; };
 		483DD6F941B710B8476B7848 /* MoriPhotosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoriPhotosApp.swift; sourceTree = "<group>"; };
 		4921EB848336495B6525E6BE /* ChinaHolidayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChinaHolidayTests.swift; sourceTree = "<group>"; };
 		4A9C3809C2E657705DD021AF /* FileDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileDownloads.swift; sourceTree = "<group>"; };
@@ -189,9 +201,11 @@
 		688DD787FD430F05659B5C2B /* HomeOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeOverviewView.swift; sourceTree = "<group>"; };
 		7274409BBE484F52990098A9 /* VideoPlaybackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlaybackView.swift; sourceTree = "<group>"; };
 		735EE07A0DF6F4701B719F31 /* NASMonitoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASMonitoring.swift; sourceTree = "<group>"; };
+		7B0CE585241BD6B0EA2FF78C /* GoogleDriveViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveViews.swift; sourceTree = "<group>"; };
 		7CF8BC95E8208452FBA20CC9 /* FloatingPhoneMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPhoneMenu.swift; sourceTree = "<group>"; };
 		810A4544553B5ABF82A5248A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		819A8B3810DD6AC3F92E4331 /* MoriPhotosMacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoriPhotosMacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		85F4A054313DDF09C55591E5 /* GoogleDriveClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveClient.swift; sourceTree = "<group>"; };
 		86C58A2AF460B6CFA02BBF2A /* MacPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPersistenceTests.swift; sourceTree = "<group>"; };
 		89B47CCB00012B3B2F979190 /* VideoStreaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoStreaming.swift; sourceTree = "<group>"; };
 		89F0C85B700992AB918FF20B /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
@@ -229,6 +243,7 @@
 		E572CAD53D98DB21490FE92C /* PhoneMenuQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneMenuQuery.swift; sourceTree = "<group>"; };
 		E6EF3CF14EB026ECB9C87C9A /* NASMonitorDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NASMonitorDashboard.swift; sourceTree = "<group>"; };
 		E79A359C3DFA8F3F793D6083 /* MoriPhotosUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoriPhotosUITests.swift; sourceTree = "<group>"; };
+		E9A4F2728F85F821C87CE204 /* GoogleDriveAuthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoogleDriveAuthTests.swift; sourceTree = "<group>"; };
 		F07DC7F244C5AD308943D572 /* MacWorkspaceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacWorkspaceTests.swift; sourceTree = "<group>"; };
 		F23DB288D98938A8231A977F /* AppBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBrand.swift; sourceTree = "<group>"; };
 		F80134465C65DC9628290845 /* HolidayBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HolidayBadge.swift; sourceTree = "<group>"; };
@@ -237,6 +252,17 @@
 		FE4AD4B855D54D55D50486FA /* CalendarWidgetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarWidgetTests.swift; sourceTree = "<group>"; };
 		FFE47DC8FEB7E8200EB69BFD /* LunarMonthWidgetContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LunarMonthWidgetContent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A6361923EB480F0C82058A22 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0BE5CDECED852CC6A86B0085 /* GoogleSignIn in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		132B674A1A94C7DCB23252D7 = {
@@ -292,6 +318,8 @@
 				27B6095DB92ABE7E4C63C227 /* ConnectionRestoreTests.swift */,
 				2C0D5E2EB15294CD604F4A8C /* DesktopFileNavigationTests.swift */,
 				93E94C98B05D182056236E85 /* FileStationTests.swift */,
+				E9A4F2728F85F821C87CE204 /* GoogleDriveAuthTests.swift */,
+				43D6BBEDDE35089CE06638B7 /* GoogleDriveTests.swift */,
 				86C58A2AF460B6CFA02BBF2A /* MacPersistenceTests.swift */,
 				A81AA60334F5863526553FA1 /* NASMonitorTests.swift */,
 				0E26CC2B549D6834735DF386 /* NASNetworkErrorTests.swift */,
@@ -311,6 +339,7 @@
 			children = (
 				A44C6D38A27C07296EB382C2 /* CalendarUITests.swift */,
 				4384ED8AC25418D63D492A78 /* CalendarWidgetUITests.swift */,
+				3AF25A39107C6C909FC31DD3 /* GoogleDriveUITests.swift */,
 				1B3A5C328D48818A288954BE /* HomeOverviewUITests.swift */,
 				E79A359C3DFA8F3F793D6083 /* MoriPhotosUITests.swift */,
 				E572CAD53D98DB21490FE92C /* PhoneMenuQuery.swift */,
@@ -347,6 +376,10 @@
 				BA2845221AB5B98D95E6E981 /* FileStation.swift */,
 				98911A0516F65F508D6BABDA /* FileStationFixture.swift */,
 				7CF8BC95E8208452FBA20CC9 /* FloatingPhoneMenu.swift */,
+				14F0E17FF563AC0977F333D0 /* GoogleDriveAuth.swift */,
+				85F4A054313DDF09C55591E5 /* GoogleDriveClient.swift */,
+				42E9C7876D0B9F79080D6CCD /* GoogleDriveDownloads.swift */,
+				7B0CE585241BD6B0EA2FF78C /* GoogleDriveViews.swift */,
 				688DD787FD430F05659B5C2B /* HomeOverviewView.swift */,
 				2B2818C3918344163122E78B /* Info.plist */,
 				0097D1CB1BDAFCBB5174506D /* iOS.entitlements */,
@@ -490,6 +523,7 @@
 			buildPhases = (
 				E4338133F2E59F7DD60290D3 /* Sources */,
 				90A73E3781A569D293442690 /* Resources */,
+				A6361923EB480F0C82058A22 /* Frameworks */,
 				468F60475608EC3D8EFEDFC4 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -500,6 +534,7 @@
 			);
 			name = MoriPhotos;
 			packageProductDependencies = (
+				255C21B01C3E4633302E2B86 /* GoogleSignIn */,
 			);
 			productName = MoriPhotos;
 			productReference = 8DFD988A7E5AC94AE310C1C0 /* MoriPhotos.app */;
@@ -555,6 +590,9 @@
 			);
 			mainGroup = 132B674A1A94C7DCB23252D7;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				047A54A9D63EB8BB4D491542 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = EF8B4439E32966857188E2BF /* Products */;
 			projectDirPath = "";
@@ -635,6 +673,7 @@
 			files = (
 				47226652C5A60491E81C8E5D /* CalendarUITests.swift in Sources */,
 				89025951598261022B366F71 /* CalendarWidgetUITests.swift in Sources */,
+				67CFE70FB73D570E8EBB0B40 /* GoogleDriveUITests.swift in Sources */,
 				8347DEC1AED4CCDA2FAE354D /* HomeOverviewUITests.swift in Sources */,
 				B4F3F4E1241A70C2A77570C3 /* MoriPhotosUITests.swift in Sources */,
 				E5EED75CC0426BE8D5EA6305 /* PhoneMenuQuery.swift in Sources */,
@@ -691,6 +730,10 @@
 				CC4152AD62FA102AD4A78619 /* FileStation.swift in Sources */,
 				70490F1EA001F189CD4B3C0E /* FileStationFixture.swift in Sources */,
 				2062DD9D3667FF4A95913E0E /* FloatingPhoneMenu.swift in Sources */,
+				092C32FE9B53ED79B5086D4D /* GoogleDriveAuth.swift in Sources */,
+				7A63BB0107B70635364D29D0 /* GoogleDriveClient.swift in Sources */,
+				F8F9D844A746C572CE804327 /* GoogleDriveDownloads.swift in Sources */,
+				53C6CF6F567A2CD8744DF4C7 /* GoogleDriveViews.swift in Sources */,
 				DB38273008D0FDBC37E0AB9F /* HolidayBadge.swift in Sources */,
 				821664DCCB36195474E464BB /* HomeOverviewView.swift in Sources */,
 				9E6F5C84AD911F19FEE75279 /* KeychainStore.swift in Sources */,
@@ -733,6 +776,8 @@
 				EF60DABD68EADF76690948E2 /* ConnectionRestoreTests.swift in Sources */,
 				BCDE0C36C5013B574456F340 /* DesktopFileNavigationTests.swift in Sources */,
 				9BCFA8C3A4B5ADA30CB807C3 /* FileStationTests.swift in Sources */,
+				F7B15F94C594BE5FF250099F /* GoogleDriveAuthTests.swift in Sources */,
+				784DDC344CB7926E67541E43 /* GoogleDriveTests.swift in Sources */,
 				B7792639069A06926EF65AE9 /* MacPersistenceTests.swift in Sources */,
 				D1637BF24C52326D16C0849F /* NASMonitorTests.swift in Sources */,
 				F4EF618DC11A25395F72A413 /* NASNetworkErrorTests.swift in Sources */,
@@ -877,7 +922,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 52;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -897,9 +942,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.30.4;
+				MARKETING_VERSION = 0.31.0;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
+				MORI_GOOGLE_CLIENT_ID = "990778572026-aq17j14j75062mffi2ilqj3tstqc7mb9.apps.googleusercontent.com";
+				MORI_GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.990778572026-aq17j14j75062mffi2ilqj3tstqc7mb9";
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1142,7 +1189,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 51;
+				CURRENT_PROJECT_VERSION = 52;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1156,9 +1203,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.30.4;
+				MARKETING_VERSION = 0.31.0;
 				MORI_CALENDAR_APP_GROUP = group.dev.kylon.MoriPhotos.calendar;
 				"MORI_CALENDAR_APP_GROUP[sdk=macosx*]" = "$(DEVELOPMENT_TEAM).dev.kylon.MoriPhotos.calendar";
+				MORI_GOOGLE_CLIENT_ID = "990778572026-aq17j14j75062mffi2ilqj3tstqc7mb9.apps.googleusercontent.com";
+				MORI_GOOGLE_REVERSED_CLIENT_ID = "com.googleusercontent.apps.990778572026-aq17j14j75062mffi2ilqj3tstqc7mb9";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1236,6 +1285,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		047A54A9D63EB8BB4D491542 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		255C21B01C3E4633302E2B86 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 047A54A9D63EB8BB4D491542 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 209F96C832766CE983379B1A /* Project object */;
 }

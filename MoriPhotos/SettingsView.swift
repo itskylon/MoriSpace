@@ -4,6 +4,7 @@ struct SettingsView: View {
     @EnvironmentObject private var app: AppState
     @EnvironmentObject private var library: PhotoLibraryStore
     @EnvironmentObject private var backup: PhotoBackupManager
+    @EnvironmentObject private var googleDrive: GoogleDriveAuth
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var cleared = false
@@ -70,7 +71,10 @@ struct SettingsView: View {
                 NavigationLink { ConnectionView(service: .files).toolbar(.visible, for: .navigationBar) } label: {
                     SettingsServiceCard(title: "群晖文件", subtitle: "File Station", symbol: "folder", color: NASStyle.blue, connected: app.fileClient != nil)
                 }.buttonStyle(MoriPressStyle(scale: 0.965))
-
+                rowDivider
+                NavigationLink { GoogleDriveHomeView().toolbar(.visible, for: .navigationBar) } label: {
+                    SettingsServiceCard(title: "Google Drive", subtitle: "Google 云端硬盘", symbol: "externaldrive.badge.icloud", color: NASStyle.blue, connected: googleDrive.accountID != nil)
+                }.buttonStyle(MoriPressStyle(scale: 0.965)).accessibilityIdentifier("googleDriveSettings")
             }.settingsPanel()
         }
     }

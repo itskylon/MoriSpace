@@ -24,6 +24,7 @@ struct HomeOverviewView: View {
                         HStack(alignment: .top, spacing: 28) {
                             VStack(alignment: .leading, spacing: 20) {
                                 storageShortcuts
+                                googleDriveShortcut
                                 deviceSection
                             }.frame(maxWidth: .infinity)
                             dailyTasks.frame(width: 320)
@@ -32,8 +33,10 @@ struct HomeOverviewView: View {
                         if typeSize.isAccessibilitySize {
                             deviceSection
                             storageShortcuts
+                            googleDriveShortcut
                         } else {
                             storageShortcuts
+                            googleDriveShortcut
                             deviceSection
                         }
                         dailyTasks
@@ -168,6 +171,17 @@ struct HomeOverviewView: View {
             downloadsCard.padding(.top, 4)
         }
     }
+    private var googleDriveShortcut: some View {
+        Button { open(.googleDrive) } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "externaldrive.badge.icloud").font(.system(size: 22)).foregroundStyle(NASStyle.blue)
+                Text("Google Drive").font(.subheadline.weight(.semibold))
+                Spacer(minLength: 0)
+                Image(systemName: "arrow.up.right").font(.subheadline.weight(.medium)).foregroundStyle(NASStyle.accent)
+            }.padding(.horizontal, 16).frame(minHeight: 52)
+                .foregroundStyle(.primary).background(NASStyle.inset, in: RoundedRectangle(cornerRadius: 10))
+        }.buttonStyle(MoriPressStyle(scale: 0.97)).accessibilityIdentifier("homeGoogleDrive")
+    }
     private var device: some View {
         HomeDeviceCard(isActive: isActive && detail == nil) { open(.monitor) }.id(app.monitorConnectionID)
     }
@@ -198,7 +212,10 @@ struct HomeOverviewView: View {
     private func open(_ page: WorkspacePage) {
         if usesSidebar { navigation.selection = page; return }
         switch page {
+        case .googleDrive:
+            navigation.storageProvider = "Google Drive"; navigation.phoneSelection = .photos
         case .photos, .files, .monitor:
+            navigation.storageProvider = "群晖"
             navigation.storageSection = page == .photos ? "照片" : page == .files ? "文件" : "状态"
             navigation.phoneSelection = .photos
         default: navigation.phoneSelection = page

@@ -18,11 +18,12 @@ enum AppPlatform {
 }
 
 enum WorkspacePage: String, CaseIterable, Identifiable {
-    case local, photos, files, downloads, monitor, backup, settings, calendar, home
+    case local, photos, files, downloads, monitor, backup, settings, calendar, home, googleDrive
     var id: String { rawValue }
     var title: String {
         switch self {
         case .home: "首页"
+        case .googleDrive: "Google Drive"
         case .local: AppPlatform.libraryName
         case .photos: "群晖照片"
         case .files: "群晖文件"
@@ -36,6 +37,7 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .home: "square.grid.2x2"
+        case .googleDrive: "externaldrive.badge.icloud"
         case .local: "photo.on.rectangle"
         case .photos: "photo.stack"
         case .files: "folder"
@@ -52,6 +54,7 @@ enum WorkspacePage: String, CaseIterable, Identifiable {
     @Published var selection: WorkspacePage = .home
     @Published var phoneSelection: WorkspacePage = .home
     @Published var storageSection = "照片"
+    @Published var storageProvider = "群晖"
     @Published var paths: [WorkspacePage: NavigationPath] = [:]
 }
 
@@ -69,6 +72,7 @@ struct AdaptiveRootView: View {
             }
             .onChange(of: navigation.phoneSelection) { _, _ in phoneMenu.expand() }
             .onChange(of: navigation.storageSection) { _, _ in phoneMenu.expand() }
+            .onChange(of: navigation.storageProvider) { _, _ in phoneMenu.expand() }
         }
     }
 }
@@ -131,7 +135,7 @@ struct DesktopWorkspaceView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
                         row(.home)
-                        sidebarGroup("资料库", pages: [.local, .photos, .files])
+                        sidebarGroup("资料库", pages: [.local, .photos, .files, .googleDrive])
                         sidebarGroup("工具", pages: [.calendar, .downloads, .monitor, .backup])
                     }.padding(.horizontal, 12)
                 }.scrollIndicators(.hidden)
@@ -201,7 +205,7 @@ struct DesktopWorkspaceView: View {
             .accessibilityIdentifier("sidebar_" + page.rawValue)
     }
     private func moveSidebar(by offset: Int) {
-        let pages: [WorkspacePage] = [.home, .local, .photos, .files, .calendar, .downloads, .monitor, .backup, .settings]
+        let pages: [WorkspacePage] = [.home, .local, .photos, .files, .googleDrive, .calendar, .downloads, .monitor, .backup, .settings]
         guard let index = pages.firstIndex(of: navigation.selection), pages.indices.contains(index + offset) else { return }
         navigation.selection = pages[index + offset]
         sidebarFocus = pages[index + offset]
@@ -217,6 +221,7 @@ struct DesktopWorkspaceView: View {
         case .settings: SettingsView()
         case .calendar: CalendarHomeView(isActive: navigation.selection == page)
         case .home: HomeOverviewView(isActive: navigation.selection == page)
+        case .googleDrive: GoogleDriveHomeView(isActive: navigation.selection == page)
         }
     }
 }

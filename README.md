@@ -1,8 +1,26 @@
 # 森空间 · Mori Space
 
-自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口，没有第三方运行时 SDK，也不通过中转服务器传输照片和文件。
+自用的 Apple 多端照片与文件客户端，集中管理本机照片、群晖 NAS、Google Drive、视频、日历和设备状态。使用 SwiftUI、PhotoKit、EventKit、AVFoundation、Synology 原生接口和 Google 官方 GoogleSignIn SDK。照片和文件在设备与相应存储服务之间直接传输。
 
-当前版本：**0.30.4（51）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+当前版本：**0.31.0（52）**。支持 iPhone / iPad（iOS 17+）和 Mac（macOS 14+，Mac Catalyst）。
+
+## 0.31 Google Drive
+
+新增 Google Drive 只读接入：Google 官方登录、恢复授权、目录浏览、整个云盘按名称搜索、分页与文件下载。Google 文档、表格、幻灯片与绘图分别导出为 DOCX、XLSX、PPTX、PDF，下载完成后可以本机预览、另存为或分享。下载显示进度，支持取消与重试；每个 Google 账号使用独立记录，退出时取消其进行中任务，保留本机下载。
+
+手机从首页 Google Drive 快捷入口进入，也可在「存储」顶部切换「群晖 / Google Drive」；Mac / iPad 使用侧栏。切换提供方保留群晖目录。Google 授权由官方 SDK 保存在系统钥匙串，各设备分别完成首次授权；浏览器已有登录不等于原生 App 已获授权。
+
+验证：25 项 Google Drive 单元测试和 18 项 NAS 恢复回归测试通过；4 项独立手机 / iPad 界面检查通过，覆盖入口、下载列表、大字体及切换后目录保留。两端 Release 构建与主 App、小组件的签名及原有权限核验通过，Mac 与 iPhone 均覆盖安装并启动 0.31.0（52）。Mac 真实 Google 账号已授权并读取目录，一份 Google 表格导出任务实际完成（约 6 KB）；手机用户确认授权后已看到真实文件列表。本轮未逐项验证所有文件格式及大文件，HTTP 重定向下载会安全停止并提示使用 Google Drive 网页。
+
+### Google 授权配置
+
+在 Google Cloud 为自己的项目启用 Google Drive API，配置 Google Auth Platform 的品牌信息、受众与访问范围，创建软件包 ID 为 `dev.kylon.MoriPhotos` 的 iOS 客户端（Mac Catalyst 使用相同客户端）。请求范围为 `openid`、`userinfo.email`、`userinfo.profile` 和 `https://www.googleapis.com/auth/drive.readonly`。这里的只读范围用于读取已有云盘的目录和内容；`drive.file` 不能替代全盘浏览。
+
+`project.yml` 的 `MORI_GOOGLE_CLIENT_ID` 和 `MORI_GOOGLE_REVERSED_CLIENT_ID` 是可公开的原生 OAuth 客户端配置，不是 Client Secret。使用自己的 Google 项目时替换这两项，再运行 `xcodegen generate`。系统钥匙串组、原有 `morispace` 日历回调和 Google 反向 Client ID 回调均需保留。不要将密码、访问令牌、刷新令牌或 Client Secret 写入工程或下载记录。
+
+Google 应用处于 Testing 状态时，需要添加测试用户，涉及云盘范围的授权通常在 7 天后过期，届时 App 提示重新连接。这与 Apple 开发签名有效期分别管理。正式使用前应按 Google 的个人使用应用政策配置发布状态；本轮维持测试状态。Google 原生文档的 API 导出有 10 MB 限制；下载与本机预览需要保持 App 运行。
+
+官方参考：[Apple 平台登录配置](https://developers.google.com/identity/sign-in/ios/start-integrating)、[Drive 授权范围](https://developers.google.com/workspace/drive/api/guides/api-specific-auth)、[下载与导出](https://developers.google.com/workspace/drive/api/guides/manage-downloads)、[Testing 状态](https://support.google.com/cloud/answer/15549945?hl=en)。
 
 ## 0.30.4 折叠 M 品牌图标
 

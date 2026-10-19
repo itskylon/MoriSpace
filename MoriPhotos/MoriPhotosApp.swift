@@ -1,6 +1,7 @@
 import SwiftUI
 import EventKit
 import Combine
+import GoogleSignIn
 
 @main
 struct MoriPhotosApp: App {
@@ -8,6 +9,8 @@ struct MoriPhotosApp: App {
     @StateObject private var navigation = WorkspaceNavigation()
     @StateObject private var library = PhotoLibraryStore()
     @StateObject private var calendar = CalendarStore(widgetCache: .shared)
+    @StateObject private var googleDrive = GoogleDriveAuth()
+    @StateObject private var googleDownloads = GoogleDriveDownloads()
     @StateObject private var app: AppState
     @StateObject private var backup: PhotoBackupManager
     @Environment(\.scenePhase) private var scenePhase
@@ -27,14 +30,20 @@ struct MoriPhotosApp: App {
             .environmentObject(app)
             .environmentObject(backup)
             .environmentObject(calendar)
+            .environmentObject(googleDrive)
+            .environmentObject(googleDownloads)
             .task { backup.foregroundChanged(scenePhase == .active) }
             .task { await calendar.refreshWidgetSnapshot() }
             .onOpenURL { url in
+                if googleDrive.isConfigured, GIDSignIn.sharedInstance.handle(url) { return }
                 guard let date = CalendarWidgetRoute.date(from: url) else { return }
                 calendar.select(date); calendar.month = calendar.layout.month(containing: date)
                 calendar.displayMode = .month
                 navigation.paths[.calendar] = NavigationPath()
                 navigation.selection = .calendar; navigation.phoneSelection = .calendar
+            }
+            .onChange(of: googleDrive.accountID) { previous, current in
+                if let previous, previous != current { googleDownloads.cancelActive(owner: previous) }
             }
             .onReceive(calendar.$hiddenCalendarIDs.dropFirst()) { _ in Task { await calendar.refreshWidgetSnapshot() } }
             .onReceive(NotificationCenter.default.publisher(for: .EKEventStoreChanged).debounce(for: .milliseconds(400), scheduler: RunLoop.main)) { _ in
@@ -57,9 +66,10 @@ struct MoriPhotosApp: App {
                 Button("设置…") { navigation.selection = .settings }.keyboardShortcut(",")
             }
             CommandMenu("前往") {
-                ForEach(Array(WorkspacePage.allCases.filter { $0 != .home }.enumerated()), id: \.element) { index, page in
+                ForEach(Array(WorkspacePage.allCases.filter { $0 != .home && $0 != .googleDrive }.enumerated()), id: \.element) { index, page in
                     Button(page.title) { navigation.selection = page }.keyboardShortcut(KeyEquivalent(Character(String(index + 1))))
                 }
+                Button("Google Drive") { navigation.selection = .googleDrive }.keyboardShortcut("g", modifiers: [.command, .shift])
                 Button("首页") { navigation.selection = .home }.keyboardShortcut("0")
             }
         }

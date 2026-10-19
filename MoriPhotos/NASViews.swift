@@ -2,6 +2,41 @@ import SwiftUI
 
 struct NASHomeView: View {
     var isActive = true
+    @EnvironmentObject private var navigation: WorkspaceNavigation
+    @State private var visitedGoogleDrive = false
+    private var googleSelected: Bool { navigation.storageProvider == "Google Drive" }
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Menu {
+                    Button("群晖", systemImage: "externaldrive") { navigation.storageProvider = "群晖" }
+                        .accessibilityIdentifier("storageProviderSynology")
+                    Button("Google Drive", systemImage: "externaldrive.badge.icloud") { navigation.storageProvider = "Google Drive" }
+                        .accessibilityIdentifier("storageProviderGoogleDrive")
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(navigation.storageProvider).font(.headline.weight(.bold))
+                        Image(systemName: "chevron.down").font(.caption2.weight(.bold))
+                    }.frame(minHeight: 40)
+                }.accessibilityIdentifier("storageProviderMenu").accessibilityLabel("切换存储：" + navigation.storageProvider)
+                Spacer()
+            }.padding(.horizontal, 20).background(NASStyle.canvas)
+            ZStack {
+                SynologyStorageHomeView(isActive: isActive && !googleSelected)
+                    .frame(maxWidth: googleSelected ? 0 : .infinity, maxHeight: googleSelected ? 0 : .infinity)
+                    .clipped().disabled(googleSelected).nasPageVisibility(!googleSelected)
+                if visitedGoogleDrive || googleSelected {
+                    NavigationStack { GoogleDriveHomeView(isActive: isActive && googleSelected).toolbar(.hidden, for: .navigationBar) }
+                        .frame(maxWidth: googleSelected ? .infinity : 0, maxHeight: googleSelected ? .infinity : 0)
+                        .clipped().disabled(!googleSelected).nasPageVisibility(googleSelected)
+                }
+            }
+        }.onChange(of: googleSelected) { _, selected in if selected { visitedGoogleDrive = true } }
+    }
+}
+
+private struct SynologyStorageHomeView: View {
+    var isActive = true
     @State private var connection = false
     @EnvironmentObject private var navigation: WorkspaceNavigation
     private var section: String { navigation.storageSection }
